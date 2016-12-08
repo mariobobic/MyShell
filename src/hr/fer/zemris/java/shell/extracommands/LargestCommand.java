@@ -54,7 +54,7 @@ public class LargestCommand extends AbstractCommand {
 	}
 	
 	@Override
-	public CommandStatus execute(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
@@ -66,10 +66,6 @@ public class LargestCommand extends AbstractCommand {
 		
 		/* Resolve path from the first argument. */
 		Path dir = Helper.resolveAbsolutePath(env, args[0]);
-		if (dir == null) {
-			writeln(env, "Invalid path!");
-			return CommandStatus.CONTINUE;
-		}
 		
 		/* Resolve quantity from the second argument, if present. */
 		if (args.length == 1) {
@@ -90,11 +86,7 @@ public class LargestCommand extends AbstractCommand {
 		}
 		
 		LargestFileVisitor largestVisitor = new LargestFileVisitor(quantity);
-		try {
-			Files.walkFileTree(dir, largestVisitor);
-		} catch (IOException e) {
-			writeln(env, e.getMessage());
-		}
+		Files.walkFileTree(dir, largestVisitor);
 		
 		List<Path> largestFiles = largestVisitor.getLargest();
 		for (Path f : largestFiles) {

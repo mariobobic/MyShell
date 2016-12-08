@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -32,7 +33,7 @@ import hr.fer.zemris.java.shell.interfaces.ShellCommand;
  *
  * @author Mario Bobic
  * @author Marko Čupić
- * @version 2016-11-13 18:20
+ * @version 2016-11-26 16:30
  */
 public class MyShell {
 	
@@ -59,6 +60,7 @@ public class MyShell {
 				new DiffCommand(),
 				new DirCommand(),
 				new DumpCommand(),
+				new ExtractCommand(),
 				new FilterCommand(),
 				new FindCommand(),
 				new LargestCommand(),
@@ -153,7 +155,14 @@ public class MyShell {
 	 * @throws IOException if an I/O error occurs
 	 */
 	private static String readInput() throws IOException {
-		String line = environment.readLine().trim();
+		String line = environment.readLine();
+		if (line == null) {
+			environment.writeln("Input unavailable. Closing MyShell...");
+			System.exit(-1);
+		} else {
+			line = line.trim();
+		}
+		
 		while (line.endsWith(" " + environment.morelinesSymbol)) {
 			line = line.substring(0, line.length()-1); // remove the symbol
 			
@@ -190,9 +199,9 @@ public class MyShell {
 	public static class EnvironmentImpl implements Environment {
 		
 		/** A default reader that reads from the standard input. */
-		private BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
+		private BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
 		/** A default writer that writes on the standard output. */
-		private BufferedWriter stdOut = new BufferedWriter(new OutputStreamWriter(System.out));
+		private BufferedWriter stdOut = new BufferedWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8));
 		
 		
 		/** Reader of this environment. May be connected to a remote machine. */
@@ -327,9 +336,31 @@ public class MyShell {
 		private OutputStream outToClient;
 		
 		/** Current ID number for marked paths. */
-		private int markNum = 1;
+		private int markNum = 0;
 		/** Map that associates paths ready for download with an ID number. */
 		private Map<Integer, Path> markedForDownload = new HashMap<>();
+		
+		@Override
+		public void connectStreams(InputStream in, OutputStream out) {
+			inFromClient = in;
+			outToClient = out;
+			
+			environment.reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+			environment.writer = new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
+			
+			connected = true;
+		}
+		
+		@Override
+		public void disconnectStreams() {
+			inFromClient = null;
+			outToClient = null;
+			
+			environment.reader = environment.stdIn;
+			environment.writer = environment.stdOut;
+
+			connected = false;
+		}
 		
 		@Override
 		public boolean isConnected() {
@@ -348,13 +379,13 @@ public class MyShell {
 
 		@Override
 		public int markForDownload(Path path) {
-			markedForDownload.put(markNum, path);
-			return markNum++;
+			markedForDownload.put(++markNum, path);
+			return markNum;
 		}
 
 		@Override
 		public void clearDownloadMarks() {
-			markNum = 1;
+			markNum = 0;
 			markedForDownload.clear();
 		}
 		
@@ -363,44 +394,6 @@ public class MyShell {
 			return markedForDownload.get(num);
 		}
 		
-	}
-	
-	/**
-	 * Redirects the input and output stream to the client to establish a
-	 * connection with the host. This method does not close the previously
-	 * opened reader and writer.
-	 * <p>
-	 * This method is primarily used by the {@linkplain HostCommand} of this
-	 * MyShell.
-	 * 
-	 * @param in input stream from the client
-	 * @param out output stream to the client
-	 */
-	public static void connectStreams(InputStream in, OutputStream out) {
-		environment.connection.inFromClient = in;
-		environment.connection.outToClient = out;
-		
-		environment.reader = new BufferedReader(new InputStreamReader(in));
-		environment.writer = new BufferedWriter(new OutputStreamWriter(out));
-		
-		environment.connection.connected = true;
-	}
-	
-	/**
-	 * Redirects the input and output stream to standard input and output.
-	 * This method does not close the previously opened reader and writer.
-	 * <p>
-	 * This method is primarily used by the {@linkplain HostCommand} of this
-	 * MyShell.
-	 */
-	public static void disconnectStreams() {
-		environment.connection.inFromClient = null;
-		environment.connection.outToClient = null;
-		
-		environment.reader = environment.stdIn;
-		environment.writer = environment.stdOut;
-
-		environment.connection.connected = false;
 	}
 	
 }

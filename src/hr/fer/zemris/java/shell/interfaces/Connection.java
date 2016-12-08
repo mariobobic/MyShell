@@ -15,6 +15,22 @@ import java.nio.file.Path;
  * @author Mario Bobic
  */
 public interface Connection {
+	
+	/**
+	 * Redirects the input and output stream to the client to establish a
+	 * connection with the host. This method does not close the previously
+	 * opened reader and writer.
+	 * 
+	 * @param in input stream from the client
+	 * @param out output stream to the client
+	 */
+	void connectStreams(InputStream in, OutputStream out);
+	
+	/**
+	 * Redirects the input and output stream to standard input and output.
+	 * This method does not close the previously opened reader and writer.
+	 */
+	void disconnectStreams();
 
 	/**
 	 * Returns true if this machine has an active connection with another
@@ -25,21 +41,21 @@ public interface Connection {
 	 * @return true if this machine has an active connection with another
 	 *         machine
 	 */
-	public boolean isConnected();
+	boolean isConnected();
 	
 	/**
 	 * Returns an input stream for reading from the client.
 	 * 
 	 * @return an input stream for reading from the client
 	 */
-	public InputStream getInFromClient();
+	InputStream getInFromClient();
 	
 	/**
 	 * Returns an output stream for writing to the client.
 	 * 
 	 * @return an output stream for writing to the client
 	 */
-	public OutputStream getOutToClient();
+	OutputStream getOutToClient();
 
 	/**
 	 * Marks the specified file <tt>path</tt> for download by associating the
@@ -49,14 +65,14 @@ public interface Connection {
 	 * @param path path to be marked
 	 * @return ID associated with the marked path
 	 */
-	public int markForDownload(Path path);
+	int markForDownload(Path path);
 
 	/**
 	 * Clears all paths marked for download by the
 	 * {@link #markForDownload(Path)} method. This generally means emptying the
 	 * internal collection of ID associated with paths.
 	 */
-	public void clearDownloadMarks();
+	void clearDownloadMarks();
 	
 	/**
 	 * Returns a path marked with the specified ID number. The path must be
@@ -65,6 +81,6 @@ public interface Connection {
 	 * @param num ID number of the path to be returned
 	 * @return path marked with the specified ID number
 	 */
-	public Path getMarked(int num);
+	Path getMarked(int num);
 	
 }

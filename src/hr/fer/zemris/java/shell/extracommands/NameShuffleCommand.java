@@ -52,17 +52,13 @@ public class NameShuffleCommand extends AbstractCommand {
 	}
 	
 	@Override
-	public CommandStatus execute(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) {
 		if (s == null) {
 			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
 		}
 		
 		Path path = Helper.resolveAbsolutePath(env, s);
-		if (path == null) {
-			writeln(env, "Invalid path!");
-			return CommandStatus.CONTINUE;
-		}
 		
 		if (!Files.exists(path)) {
 			writeln(env, "The system cannot find the path specified.");

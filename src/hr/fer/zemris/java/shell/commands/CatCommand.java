@@ -2,6 +2,7 @@ package hr.fer.zemris.java.shell.commands;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -25,7 +26,7 @@ import hr.fer.zemris.java.shell.interfaces.Environment;
 public class CatCommand extends AbstractCommand {
 
 	/** Defines the proper syntax for using this command. */
-	private static final String SYNTAX = "cat <filename> (optional: <charset>)";
+	private static final String SYNTAX = "cat <filename> (<charset>)";
 
 	/**
 	 * Constructs a new command object of type {@code CatCommand}.
@@ -54,7 +55,7 @@ public class CatCommand extends AbstractCommand {
 	}
 
 	@Override
-	public CommandStatus execute(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) {
 		if (s == null) {
 			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
@@ -63,10 +64,6 @@ public class CatCommand extends AbstractCommand {
 		String[] args = Helper.extractArguments(s);
 		
 		Path path = Helper.resolveAbsolutePath(env, args[0]);
-		if (path == null) {
-			writeln(env, "Invalid path!");
-			return CommandStatus.CONTINUE;
-		}
 		
 		Charset charset = Charset.defaultCharset();
 		if (args.length > 1) {
@@ -105,7 +102,7 @@ public class CatCommand extends AbstractCommand {
 				writeln(env, line);
 			}
 			
-		} catch (Exception e) {
+		} catch (IOException e) {
 			/* This could happen if the file is protected. */
 			writeln(env, "Access is denied: " + e.getMessage());
 		}

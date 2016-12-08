@@ -8,6 +8,7 @@ import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,14 +55,16 @@ public class RenameAllCommand extends AbstractCommand {
 	 */
 	private static List<String> createCommandDescription() {
 		List<String> desc = new ArrayList<>();
-		desc.add("Renames all files and directories specified by a path and the new name.");
+		desc.add("Renames all files and directories to the new name.");
+		desc.add("The new name may contain an asterisk symbol (*) where "
+				+ "the file index will be inserted upon renaming.");
 		desc.add("Optional start index may be included.");
 		desc.add("Syntax: " + SYNTAX);
 		return desc;
 	}
 	
 	@Override
-	public CommandStatus execute(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) {
 		if (s == null) {
 			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
@@ -74,13 +77,8 @@ public class RenameAllCommand extends AbstractCommand {
 		}
 		
 		Path path = Helper.resolveAbsolutePath(env, args[0]);
-		if (path == null) {
-			writeln(env, "Invalid path!");
-			return CommandStatus.CONTINUE;
-		}
-		File dir = path.toFile();
 		
-		if (!dir.exists() || !dir.isDirectory()) {
+		if (!Files.exists(path) || !Files.isDirectory(path)) {
 			writeln(env, "The system cannot find the path specified.");
 			return CommandStatus.CONTINUE;
 		}
@@ -93,27 +91,35 @@ public class RenameAllCommand extends AbstractCommand {
 		} catch (NumberFormatException e) {
 			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
-		} catch (IndexOutOfBoundsException e) {}
+		} catch (IndexOutOfBoundsException ignorable) {}
 		
 		if (offset < 0) {
 			writeln(env, "The start index must be positive: " + offset);
 			return CommandStatus.CONTINUE;
 		}
+
+		File dir = path.toFile();
 		
-		/* Create a sorted list of files in the specified directory */
+		/* Create a sorted list of files in the specified directory. */
 		List<File> listOfFiles = Arrays.asList(dir.listFiles());
 		Collections.sort(listOfFiles);
 		
-		/* Check if the directory was empty */
-		if (listOfFiles.size() == 0) {
+		/* Check if the directory was empty. */
+		int n = listOfFiles.size();
+		if (n == 0) {
 			writeln(env, "There are no files in the specified directory.");
 			return CommandStatus.CONTINUE;
 		}
 		
-		/* Rename all files */
-		for (int i = 0, n = listOfFiles.size(); i < n; i++) {
+		/* All occurrences of * symbols will be replaced with file index. */
+		boolean containsAsterisk = name.contains("*");
+		name = name.replace("{*}", Integer.toString(n+offset-1));
+		
+		/* Rename all files. */
+		for (int i = 0; i < n; i++) {
 			int index = i + offset;
-			String newName = name + getLeadingZeros(n, index) + index;
+			String number = getLeadingZeros(n, offset, index) + index;
+			String newName = containsAsterisk ? name.replace("*", number) : name+number;
 			
 			File originalFile = listOfFiles.get(i);
 			File renamingFile = new File(dir, newName);
@@ -134,11 +140,12 @@ public class RenameAllCommand extends AbstractCommand {
 	 * <code>currentIndex</code> in relation to <code>numOfFiles</code>.
 	 * 
 	 * @param numOfFiles total number of files
+	 * @param offset start index a.k.a. index offset
 	 * @param currentIndex index of the current processing object
 	 * @return a string of leading zeroes
 	 */
-	private static String getLeadingZeros(int numOfFiles, int currentIndex) {
-		int decimalPlaces = Integer.toString(numOfFiles).length();
+	private static String getLeadingZeros(int numOfFiles, int offset, int currentIndex) {
+		int decimalPlaces = Integer.toString(numOfFiles+offset-1).length();
 		int numZeroes = decimalPlaces - (Integer.toString(currentIndex).length() % 10);
 		
 		StringBuilder sb = new StringBuilder();

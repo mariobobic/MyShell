@@ -50,17 +50,9 @@ public class TreeCommand extends AbstractCommand {
 	}
 	
 	@Override
-	public CommandStatus execute(Environment env, String s) {
-		Path path;
-		if (s == null) {
-			path = env.getCurrentPath();
-		} else {
-			path = Helper.resolveAbsolutePath(env, s);
-			if (path == null) {
-				writeln(env, "Invalid path!");
-				return CommandStatus.CONTINUE;
-			}
-		}
+	protected CommandStatus execute0(Environment env, String s) throws IOException {
+		Path path = s == null ?
+			env.getCurrentPath() : Helper.resolveAbsolutePath(env, s);
 		
 		if (!Files.isDirectory(path)) {
 			writeln(env, "The specified path must be a directory.");
@@ -68,11 +60,7 @@ public class TreeCommand extends AbstractCommand {
 		}
 		
 		/* Passed all checks, start working. */
-		try {
-			Files.walkFileTree(path, new TreeFileVisitor(env));
-		} catch (IOException e) {
-			writeln(env, e.getMessage());
-		}
+		Files.walkFileTree(path, new TreeFileVisitor(env));
 		
 		return CommandStatus.CONTINUE;
 	}

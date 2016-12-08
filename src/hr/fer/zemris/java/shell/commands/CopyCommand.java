@@ -57,7 +57,7 @@ public class CopyCommand extends AbstractCommand {
 	}
 
 	@Override
-	public CommandStatus execute(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) {
 		if (s == null) {
 			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
@@ -71,10 +71,6 @@ public class CopyCommand extends AbstractCommand {
 		
 		Path source = Helper.resolveAbsolutePath(env, args[0]);
 		Path dest = Helper.resolveAbsolutePath(env, args[1]);
-		if (source == null || dest == null) {
-			writeln(env, "Invalid path!");
-			return CommandStatus.CONTINUE;
-		}
 		
 		copyFile(source, dest, env);
 		
@@ -122,7 +118,7 @@ public class CopyCommand extends AbstractCommand {
 	private void createNewFile(Path src, Path dst, Environment env) {
 		if (Files.exists(dst)) {
 			write(env, "File " + dst + " already exists. Overwrite? (Y/N) ");
-			if (!overwrite(env)) {
+			if (!Helper.promptConfirm(env)) {
 				writeln(env, "Cancelled.");
 				return;
 			}
@@ -144,29 +140,6 @@ public class CopyCommand extends AbstractCommand {
 		} catch (IOException e) {
 			writeln(env, "An error occured during the copying of file " + src);
 			writeln(env, e.getMessage());
-		}
-	}
-
-	/**
-	 * Prompts the user if he wants to overwrite a file. The user is expected to
-	 * input <tt>Y</tt> as a <i>yes</i> or <tt>N</tt> as a <i>no</i>. Returns
-	 * true if the user answered yes, false if no.
-	 * 
-	 * @param env an environment
-	 * @return true if the user answered yes, false if no
-	 */
-	private boolean overwrite(Environment env) {
-		while (true) {
-			String line = readLine(env);
-			
-			if (line.equalsIgnoreCase("Y")) {
-				return true;
-			} else if (line.equalsIgnoreCase("N")) {
-				return false;
-			} else {
-				write(env, "Please answer Y / N: ");
-				continue;
-			}
 		}
 	}
 

@@ -47,17 +47,13 @@ public class RmCommand extends AbstractCommand {
 	}
 
 	@Override
-	public CommandStatus execute(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
 		}
 		
 		Path path = Helper.resolveAbsolutePath(env, s);
-		if (path == null) {
-			writeln(env, "Invalid path!");
-			return CommandStatus.CONTINUE;
-		}
 
 		if (!Files.exists(path)) {
 			writeln(env, "The system cannot find the file specified.");
@@ -66,18 +62,16 @@ public class RmCommand extends AbstractCommand {
 		
 		// Remove directory
 		if (Files.isDirectory(path)) {
-			boolean confirmed = confirm(env, path);
+			write(env, "Remove directory " + path + "? (Y/N) ");
+			boolean confirmed = Helper.promptConfirm(env);
 			if (!confirmed) {
 				writeln(env, "Cancelled.");
 				return CommandStatus.CONTINUE;
 			}
 			
 			RmFileVisitor rmVisitor = new RmFileVisitor(env);
-			try {
-				Files.walkFileTree(path, rmVisitor);
-			} catch (IOException e) {
-				writeln(env, e.getMessage());
-			}
+			Files.walkFileTree(path, rmVisitor);
+			
 		// Remove file
 		} else {
 			try {
@@ -89,32 +83,6 @@ public class RmCommand extends AbstractCommand {
 		}
 			
 		return CommandStatus.CONTINUE;
-	}
-	
-	/**
-	 * Prompts the user if he wants to remove the specified directory
-	 * <tt>dir</tt>. The user is expected to input <tt>Y</tt> as a <i>yes</i> or
-	 * <tt>N</tt> as a <i>no</i>. Returns true if the user answered yes, false
-	 * if no.
-	 * 
-	 * @param env an environment
-	 * @param dir directory whose removal is to be confirmed
-	 * @return true if the user answered yes, false if no
-	 */
-	private boolean confirm(Environment env, Path dir) {
-		write(env, "Remove directory " + dir + "? (Y/N) ");
-		while (true) {
-			String line = readLine(env);
-			
-			if (line.equalsIgnoreCase("Y")) {
-				return true;
-			} else if (line.equalsIgnoreCase("N")) {
-				return false;
-			} else {
-				write(env, "Please answer Y / N: ");
-				continue;
-			}
-		}
 	}
 
 	/**

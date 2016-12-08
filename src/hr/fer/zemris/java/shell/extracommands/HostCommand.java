@@ -58,7 +58,7 @@ public class HostCommand extends AbstractCommand {
 	}
 	
 	@Override
-	public CommandStatus execute(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) {
 		if (s == null) {
 			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
@@ -88,7 +88,7 @@ public class HostCommand extends AbstractCommand {
 			env.writeln(clientAddress + " connected.");
 
 			/* Redirect the streams to client. */
-			MyShell.connectStreams(inFromClient, outToClient);
+			env.getConnection().connectStreams(inFromClient, outToClient);
 
 			/* Go to the main program and wait for the client to disconnect. */
 			try {
@@ -96,7 +96,7 @@ public class HostCommand extends AbstractCommand {
 			} catch (Exception e) {}
 
 			/* Redirect the streams back. */
-			MyShell.disconnectStreams();
+			env.getConnection().disconnectStreams();
 			env.writeln(clientAddress + " disconnected.");
 		} catch (Exception e) {
 			writeln(env, e.getMessage());

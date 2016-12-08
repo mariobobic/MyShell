@@ -55,7 +55,7 @@ public class DumpCommand extends AbstractCommand {
 	}
 	
 	@Override
-	public CommandStatus execute(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
@@ -86,10 +86,6 @@ public class DumpCommand extends AbstractCommand {
 		}
 
 		Path path = Helper.resolveAbsolutePath(env, pathname);
-		if (path == null) {
-			writeln(env, "Invalid path!");
-			return CommandStatus.CONTINUE;
-		}
 		
 		if (Files.isDirectory(path)) {
 			writeln(env, "Directory " + path.getFileName() + " already exists.");
@@ -138,8 +134,9 @@ public class DumpCommand extends AbstractCommand {
 	 * @param env an environment
 	 * @param file file to be created
 	 * @param size number of bytes to be generated
+	 * @throws IOException if an I/O error occurs
 	 */
-	private static void dumpBytes(Environment env, Path file, long size) {
+	private static void dumpBytes(Environment env, Path file, long size) throws IOException {
 		long writtenBytes = 0;
 		
 		try (BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(file))) {
@@ -153,10 +150,6 @@ public class DumpCommand extends AbstractCommand {
 				out.write(bytes, 0, len);
 				writtenBytes += len;
 			}
-			
-		} catch (IOException e) {
-			writeln(env, "An I/O error occured!");
-			writeln(env, e.getMessage());
 		}
 	}
 

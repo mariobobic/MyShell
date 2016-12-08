@@ -38,7 +38,7 @@ public class ExitCommand extends AbstractCommand {
 	}
 
 	@Override
-	public CommandStatus execute(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) {
 		return CommandStatus.TERMINATE;
 	}
 

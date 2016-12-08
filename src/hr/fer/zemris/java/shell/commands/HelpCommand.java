@@ -43,7 +43,7 @@ public class HelpCommand extends AbstractCommand {
 	}
 
 	@Override
-	public CommandStatus execute(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) {
 		Iterable<ShellCommand> commands = env.commands();
 
 		if (s == null) {

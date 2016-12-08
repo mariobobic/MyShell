@@ -43,7 +43,7 @@ public class CharsetsCommand extends AbstractCommand {
 	}
 
 	@Override
-	public CommandStatus execute(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) {
 		Set<String> charsetNames = Charset.availableCharsets().keySet();
 		
 		for (String name : charsetNames) {

@@ -2,6 +2,7 @@ package hr.fer.zemris.java.shell.commands;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
@@ -52,8 +53,9 @@ public abstract class AbstractCommand implements ShellCommand {
 	 * 
 	 * @param env environment from where to read
 	 * @return the user's input
+	 * @throws RuntimeException if an I/O exception occurs
 	 */
-	protected static final String readLine(Environment env) {
+	public static final String readLine(Environment env) {
 		try {
 			return env.readLine();
 		} catch (IOException e) {
@@ -69,8 +71,9 @@ public abstract class AbstractCommand implements ShellCommand {
 	 * 
 	 * @param env environment where to write
 	 * @param s string to be written to the environment
+	 * @throws RuntimeException if an I/O exception occurs
 	 */
-	protected static final void write(Environment env, String s) {
+	public static final void write(Environment env, String s) {
 		try {
 			env.write(s);
 		} catch (IOException e) {
@@ -86,8 +89,9 @@ public abstract class AbstractCommand implements ShellCommand {
 	 * 
 	 * @param env environment where to write
 	 * @param s string to be written to the environment
+	 * @throws RuntimeException if an I/O exception occurs
 	 */
-	protected static final void writeln(Environment env, String s) {
+	public static final void writeln(Environment env, String s) {
 		try {
 			env.writeln(s);
 		} catch (IOException e) {
@@ -120,7 +124,30 @@ public abstract class AbstractCommand implements ShellCommand {
 	}
 
 	@Override
-	public abstract CommandStatus execute(Environment env, String s);
+	public CommandStatus execute(Environment env, String s) {
+		try {
+			return execute0(env, s);
+		} catch (IOException e) {
+			writeln(env, "An I/O error occured: ");
+			writeln(env, e.getMessage());
+		} catch (InvalidPathException e) {
+			writeln(env, "Invalid path: " + e.getInput());
+		}
+		
+		return CommandStatus.CONTINUE;
+	}
+	
+	/**
+	 * Executes the command exactly as the {@link #execute(Environment, String)}
+	 * method would. This method serves so that its implementation is
+	 * independent of {@code IOException}.
+	 * 
+	 * @param env an environment
+	 * @param s arguments
+	 * @return the status of this command
+	 * @throws IOException if an I/O error occurs
+	 */
+	protected abstract CommandStatus execute0(Environment env, String s) throws IOException;
 
 	@Override
 	public int hashCode() {

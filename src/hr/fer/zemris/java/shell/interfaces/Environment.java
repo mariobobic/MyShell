@@ -19,7 +19,7 @@ public interface Environment {
 	 * @return the user's input
 	 * @throws IOException if an I/O exception occurs
 	 */
-	public String readLine() throws IOException;
+	String readLine() throws IOException;
 
 	/**
 	 * Writes the given string using the writer.
@@ -27,7 +27,7 @@ public interface Environment {
 	 * @param s string to be written
 	 * @throws IOException if an I/O exception occurs
 	 */
-	public void write(String s) throws IOException;
+	void write(String s) throws IOException;
 	
 	/**
 	 * Writes the given array of characters using the writer.
@@ -36,7 +36,7 @@ public interface Environment {
 	 * @param off offset
 	 * @param len length to be written
 	 */
-	public void write(char cbuf[], int off, int len);
+	void write(char cbuf[], int off, int len);
 
 	/**
 	 * Writes the given string using the writer, inputting a new line at the
@@ -45,84 +45,84 @@ public interface Environment {
 	 * @param s string to be written
 	 * @throws IOException if an I/O exception occurs
 	 */
-	public void writeln(String s) throws IOException;
+	void writeln(String s) throws IOException;
 
 	/**
 	 * Returns an iterable object containing this Shell's commands.
 	 * 
 	 * @return an iterable object containing this Shell's commands
 	 */
-	public Iterable<ShellCommand> commands();
+	Iterable<ShellCommand> commands();
 
 	/**
 	 * Returns the current working directory path.
 	 * 
 	 * @return the current working directory path
 	 */
-	public Path getCurrentPath();
+	Path getCurrentPath();
 
 	/**
 	 * Sets the current working directory path.
 	 * 
 	 * @param path path to be set
 	 */
-	public void setCurrentPath(Path path);
+	void setCurrentPath(Path path);
 
 	/**
 	 * Returns the path of a directory where this program was run.
 	 * 
 	 * @return the path of a directory where this program was run
 	 */
-	public Path getHomePath();
+	Path getHomePath();
 	
 	/**
 	 * Returns the prompt symbol that is used by MyShell.
 	 * 
 	 * @return the prompt symbol that is used by MyShell
 	 */
-	public Character getPromptSymbol();
+	Character getPromptSymbol();
 	
 	/**
 	 * Sets the prompt symbol to be used by MyShell.
 	 * 
 	 * @param symbol the prompt symbol to be used by MyShell
 	 */
-	public void setPromptSymbol(Character symbol);
+	void setPromptSymbol(Character symbol);
 	
 	/**
 	 * Returns the morelines symbol that is used by MyShell.
 	 * 
 	 * @return the morelines symbol that is used by MyShell
 	 */
-	public Character getMorelinesSymbol();
+	Character getMorelinesSymbol();
 	
 	/**
 	 * Sets the morelines symbol to be used by MyShell.
 	 * 
 	 * @param symbol the morelines symbol to be used by MyShell
 	 */
-	public void setMorelinesSymbol(Character symbol);
+	void setMorelinesSymbol(Character symbol);
 	
 	/**
 	 * Returns the multiline symbol that is used by MyShell.
 	 * 
 	 * @return the multiline symbol that is used by MyShell
 	 */
-	public Character getMultilineSymbol();
+	Character getMultilineSymbol();
 	
 	/**
 	 * Sets the multiline symbol to be used by MyShell.
 	 * 
 	 * @param symbol the multiline symbol to be used by MyShell
 	 */
-	public void setMultilineSymbol(Character symbol);
+	void setMultilineSymbol(Character symbol);
 	
 	/**
 	 * Returns the connection object of this environment.
 	 * 
 	 * @return the connection object of this environment
 	 */
-	public Connection getConnection();
+	Connection getConnection();
 	
 	/**
 	 * Returns true if this Environment has connected different input and
@@ -131,6 +131,6 @@ public interface Environment {
 	 * @return true if this Environment has connected different input and
 	 *         output streams
 	 */
-	public boolean isConnected();
+	boolean isConnected();
 
 }

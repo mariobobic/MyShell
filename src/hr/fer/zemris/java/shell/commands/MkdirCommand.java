@@ -42,28 +42,23 @@ public class MkdirCommand extends AbstractCommand {
 	}
 
 	@Override
-	public CommandStatus execute(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) {
 		if (s == null) {
 			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
 		}
 		
 		Path path = Helper.resolveAbsolutePath(env, s);
-		if (path == null) {
-			writeln(env, "Invalid path!");
-			return CommandStatus.CONTINUE;
-		}
 		
 		if (Files.exists(path)) {
 			writeln(env, path + " already exists!");
 		} else {
 			try {
 				Files.createDirectories(path);
+				writeln(env, "Created " + path);
 			} catch (IOException e) {
-				writeln(env, "An error occured during creation of directory " + path);
-				writeln(env, e.getMessage());
+				writeln(env, "Can not create directory " + path);
 			}
-			writeln(env, "Created " + path);
 		}
 		
 		return CommandStatus.CONTINUE;

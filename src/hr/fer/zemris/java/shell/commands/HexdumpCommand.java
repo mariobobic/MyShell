@@ -51,17 +51,13 @@ public class HexdumpCommand extends AbstractCommand {
 	}
 
 	@Override
-	public CommandStatus execute(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
 		}
 		
 		Path file = Helper.resolveAbsolutePath(env, s);
-		if (file == null) {
-			writeln(env, "Invalid path!");
-			return CommandStatus.CONTINUE;
-		}
 		
 		if (!Files.isRegularFile(file)) {
 			writeln(env, "The specified path must be a file.");
@@ -79,8 +75,6 @@ public class HexdumpCommand extends AbstractCommand {
 				total += len;
 			}
 			
-		} catch (IOException e) {
-			writeln(env, e.getMessage());
 		}
 		
 		return CommandStatus.CONTINUE;

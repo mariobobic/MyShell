@@ -40,10 +40,13 @@ import hr.fer.zemris.java.shell.interfaces.Environment;
 public class LsCommand extends AbstractCommand {
 	
 	/** Defines the proper syntax for using this command. */
-	private static final String SYNTAX = "ls (optional: <path>)";
+	private static final String SYNTAX = "ls (-h) (<path>)";
 	
 	/** Date format used for formatting file date attribute. */
 	private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	
+	/** Indicates if file sizes should be printed in human readable byte count. */
+	private boolean humanReadable;
 	
 	/**
 	 * Constructs a new command object of type {@code LsCommand}.
@@ -71,20 +74,25 @@ public class LsCommand extends AbstractCommand {
 	}
 
 	@Override
-	public CommandStatus execute(Environment env, String s) {
-		Path dir;
-		if (s == null) {
-			dir = env.getCurrentPath();
-		} else {
-			dir = Helper.resolveAbsolutePath(env, s);
-			if (dir == null) {
-				writeln(env, "Invalid path!");
-				return CommandStatus.CONTINUE;
+	protected CommandStatus execute0(Environment env, String s) throws IOException {
+		String[] args = Helper.extractArguments(s, 2);
+
+		Path dir = env.getCurrentPath();
+		humanReadable = false;
+		if (args.length == 1) {
+			if ("-h".equals(args[0])) humanReadable = true;
+			else dir = Helper.resolveAbsolutePath(env, args[0]);
+		} else if (args.length == 2) {
+			if ("-h".equals(args[0])) {
+				humanReadable = true;
+				dir = Helper.resolveAbsolutePath(env, args[1]);
+			} else {
+				dir = Helper.resolveAbsolutePath(env, s);
 			}
 		}
 		
 		if (!Files.exists(dir)) {
-			writeln(env, "The system cannot find the path specified.");
+			writeln(env, "The system cannot find the path specified: " + dir);
 			return CommandStatus.CONTINUE;
 		}
 		if (!Files.isDirectory(dir)) {
@@ -100,11 +108,8 @@ public class LsCommand extends AbstractCommand {
 		/* Passed all checks, start working. */
 		try (Stream<Path> pathStream = Files.list(dir)) {
 			pathStream.forEachOrdered(file -> {
-				printFile(env, file);
+				printFile(env, file, humanReadable);
 			});
-		} catch (IOException e) {
-			writeln(env, e.getMessage());
-			return CommandStatus.CONTINUE;
 		}
 		
 		return CommandStatus.CONTINUE;
@@ -126,8 +131,9 @@ public class LsCommand extends AbstractCommand {
 	 * 
 	 * @param env environment to where the path attributes are printed
 	 * @param path path to be printed
+	 * @param humanReadable if file size should be in human readable byte count
 	 */
-	private static void printFile(Environment env, Path path) {
+	private static void printFile(Environment env, Path path, boolean humanReadable) {
 		try {
 			/* First column */
 			write(env, String.format("%c%c%c%c",
@@ -138,7 +144,11 @@ public class LsCommand extends AbstractCommand {
 			));
 			
 			/* Second column */
-			write(env, String.format(" %10d" , Files.size(path)));
+			long size = Files.size(path);
+			write(env, !humanReadable ?
+				String.format(" %10d" , size) :
+				String.format(" %10s", Helper.humanReadableByteCount(size))
+			);
 			
 			/* Third column */
 			BasicFileAttributeView faView = Files.getFileAttributeView(

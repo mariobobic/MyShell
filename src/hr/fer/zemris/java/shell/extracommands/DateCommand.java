@@ -45,7 +45,7 @@ public class DateCommand extends AbstractCommand {
 	}
 
 	@Override
-	public CommandStatus execute(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) {
 		Date date = new Date();
 		writeln(env, DATE_FORMAT.format(date));
 		return CommandStatus.CONTINUE;

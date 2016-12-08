@@ -3,6 +3,8 @@ package hr.fer.zemris.java.shell.extracommands;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,7 +54,7 @@ public class ByteShuffleCommand extends AbstractCommand {
 	}
 	
 	@Override
-	public CommandStatus execute(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
@@ -61,13 +63,8 @@ public class ByteShuffleCommand extends AbstractCommand {
 		String[] args = Helper.extractArguments(s);
 		
 		Path path = Helper.resolveAbsolutePath(env, args[0]);
-		if (path == null) {
-			writeln(env, "Invalid path!");
-			return CommandStatus.CONTINUE;
-		}
-		File file = path.toFile();
 		
-		if (!file.isFile()) {
+		if (!Files.isRegularFile(path)) {
 			writeln(env, "The system cannot find the file specified.");
 			return CommandStatus.CONTINUE;
 		}
@@ -79,17 +76,18 @@ public class ByteShuffleCommand extends AbstractCommand {
 			length = Integer.parseInt(args[2]);
 		} catch (Exception e) {
 			offset = 0;
-			length = file.length();
+			length = Files.size(path);
 			writeln(env, "Offset: " + offset + ", length: " + length); 
 		}
 		
 		long fileEndPoint = offset + length;
-		if (fileEndPoint > file.length()) {
-			writeln(env, "The given offset and length are too big for file " + file.getName());
-			writeln(env, "The given file has the length of " + file.length() + " bytes.");
+		if (fileEndPoint > Files.size(path)) {
+			writeln(env, "The given offset and length are too big for file " + path.getFileName());
+			writeln(env, "The given file has the length of " + Files.size(path) + " bytes.");
 			return CommandStatus.CONTINUE;
 		}
 
+		File file = path.toFile();
 		File parent = file.getParentFile();
 		File newFile = new File(parent, TEMP_NAME);
 		
@@ -98,40 +96,38 @@ public class ByteShuffleCommand extends AbstractCommand {
 				FileOutputStream out = new FileOutputStream(newFile);
 		) {
 
-			/* First copy entire file */
+			/* First copy entire file. */
 			int len;
 			byte[] bytes = new byte[1024];
 			while ((len = in.read(bytes)) > 0) {
 				out.write(bytes, 0, len);
 			}
 
-			/* Rewind both streams */
+			/* Rewind both streams. */
 			in.getChannel().position(offset);
 			out.getChannel().position(offset);
 			
-			/* Then read with the offset */
+			/* Then read with the offset. */
 			len = (int) length;
 			bytes = new byte[len];
 			in.read(bytes, 0, len);
 
-			/* Shuffle the bytes and write to a new file with offset */
+			/* Shuffle the bytes and write to a new file with offset. */
 			byte[] shuffledBytes = shuffleBytes(bytes);
 			out.write(shuffledBytes, 0, len);
 
-		} catch (Exception e) {
-			writeln(env, "An I/O error has occured!");
-			writeln(env, e.toString());
 		}
 
-		/* The process of renaming a file */
+		/* The process of renaming a file. */
 		int namingIndex = 0;
-		String name = file.getName();
+		String name = path.getFileName().toString();
 		String extension = "";
 		int dotIndex = name.lastIndexOf('.');
-		if (dotIndex != -1) {
+		if (dotIndex > 0) {
 			extension = name.substring(dotIndex);
-			name = name.replace(extension, "-");
+			name = name.substring(0, dotIndex);
 		}
+		name += "-";
 		File renamingFile;
 		while ((renamingFile = new File(parent, name + namingIndex + extension)).exists()) {
 			namingIndex++;

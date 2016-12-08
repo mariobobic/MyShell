@@ -44,17 +44,13 @@ public class RmdirCommand extends AbstractCommand {
 	}
 
 	@Override
-	public CommandStatus execute(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) {
 		if (s == null) {
 			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
 		}
 		
 		Path dir = Helper.resolveAbsolutePath(env, s);
-		if (dir == null) {
-			writeln(env, "Invalid path!");
-			return CommandStatus.CONTINUE;
-		}
 		
 		if (!Files.isDirectory(dir)){
 			writeln(env, dir.getFileName() + " is not a directory.");

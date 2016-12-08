@@ -44,12 +44,13 @@ public class FilterCommand extends AbstractCommand {
 		List<String> desc = new ArrayList<>();
 		desc.add("Searches the current directory and all its subdirectories.");
 		desc.add("Displays the absolute path of files that match the given pattern.");
+		desc.add("Pattern may be given with optional asterisk (*) symbols.");
 		desc.add("Syntax: " + SYNTAX);
 		return desc;
 	}
 
 	@Override
-	public CommandStatus execute(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
@@ -62,11 +63,8 @@ public class FilterCommand extends AbstractCommand {
 		
 		FilterFileVisitor filterVisitor = new FilterFileVisitor(env, s);
 		Path path = env.getCurrentPath();
-		try {
-			Files.walkFileTree(path, filterVisitor);
-		} catch (IOException e) {
-			writeln(env, e.getMessage());
-		}
+		
+		Files.walkFileTree(path, filterVisitor);
 
 		return CommandStatus.CONTINUE;
 	}

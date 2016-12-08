@@ -50,7 +50,7 @@ public class DownloadCommand extends AbstractCommand {
 	}
 
 	@Override
-	public CommandStatus execute(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) {
 		if (!env.isConnected()) {
 			writeln(env, "You must be connected to a host to run this command!");
 			return CommandStatus.CONTINUE;
@@ -72,10 +72,6 @@ public class DownloadCommand extends AbstractCommand {
 		/* If not, regularly check for the file. */
 		if (path == null) {
 			path = Helper.resolveAbsolutePath(env, s);
-			if (path == null) {
-				writeln(env, "Invalid path!");
-				return CommandStatus.CONTINUE;
-			}
 		}
 
 		if (!Files.exists(path)) {
@@ -115,12 +111,12 @@ public class DownloadCommand extends AbstractCommand {
 			while ((len = fileStream.read(bytes)) != -1) {
 				outToClient.write(bytes, 0, len);
 			}
+
+			writeln(env, "Host ended uploading " + path);
 		} catch (IOException e) {
 			writeln(env, "An error occured while downloading " + path);
 			writeln(env, e.getMessage());
 		}
-
-		writeln(env, "Host ended uploading " + path);
 		
 		return CommandStatus.CONTINUE;
 	}

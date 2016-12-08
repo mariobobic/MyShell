@@ -1,5 +1,7 @@
 package hr.fer.zemris.java.shell.extracommands;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,22 +49,18 @@ public class CdCommand extends AbstractCommand {
 	}
 
 	@Override
-	public CommandStatus execute(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			env.setCurrentPath(env.getHomePath());
 			return CommandStatus.CONTINUE;
 		}
 
 		Path newPath = Helper.resolveAbsolutePath(env, s);
-		if (newPath == null) {
-			writeln(env, "Invalid path!");
-			return CommandStatus.CONTINUE;
-		}
 		
-		if (!newPath.toFile().exists()) {
+		if (!Files.exists(newPath)) {
 			writeln(env, "The system cannot find the path specified.");
 		} else {
-			env.setCurrentPath(newPath);
+			env.setCurrentPath(newPath.toRealPath());
 		}
 
 		return CommandStatus.CONTINUE;

@@ -58,17 +58,9 @@ public class DirCommand extends AbstractCommand {
 	}
 
 	@Override
-	public CommandStatus execute(Environment env, String s) {
-		Path dir;
-		if (s == null) {
-			dir = env.getCurrentPath();
-		} else {
-			dir = Helper.resolveAbsolutePath(env, s);
-			if (dir == null) {
-				writeln(env, "Invalid path!");
-				return CommandStatus.CONTINUE;
-			}
-		}
+	protected CommandStatus execute0(Environment env, String s) {
+		Path dir = s == null ?
+			env.getCurrentPath() : Helper.resolveAbsolutePath(env, s);
 		
 		if (!Files.exists(dir)) {
 			writeln(env, "The system cannot find the path specified.");
@@ -102,7 +94,7 @@ public class DirCommand extends AbstractCommand {
 				noDirs++;
 				write(env, "    <DIR>          ");
 			}
-			writeln(env, name);			
+			writeln(env, name);
 		}
 		writeln(env, String.format("%15d", noFiles) + " File(s), " + DECIMAL_FORMAT.format(filesLength) + " bytes");
 		writeln(env, String.format("%15d", noDirs) + " Dir(s)");

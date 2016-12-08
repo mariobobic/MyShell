@@ -1,13 +1,19 @@
 package hr.fer.zemris.java.shell;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.xml.bind.DatatypeConverter;
+
+import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 
 /**
@@ -30,21 +36,18 @@ public class Helper {
 	 * returns the given path. In the simplest case, the given path does not
 	 * have a root component, in which case this method joins the given path
 	 * with the root and returns the absolute path. If the given path has
-	 * invalid characters {@code null} value is returned.
+	 * invalid characters an {@code InvalidPathException} is thrown.
 	 * 
 	 * @param env an environment
 	 * @param str the given path string
 	 * @return the absolute path of the given path
+	 * @throws InvalidPathException if string cannot be converted into a Path
 	 */
 	public static Path resolveAbsolutePath(Environment env, String str) {
 		str = str.replace("\"", "");
 		
-		Path path;
-		try {
-			path = Paths.get(str);
-		} catch (InvalidPathException e) {
-			return null;
-		}
+		/* May throw an exception. */
+		Path path = Paths.get(str);
 		
 		/* If it starts with a tilde, recurse back to this method with user.home. */
 		if (path.startsWith(HOME_DIR)) {
@@ -61,20 +64,45 @@ public class Helper {
 	}
 	
 	/**
-	 * Used for extracting arguments passed to a function. This method
-	 * supports an unlimited number of arguments, and can be inputed either
-	 * with quotation marks or not. Returns an array of strings containing the
+	 * Used for extracting arguments passed to a function. This method supports
+	 * an unlimited number of arguments, and can be inputed either with
+	 * quotation marks or not. Returns an array of strings containing the
 	 * extracted arguments.
+	 * <p>
+	 * This is the same as calling the {@link #extractArguments(String, int)
+	 * extractArguments(s, 0)} method.
 	 * 
 	 * @param s a string containing arguments
 	 * @return an array of strings containing extracted arguments.
 	 */
 	public static String[] extractArguments(String s) {
+		return extractArguments(s, 0);
+	}
+	
+	/**
+	 * Used for extracting arguments passed to a function. This method splits
+	 * arguments until it runs out of matches or reaches the specified
+	 * <tt>limit</tt>, which ever comes first. Arguments can be inputed either
+	 * with quotation marks or not. Returns an array of strings containing the
+	 * extracted arguments.
+	 * 
+	 * @param s a string containing arguments
+	 * @param limit limit of splitting the arguments, 0 for no limit
+	 * @return an array of strings containing extracted arguments.
+	 */
+	public static String[] extractArguments(String s, int limit) {
+		if (s == null) return new String[0];
+		
 		List<String> list = new ArrayList<>();
 		
 		String regex = "\"([^\"]*)\"|(\\S+)";
 		Matcher m = Pattern.compile(regex).matcher(s);
 		while (m.find()) {
+			if (--limit == 0 && !m.hitEnd()) {
+				list.add(s.substring(m.start()).trim());
+				break;
+			}
+			
 			if (m.group(1) != null) {
 				list.add(m.group(1));
 			} else {
@@ -83,6 +111,31 @@ public class Helper {
 		}
 
 		return list.toArray(new String[list.size()]);
+	}
+
+	/**
+	 * Prompts the user to confirm an action. The user is expected to input
+	 * <tt>Y</tt> as a <i>yes</i> or <tt>N</tt> as a <i>no</i>. Returns true if
+	 * the user answered yes, false if no.
+	 * <p>
+	 * This method blocks until the user answers yes or no.
+	 * 
+	 * @param env an environment
+	 * @return true if the user answered yes, false if no
+	 */
+	public static boolean promptConfirm(Environment env) {
+		while (true) {
+			String line = AbstractCommand.readLine(env);
+			
+			if (line.equalsIgnoreCase("Y")) {
+				return true;
+			} else if (line.equalsIgnoreCase("N")) {
+				return false;
+			} else {
+				AbstractCommand.write(env, "Please answer Y / N: ");
+				continue;
+			}
+		}
 	}
 	
 	/**
@@ -334,6 +387,29 @@ public class Helper {
 		}
 		
 		return true;
+	}
+	
+	/**
+	 * Generates the 40 character long SHA-1 password hash of the user's
+	 * password by converting the specified <tt>password</tt> to an array of
+	 * bytes decoded with the {@link StandardCharsets#UTF_8 UTF-8} charset and
+	 * digested with the hash-algorithm.
+	 * 
+	 * @param password password to be hashed
+	 * @return the hash of the specified <tt>password</tt>
+	 */
+	public static String generatePasswordHash(String password) {
+		String pass = password.concat("peaches.*");
+		byte[] passwordBytes = pass.getBytes(StandardCharsets.UTF_8);
+		
+		MessageDigest md;
+		try {
+			md = MessageDigest.getInstance("SHA-1");
+		} catch (NoSuchAlgorithmException e) {
+			throw new InternalError("Algorithm unavailable (SHA-1)", e);
+		}
+		
+		return DatatypeConverter.printHexBinary(md.digest(passwordBytes));
 	}
 	
 }

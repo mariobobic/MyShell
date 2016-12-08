@@ -32,13 +32,13 @@ import hr.fer.zemris.java.shell.interfaces.Environment;
 public class FindCommand extends AbstractCommand {
 
 	/** Defines the proper syntax for using this command. */
-	private static final String SYNTAX = "find (-r) <path> <regexp>";
+	private static final String SYNTAX = "find (-r) <path> <pattern>";
 	
 	/** Size limit of files that this command will search through. */
 	private static final long SIZE_LIMIT = 5*1024*1024;
 	
 	/** Indicates if regex matching should be used. */
-	private boolean useRegex = false;
+	private boolean useRegex;
 	
 	/**
 	 * Constructs a new command object of type {@code FindCommand}.
@@ -66,18 +66,21 @@ public class FindCommand extends AbstractCommand {
 	}
 
 	@Override
-	public CommandStatus execute(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
 		}
 		
-		/* Possible 1 or 2 arguments. */
-		String[] args = Helper.extractArguments(s);
+		/* Possible 1 to 3 arguments, where the third is a regex
+		 * with possible spaces and quotation marks. */
+		String[] args = Helper.extractArguments(s, 3);
 		
 		/* Set path and filter pattern, and useRegex if any. */
 		Path path;
 		String filter;
+		useRegex = false;
+		
 		if (args.length == 1) {
 			path = env.getCurrentPath();
 			filter = args[0];
@@ -90,11 +93,6 @@ public class FindCommand extends AbstractCommand {
 			filter = args[2];
 		} else {
 			printSyntaxError(env, SYNTAX);
-			return CommandStatus.CONTINUE;
-		}
-		
-		if (path == null) {
-			writeln(env, "Invalid path!");
 			return CommandStatus.CONTINUE;
 		}
 		
@@ -119,22 +117,12 @@ public class FindCommand extends AbstractCommand {
 		
 		/* If path is a file, find matching lines inside a file. */
 		if (Files.isRegularFile(path)) {
-			try {
-				printMatches(env, myPattern, path);
-			} catch (IOException e) {
-				writeln(env, "An I/O error occured: ");
-				writeln(env, e.getMessage());
-			}
+			printMatches(env, myPattern, path);
 			return CommandStatus.CONTINUE;
 		}
 
 		FindFileVisitor filterVisitor = new FindFileVisitor(env, myPattern);
-		try {
-			Files.walkFileTree(path, filterVisitor);
-		} catch (IOException e) {
-			writeln(env, "An I/O error occured: ");
-			writeln(env, e.getMessage());
-		}
+		Files.walkFileTree(path, filterVisitor);
 
 		return CommandStatus.CONTINUE;
 	}
