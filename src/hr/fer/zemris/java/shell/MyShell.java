@@ -65,6 +65,7 @@ public class MyShell {
 				new FindCommand(),
 				new LargestCommand(),
 				new NameShuffleCommand(),
+				new OpenCommand(),
 				new PwdCommand(),
 				new RenameAllCommand(),
 				new RmCommand(),
