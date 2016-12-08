@@ -26,7 +26,8 @@ public interface ShellCommand {
 	 * way of executing. Most Shell commands write out their steps of executing,
 	 * or they write out certain errors, so the {@code Environment} type param
 	 * is given. Arguments may or may not exist (String has a valid value or
-	 * {@code null}).
+	 * {@code null}). The user is advised to check the implementing class
+	 * documentation in order to see what this command does.
 	 * 
 	 * @param env an environment
 	 * @param s arguments

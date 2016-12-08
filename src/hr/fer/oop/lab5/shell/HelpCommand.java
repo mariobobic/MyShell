@@ -44,11 +44,11 @@ public class HelpCommand extends AbstractCommand {
 	}
 
 	/**
-	 * Writes out a certain command's description.
+	 * Writes out description of a a certain command.
 	 * 
 	 * @param env an environment
-	 * @param commands this Shell's commands
-	 * @param s a certain command's name
+	 * @param commands supported MyShell commands
+	 * @param s name of the specified command
 	 */
 	private void printSpecifiedCommand(Environment env, Iterable<ShellCommand> commands, String s) {
 		for (ShellCommand command : commands) {

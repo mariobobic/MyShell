@@ -16,6 +16,9 @@ import java.nio.file.Path;
  */
 public class TypeCommand extends AbstractCommand {
 
+	/** Defines the proper syntax for using this command */
+	private static final String SYNTAX = "type <filename>";
+
 	/**
 	 * Constructs a new command object of type {@code TypeCommand}.
 	 */
@@ -26,7 +29,7 @@ public class TypeCommand extends AbstractCommand {
 	@Override
 	public CommandStatus execute(Environment env, String s) {
 		if (s == null) {
-			printSyntaxError(env, "type <arg>");
+			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
 		}
 		
@@ -44,7 +47,8 @@ public class TypeCommand extends AbstractCommand {
 					env.writeln(line);
 				}
 			} catch (IOException e) {
-				/* This could happen if the specified file is a folder */
+				/* This could happen if the specified file is a folder,
+				 * or if the file is protected */
 				env.writeln("Access is denied.");
 			}
 		} else {

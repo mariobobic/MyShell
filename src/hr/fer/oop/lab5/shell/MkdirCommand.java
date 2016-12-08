@@ -10,6 +10,9 @@ import java.nio.file.Path;
  */
 public class MkdirCommand extends AbstractCommand {
 
+	/** Defines the proper syntax for using this command */
+	private static final String SYNTAX = "mkdir <path>";
+
 	/**
 	 * Constructs a new command object of type {@code MkdirCommand}.
 	 */
@@ -20,7 +23,7 @@ public class MkdirCommand extends AbstractCommand {
 	@Override
 	public CommandStatus execute(Environment env, String s) {
 		if (s == null) {
-			printSyntaxError(env, "mkdir <arg>");
+			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
 		}
 		

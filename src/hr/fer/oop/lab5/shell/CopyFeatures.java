@@ -11,17 +11,19 @@ import java.io.IOException;
  * @author Mario Bobic
  */
 public interface CopyFeatures {
-
+	
 	/**
 	 * Used for extracting arguments passed to a copying function. This method
 	 * currently supports only 2 arguments. If an argument has spaces in its
-	 * name, it is neccessary to surround it in quotation marks. Returns an
+	 * name, it is necessary to surround it in quotation marks. Returns an
 	 * array of strings containing extracted arguments.
 	 * 
 	 * @param s a string containing arguments
 	 * @return an array of strings containing extracted arguments.
+	 * @deprecated Use generic method {@linkplain Helper#extractArguments(String)}
 	 */
-	default String[] extractArguments(String s) {
+	@Deprecated
+	default String[] extractTwoArguments(String s) {
 		String s1;
 		String s2;
 		int delimiter;
@@ -72,7 +74,8 @@ public interface CopyFeatures {
 				}
 				env.writeln("Copy: " + newFile);
 			} catch (IOException e) {
-				e.printStackTrace();
+				env.writeln("An error occured during the copying of file " + originalFile);
+				env.writeln(e.getMessage());
 			}
 		}
 	}

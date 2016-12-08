@@ -15,6 +15,9 @@ import java.nio.file.Path;
  * @author Mario Bobic
  */
 public class CopyCommand extends AbstractCommand implements CopyFeatures {
+	
+	/** Defines the proper syntax for using this command */
+	private static final String SYNTAX = "copy <filename1> <filename2>";
 
 	/**
 	 * Constructs a new command object of type {@code CopyCommand}.
@@ -26,11 +29,11 @@ public class CopyCommand extends AbstractCommand implements CopyFeatures {
 	@Override
 	public CommandStatus execute(Environment env, String s) {
 		if (s == null || !s.contains(" ")) {
-			printSyntaxError(env, "copy <arg1> <arg2>");
+			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
 		}
 		
-		String args[] = extractArguments(s);
+		String args[] = Helper.extractArguments(s);
 		
 		Path path1 = Helper.resolveAbsolutePath(env, args[0]);
 		Path path2 = Helper.resolveAbsolutePath(env, args[1]);

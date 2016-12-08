@@ -4,11 +4,15 @@ import java.io.File;
 import java.nio.file.Path;
 
 /**
- * A command that is used for removing directories.
+ * A command that is used for removing empty directories. In order to remove a
+ * non-empty directory, use {@linkplain RmCommand}.
  *
  * @author Mario Bobic
  */
 public class RmdirCommand extends AbstractCommand {
+
+	/** Defines the proper syntax for using this command */
+	private static final String SYNTAX = "rmdir <path>";
 
 	/**
 	 * Constructs a new command object of type {@code RmdirCommand}.
@@ -20,7 +24,7 @@ public class RmdirCommand extends AbstractCommand {
 	@Override
 	public CommandStatus execute(Environment env, String s) {
 		if (s == null) {
-			printSyntaxError(env, "rmdir <arg>");
+			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
 		}
 		
@@ -42,7 +46,7 @@ public class RmdirCommand extends AbstractCommand {
 				env.writeln("Directory " + dir.getName() + " removed.");
 			}
 		}
-		
+
 		return CommandStatus.CONTINUE;
 	}
 

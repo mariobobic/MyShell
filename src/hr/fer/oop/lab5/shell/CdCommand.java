@@ -4,7 +4,9 @@ import java.nio.file.Path;
 
 /**
  * A command that is used for changing the current working directory. The given
- * path may be absolute or relative to the current working directory.
+ * path may be absolute or relative to the current working directory. It can
+ * also be inputed with quotation marks, which is widely used to interpret files
+ * and directories containing whitespaces.
  *
  * @author Mario Bobic
  */
@@ -23,7 +25,7 @@ public class CdCommand extends AbstractCommand {
 			env.setCurrentPath(env.getHomePath());
 			return CommandStatus.CONTINUE;
 		}
-		
+
 		Path newPath = Helper.resolveAbsolutePath(env, s);
 		if (newPath == null) {
 			env.writeln("Invalid path!");

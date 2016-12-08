@@ -25,6 +25,15 @@ public interface Environment {
 	 * @param s string to be written
 	 */
 	public void write(String s);
+	
+	/**
+	 * Writes the given array of characters using the writer.
+	 * 
+	 * @param cbuf array of characters to be written
+	 * @param off offset
+	 * @param len length to be written
+	 */
+	public void write(char cbuf[], int off, int len);
 
 	/**
 	 * Writes the given string using the writer, inputting a new line at the

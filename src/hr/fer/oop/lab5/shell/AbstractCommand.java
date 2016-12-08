@@ -31,7 +31,7 @@ public abstract class AbstractCommand implements ShellCommand {
 	 * @param env an environment
 	 * @param syntax the expected syntax
 	 */
-	public static void printSyntaxError(Environment env, String syntax) {
+	protected static final void printSyntaxError(Environment env, String syntax) {
 		env.writeln("The syntax of the command is incorrect. Expected: " + syntax);
 	}
 

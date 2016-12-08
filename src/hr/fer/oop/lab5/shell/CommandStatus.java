@@ -10,6 +10,7 @@ package hr.fer.oop.lab5.shell;
  * @author Mario Bobic
  */
 public enum CommandStatus {
+
 	/**
 	 * Continue running the Shell and accepting new commands.
 	 */

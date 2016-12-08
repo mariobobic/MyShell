@@ -12,7 +12,13 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * MyShell, this is where the magic happens.
+ * MyShell, this is where the magic happens. Scans the user's input and searches
+ * for a matching command. Some commands require arguments, so the user must
+ * input them as well. If the inputed command is found, the command is
+ * executed, otherwise an error message is displayed. The program stops and
+ * prints out a goodbye message if the inputed command is {@linkplain
+ * QuitCommand}. The program also indicates the current user's position by
+ * prompting the current directory while waiting for a command to be inputed.
  *
  * @author Mario Bobic
  * @author Marko Cupic
@@ -37,7 +43,14 @@ public class MyShell {
 				new MkdirCommand(),
 				new RmdirCommand(),
 				new XcopyCommand(),
-				new RmCommand()
+				new RmCommand(),
+				new NameShuffleCommand(),
+				new ConnectCommand(),
+				new HostCommand(),
+				new ByteShuffleCommand(),
+				new DumpCommand(),
+				new LargestCommand(),
+				new RenameAllCommand()
 		};
 		for (ShellCommand c : cc) {
 			commands.put(c.getCommandName(), c);
@@ -45,16 +58,16 @@ public class MyShell {
 	}
 	
 	/** An environment */
-	private static Environment environment = new EnvironmentImpl();
+	private static EnvironmentImpl environment = new EnvironmentImpl();
 	
 	/**
 	 * Scans the user's input and searches for a matching command. Some commands
-	 * require arguments, so the user must input them as well. If the inputted
+	 * require arguments, so the user must input them as well. If the inputed
 	 * command is found, the command is executed, otherwise an error message is
 	 * displayed. The program stops and prints out a goodbye message if the
-	 * inputted command is {@linkplain QuitCommand}. The program also indicates
+	 * inputed command is {@linkplain QuitCommand}. The program also indicates
 	 * the current user's position by prompting the current directory while
-	 * waiting for a command to be inputted.
+	 * waiting for a command to be inputed.
 	 * 
 	 * @param args an array of {@code String} arguments
 	 * @throws IOException if an IO exception occurs while writing or reading the input
@@ -65,14 +78,14 @@ public class MyShell {
 		while (true) {
 			Path path = environment.getCurrentPath();
 			environment.write("$" + (path.equals(path.getRoot()) ? path : path.getFileName()) + "> ");
-			String line = environment.readLine();
+			String line = environment.readLine().trim();
 			String cmd;
 			String arg;
-			int splitter = line.indexOf(' ');
-			try {
+			int splitter = indexOfWhitespace(line);
+			if (splitter != -1) {
 				cmd = line.substring(0, splitter).toUpperCase();
 				arg = line.substring(splitter+1).trim();
-			} catch (StringIndexOutOfBoundsException e) {
+			} else {
 				cmd = line.toUpperCase();
 				arg = null;
 			}
@@ -89,6 +102,45 @@ public class MyShell {
 		}
 		
 		environment.writeln("Thank you for using this shell. Goodbye!");
+	}
+	
+	/**
+	 * Returns the index within the specified string <tt>str</tt> of the first
+	 * occurrence of a whitespace character determined by the
+	 * {@linkplain Character#isWhitespace(char)} method.
+	 * 
+	 * @param str string whose index of the first whitespace is to be returned
+	 * @return the index of the first occurrence of a whitespace character
+	 */
+	private static int indexOfWhitespace(String str) {
+		for (int i = 0, n = str.length(); i < n; i++) {
+			if (Character.isWhitespace(str.charAt(i))) {
+				return i;
+			}
+		}
+		return -1;
+	}
+	
+	/**
+	 * Redirects the input and output stream to the client to establish a
+	 * connection with the host. This method does not close the previously
+	 * opened reader and writer.
+	 * 
+	 * @param in new online reader
+	 * @param out new online writer
+	 */
+	public static void connectStreams(BufferedReader in, BufferedWriter out) {
+		environment.reader = in;
+		environment.writer = out;
+	}
+	
+	/**
+	 * Redirects the input and output stream to standard input and output.
+	 * This method does not close the previously opened reader and writer.
+	 */
+	public static void disconnectStreams() {
+		environment.reader = new BufferedReader(new InputStreamReader(System.in));
+		environment.writer = new BufferedWriter(new OutputStreamWriter(System.out));
 	}
 	
 	/**
@@ -130,20 +182,24 @@ public class MyShell {
 			String line = null;
 			try {
 				line = reader.readLine();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			} catch (IOException e) {}
 			return line;
 		}
 		
 		@Override
-		public void write(String s){
+		public void write(String s) {
 			try {
 				writer.write(s);
 				writer.flush();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			} catch (IOException e) {}
+		}
+		
+		@Override
+		public void write(char cbuf[], int off, int len) {
+			try {
+				writer.write(cbuf, off, len);
+				writer.flush();
+			} catch (IOException e) {}
 		}
 		
 		@Override
@@ -152,9 +208,7 @@ public class MyShell {
 			try {
 				writer.newLine();
 				writer.flush();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			} catch (IOException e) {}
 		}
 		
 		@Override
