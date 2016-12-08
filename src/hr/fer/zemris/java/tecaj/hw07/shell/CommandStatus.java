@@ -1,11 +1,11 @@
-package hr.fer.oop.lab5.shell;
+package hr.fer.zemris.java.tecaj.hw07.shell;
 
 /**
  * An enumeration that names the procedure that should be followed after a
  * certain command is executed. Although most commands should return
- * {@link CommandStatus#CONTINUE CONTINUE} on successful executing, an
- * {@link CommandStatus#EXIT EXIT} command status should be considered upon
- * encountering a critical error in executing.
+ * {@linkplain #CONTINUE} on successful executing, an {@linkplain #TERMINATE}
+ * command status should be considered upon encountering a critical error in
+ * executing.
  * 
  * @author Mario Bobic
  */
@@ -15,8 +15,9 @@ public enum CommandStatus {
 	 * Continue running the Shell and accepting new commands.
 	 */
 	CONTINUE,
+	
 	/**
-	 * Exit upon executing the last command.
+	 * Terminate the Shell upon executing the last command.
 	 */
-	EXIT
+	TERMINATE
 }

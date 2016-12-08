@@ -1,4 +1,9 @@
-package hr.fer.oop.lab5.shell;
+package hr.fer.zemris.java.tecaj.hw07.shell.commands;
+
+import java.util.List;
+
+import hr.fer.zemris.java.tecaj.hw07.shell.CommandStatus;
+import hr.fer.zemris.java.tecaj.hw07.shell.Environment;
 
 /**
  * An interface that is used as a contract for implementing Shell commands.
@@ -19,7 +24,7 @@ public interface ShellCommand {
 	 * 
 	 * @return the description of the Shell command
 	 */
-	public String getCommandDescription();
+	public List<String> getCommandDescription();
 	
 	/**
 	 * Executes the given Shell command. Every shell command has its own unique

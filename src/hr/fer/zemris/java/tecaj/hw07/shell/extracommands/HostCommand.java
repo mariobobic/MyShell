@@ -1,4 +1,4 @@
-package hr.fer.oop.lab5.shell;
+package hr.fer.zemris.java.tecaj.hw07.shell.extracommands;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -9,7 +9,14 @@ import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
+
+import hr.fer.zemris.java.tecaj.hw07.shell.CommandStatus;
+import hr.fer.zemris.java.tecaj.hw07.shell.Environment;
+import hr.fer.zemris.java.tecaj.hw07.shell.MyShell;
+import hr.fer.zemris.java.tecaj.hw07.shell.commands.AbstractCommand;
 
 /**
  * A command that is used for connecting to another computer running MyShell. In
@@ -28,7 +35,24 @@ public class HostCommand extends AbstractCommand {
 	 * Constructs a new command object of type {@code HostCommand}.
 	 */
 	public HostCommand() {
-		super("HOST", "Hosts this session with the given port number.");
+		super("HOST", createCommandDescription());
+	}
+	
+	/**
+	 * Creates a list of strings where each string represents a new line of this
+	 * command's description. This method is generates description exclusively
+	 * for the command that this class represents.
+	 * 
+	 * @return a list of strings that represents description
+	 */
+	private static List<String> createCommandDescription() {
+		List<String> desc = new ArrayList<>();
+		desc.add("Hosts this session with the given port number.");
+		desc.add("In order for another computer to connect to host, "
+				+ "it must be running MyShell and must have executed "
+				+ "the CONNECT command with the host IP address and port number.");
+		desc.add("The expected syntax: " + SYNTAX);
+		return desc;
 	}
 	
 	@Override
@@ -38,7 +62,7 @@ public class HostCommand extends AbstractCommand {
 			return CommandStatus.CONTINUE;
 		}
 		
-		/* Parse the port number */
+		/* Parse the port number. */
 		int port;
 		try {
 			port = Integer.parseInt(s);
@@ -47,10 +71,10 @@ public class HostCommand extends AbstractCommand {
 			return CommandStatus.CONTINUE;
 		}
 		
-		/* Print out a message that the connection is ready */
-		env.writeln("Hosting server... connect to " + getIPAddress());
+		/* Print out a message that the connection is ready. */
+		writeln(env, "Hosting server... connect to " + getIPAddress());
 		
-		/* Create a host access point and redirect the input and output stream */
+		/* Create a host access point and redirect the input and output stream. */
 		try (
 				ServerSocket serverSocket = new ServerSocket(port);
 				Socket connectionSocket = serverSocket.accept();
@@ -60,19 +84,19 @@ public class HostCommand extends AbstractCommand {
 			String clientAddress = connectionSocket.getRemoteSocketAddress().toString();
 			env.writeln(clientAddress + " connected.");
 
-			/* Redirect the streams to client */
+			/* Redirect the streams to client. */
 			MyShell.connectStreams(inFromClient, outToClient);
 
-			/* Go to the main program and wait for the client to disconnect */
+			/* Go to the main program and wait for the client to disconnect. */
 			try {
 				MyShell.main(null);
 			} catch (Exception e) {}
 
-			/* Redirect the streams back */
+			/* Redirect the streams back. */
 			MyShell.disconnectStreams();
 			env.writeln(clientAddress + " disconnected.");
 		} catch (Exception e) {
-			env.writeln(e.getMessage());
+			writeln(env, e.getMessage());
 		}
 		
 		return CommandStatus.CONTINUE;

@@ -1,4 +1,4 @@
-package hr.fer.oop.lab5.shell;
+package hr.fer.zemris.java.tecaj.hw07.shell.extracommands;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -8,9 +8,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import hr.fer.zemris.java.tecaj.hw07.shell.CommandStatus;
+import hr.fer.zemris.java.tecaj.hw07.shell.Environment;
+import hr.fer.zemris.java.tecaj.hw07.shell.Helper;
+import hr.fer.zemris.java.tecaj.hw07.shell.commands.AbstractCommand;
+
 /**
  * A command that is used for shuffling bytes of a file. The user can specify
- * the range of byte shuffling.
+ * the range of byte shuffling. This command creates a new file with the same
+ * name as the original file, but with an index at the end and keeps the
+ * original file.
  *
  * @author Mario Bobic
  */
@@ -26,7 +33,22 @@ public class ByteShuffleCommand extends AbstractCommand {
 	 * Constructs a new command object of type {@code ByteShuffleCommand}.
 	 */
 	public ByteShuffleCommand() {
-		super("BYTESHUFFLE", "Shuffles bytes of the wanted file. Optional offset and length may be included.");
+		super("BYTESHUFFLE", createCommandDescription());
+	}
+	
+	/**
+	 * Creates a list of strings where each string represents a new line of this
+	 * command's description. This method is generates description exclusively
+	 * for the command that this class represents.
+	 * 
+	 * @return a list of strings that represents description
+	 */
+	private static List<String> createCommandDescription() {
+		List<String> desc = new ArrayList<>();
+		desc.add("Shuffles bytes of the specified file creating a new file and keeping the original file.");
+		desc.add("Optional offset and length may be included.");
+		desc.add("The expected syntax: " + SYNTAX);
+		return desc;
 	}
 	
 	@Override
@@ -38,15 +60,15 @@ public class ByteShuffleCommand extends AbstractCommand {
 		
 		String[] args = Helper.extractArguments(s);
 		
-		Path path = Helper.resolveAbsolutePath(env, args[0]);
+		Path path = Helper.resolvePath(args[0]);
 		if (path == null) {
-			env.writeln("Invalid path!");
+			writeln(env, "Invalid path!");
 			return CommandStatus.CONTINUE;
 		}
 		File file = path.toFile();
 		
 		if (!file.isFile()) {
-			env.writeln("The system cannot find the file specified.");
+			writeln(env, "The system cannot find the file specified.");
 			return CommandStatus.CONTINUE;
 		}
 		
@@ -58,13 +80,13 @@ public class ByteShuffleCommand extends AbstractCommand {
 		} catch (Exception e) {
 			offset = 0;
 			length = file.length();
-			env.writeln("Offset: " + offset + ", length: " + length); 
+			writeln(env, "Offset: " + offset + ", length: " + length); 
 		}
 		
 		long fileEndPoint = offset + length;
 		if (fileEndPoint > file.length()) {
-			env.writeln("The given offset and length are too big for file " + file.getName());
-			env.writeln("The given file has the length of " + file.length() + " bytes.");
+			writeln(env, "The given offset and length are too big for file " + file.getName());
+			writeln(env, "The given file has the length of " + file.length() + " bytes.");
 			return CommandStatus.CONTINUE;
 		}
 
@@ -89,7 +111,7 @@ public class ByteShuffleCommand extends AbstractCommand {
 			
 			/* Then read with the offset */
 			len = (int) length;
-			bytes = new byte[len]; // this is bad.
+			bytes = new byte[len];
 			in.read(bytes, 0, len);
 
 			/* Shuffle the bytes and write to a new file with offset */
@@ -97,8 +119,8 @@ public class ByteShuffleCommand extends AbstractCommand {
 			out.write(shuffledBytes, 0, len);
 
 		} catch (Exception e) {
-			env.writeln("An I/O error has occured!");
-			env.writeln(e.toString());
+			writeln(env, "An I/O error has occured!");
+			writeln(env, e.toString());
 		}
 
 		/* The process of renaming a file */
