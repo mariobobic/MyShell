@@ -117,8 +117,7 @@ public class CopyCommand extends AbstractCommand {
 	 */
 	private void createNewFile(Path src, Path dst, Environment env) {
 		if (Files.exists(dst)) {
-			write(env, "File " + dst + " already exists. Overwrite? (Y/N) ");
-			if (!Helper.promptConfirm(env)) {
+			if (!Helper.promptConfirm(env, "File " + dst + " already exists. Overwrite?")) {
 				writeln(env, "Cancelled.");
 				return;
 			}

@@ -21,11 +21,14 @@ import hr.fer.zemris.java.shell.interfaces.Environment;
  *
  * @author Mario Bobic
  */
-public class Helper {
+public abstract class Helper {
 	
 	/** Keyword used for sending and detecting a download start. */
 	// used by ConnectCommand and DownloadCommand
 	public static final char[] DOWNLOAD_KEYWORD = "__DOWNLOAD_START".toCharArray();
+	
+	/** Extension used for encrypted files. */
+	public static final String CRYPT_FILE_EXT = ".crypt";
 	
 	/** Shorthand abbreviation for home directory. */
 	private static final String HOME_DIR = "~";
@@ -121,9 +124,11 @@ public class Helper {
 	 * This method blocks until the user answers yes or no.
 	 * 
 	 * @param env an environment
+	 * @param message message to be written out before prompting
 	 * @return true if the user answered yes, false if no
 	 */
-	public static boolean promptConfirm(Environment env) {
+	public static boolean promptConfirm(Environment env, String message) {
+		AbstractCommand.write(env, message + " (Y/N) ");
 		while (true) {
 			String line = AbstractCommand.readLine(env);
 			

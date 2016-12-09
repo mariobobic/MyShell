@@ -56,11 +56,6 @@ public class DumpCommand extends AbstractCommand {
 	
 	@Override
 	protected CommandStatus execute0(Environment env, String s) throws IOException {
-		if (s == null) {
-			printSyntaxError(env, SYNTAX);
-			return CommandStatus.CONTINUE;
-		}
-		
 		String[] args = Helper.extractArguments(s);
 		
 		/* Consider size having a space. */

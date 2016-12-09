@@ -61,11 +61,6 @@ public class DiffCommand extends AbstractCommand {
 
 	@Override
 	protected CommandStatus execute0(Environment env, String s) {
-		if (s == null) {
-			printSyntaxError(env, SYNTAX);
-			return CommandStatus.CONTINUE;
-		}
-		
 		/* Extract arguments and check the array length. */
 		String[] args = Helper.extractArguments(s);
 		if (args.length < 2 || args.length > 4) {

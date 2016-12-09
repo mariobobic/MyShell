@@ -61,6 +61,7 @@ public class FindCommand extends AbstractCommand {
 		desc.add("Pattern can be interpreted as a regular expression if the -r flag is provided.");
 		desc.add("In need to include spaces to the pattern, use double quotation marks on the argument.");
 		desc.add("Files that are exceeding the size limit will be ignored.");
+		desc.add("The specified path may also be a file in which the pattern is searched for.");
 		desc.add("Syntax: " + SYNTAX);
 		return desc;
 	}

@@ -62,8 +62,7 @@ public class RmCommand extends AbstractCommand {
 		
 		// Remove directory
 		if (Files.isDirectory(path)) {
-			write(env, "Remove directory " + path + "? (Y/N) ");
-			boolean confirmed = Helper.promptConfirm(env);
+			boolean confirmed = Helper.promptConfirm(env, "Remove directory " + path + "?");
 			if (!confirmed) {
 				writeln(env, "Cancelled.");
 				return CommandStatus.CONTINUE;
