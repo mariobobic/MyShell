@@ -1,9 +1,13 @@
 package hr.fer.zemris.java.shell.extracommands;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -16,7 +20,7 @@ import hr.fer.zemris.java.shell.interfaces.Environment;
 
 /**
  * Analyzes line by line and displays a list of changes between two files. The
- * command requires 2 arguments - path to first and second file.
+ * command requires 2 arguments - path to first and second file or directory.
  * <p>
  * Third, optional argument is a charset. If the charset argument isn't
  * specified, UTF-8 is used as default.
@@ -24,13 +28,18 @@ import hr.fer.zemris.java.shell.interfaces.Environment;
  * If a fourth argument is specified, it is expected to be 'ALL'. The ALL
  * argument means that the whole document will be printed, with differences
  * highlighted.
+ * <p>
+ * Paths must be either both files or both directories. Printing differences of
+ * directories works on files with same name and same relative position with
+ * respect to the specified 'root' directory. If a file exists in subdirectory
+ * of path1, but not in subdirectory of path2, it is ignored.
  *
  * @author Mario Bobic
  */
 public class DiffCommand extends AbstractCommand {
 	
 	/** Defines the proper syntax for using this command. */
-	private static final String SYNTAX = "diff <filename1> <filename2> (optional: <charset> all)";
+	private static final String SYNTAX = "diff <path1> <path2> (optional: <charset> all)";
 
 	/**
 	 * Constructs a new command object of type {@code DiffCommand}.
@@ -48,19 +57,23 @@ public class DiffCommand extends AbstractCommand {
 	 */
 	private static List<String> createCommandDescription() {
 		List<String> desc = new ArrayList<>();
-		desc.add("Analyzes line by line and displays a list of changes between two files.");
-		desc.add("The command requires 2 arguments - path to first and second file.");
+		desc.add("Analyzes files line by line and displays a list of changes between them.");
+		desc.add("The command requires 2 arguments - path to first and second file or directory.");
 		desc.add("Third, optional argument is a charset. If the charset argument isn't specified, "
 				+ "UTF-8 is used as default.");
 		desc.add("If a fourth argument is specified, it is expected to be \"all\".");
 		desc.add("The ALL argument means that the whole document will be printed, "
 				+ "with differences highlighted.");
+		desc.add("Paths must be either both files or both directories.");
+		desc.add("Printing differences of directories works on files with same name and relative "
+				+ "position with respect to the specified 'root' directory and same name.");
+		desc.add("If a file exists in subdirectory of path1, but not in subdirectory of path2, it is ignored.");
 		desc.add("Syntax: " + SYNTAX);
 		return desc;
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) throws IOException {
 		/* Extract arguments and check the array length. */
 		String[] args = Helper.extractArguments(s);
 		if (args.length < 2 || args.length > 4) {
@@ -68,15 +81,15 @@ public class DiffCommand extends AbstractCommand {
 			return CommandStatus.CONTINUE;
 		}
 		
-		/* Resolve file paths. */
-		Path file1 = Helper.resolveAbsolutePath(env, args[0]);
-		Path file2 = Helper.resolveAbsolutePath(env, args[1]);
-		if (!Files.isRegularFile(file1)) {
-			writeln(env, "The system cannot find the file " + file1);
+		/* Resolve paths. */
+		Path path1 = Helper.resolveAbsolutePath(env, args[0]);
+		Path path2 = Helper.resolveAbsolutePath(env, args[1]);
+		if (!Files.exists(path1)) {
+			writeln(env, "The system cannot find the file " + path1);
 			return CommandStatus.CONTINUE;
 		}
-		if (!Files.isRegularFile(file2)) {
-			writeln(env, "The system cannot find the file " + file2);
+		if (!Files.exists(path2)) {
+			writeln(env, "The system cannot find the file " + path2);
 			return CommandStatus.CONTINUE;
 		}
 		
@@ -109,7 +122,54 @@ public class DiffCommand extends AbstractCommand {
 			return CommandStatus.CONTINUE;
 		}
 		
+		/* Both paths must be of same type. */
+		boolean path1IsFile = Files.isRegularFile(path1);
+		boolean path2IsFile = Files.isRegularFile(path2);
+		if (path1IsFile != path2IsFile) {
+			writeln(env, "Can not match file with directory.");
+			return CommandStatus.CONTINUE;
+		}
+
 		/* Passed all checks, start working. */
+		path1 = path1.toRealPath();
+		path2 = path2.toRealPath();
+		if (path1IsFile) {
+			processFiles(env, path1, path2, charset, all);	
+		} else {
+			DiffFileVisitor diffVisitor = new DiffFileVisitor(env, charset, all, path1, path2);
+			Files.walkFileTree(path1, diffVisitor);
+		}
+		
+		return CommandStatus.CONTINUE;
+	}
+	
+	/**
+	 * Returns a charset object for the named charset, or <tt>null</tt> if a
+	 * charset with the specified <tt>name<tt> can not be resolved.
+	 * 
+	 * @param name name of the requested charset; may be either a canonical name
+	 *        or an alias
+	 * @return a charset object for the named charset
+	 */
+	private static Charset resolveCharset(String name) {
+		try {
+			return Charset.forName(name);
+		} catch (IllegalArgumentException e) {
+			return null;
+		}
+	}
+	
+	/**
+	 * 
+	 * 
+	 * @param env an environment
+	 * @param file1 first file to be processed
+	 * @param file2 second file to be processed
+	 * @param charset charset for decoding files
+	 * @param all indicates that the whole document should be printed
+	 */
+	private static void processFiles(Environment env, Path file1, Path file2, Charset charset, boolean all) {
+		writeln(env, "Analyzing files " + file1 + " and " + file2);
 		try {
 			Iterator<String> iter1 = Files.lines(file1, charset).iterator();
 			Iterator<String> iter2 = Files.lines(file2, charset).iterator();
@@ -133,24 +193,6 @@ public class DiffCommand extends AbstractCommand {
 		} catch (Exception e) {
 			writeln(env, "Cannot decode files using " + charset + " encoding. Try a different encoding.");
 		}
-		
-		return CommandStatus.CONTINUE;
-	}
-	
-	/**
-	 * Returns a charset object for the named charset, or <tt>null</tt> if a
-	 * charset with the specified <tt>name<tt> can not be resolved.
-	 * 
-	 * @param name name of the requested charset; may be either a canonical name
-	 *        or an alias
-	 * @return a charset object for the named charset
-	 */
-	private static Charset resolveCharset(String name) {
-		try {
-			return Charset.forName(name);
-		} catch (IllegalArgumentException e) {
-			return null;
-		}
 	}
 	
 	/**
@@ -171,9 +213,66 @@ public class DiffCommand extends AbstractCommand {
 		if (line2 == null) line2 = "";
 		
 		if (!Objects.equals(line1, line2)) {
-			writeln(env, lineNum + ": " + line1 + " --> " + line2);
+			writeln(env, "  " + lineNum + ": " + line1 + " --> " + line2);
 		} else if (all) {
-			writeln(env, lineNum + ": " + line1);
+			writeln(env, "  " + lineNum + ": " + line1);
+		}
+	}
+	
+	/**
+	 * A {@linkplain SimpleFileVisitor} extended and used to serve the {@linkplain
+	 * DiffCommand}. This file visitor is used to write differences of 
+	 *
+	 * @author Mario Bobic
+	 */
+	private static class DiffFileVisitor extends SimpleFileVisitor<Path> {
+		
+		/** An environment. */
+		private Environment environment;
+		/** Charset for decoding files. */
+		private Charset charset;
+		/** Indicates that the whole document must be printed. */
+		private boolean all;
+		
+		/** This path's root directory. */
+		private Path root;
+		/** Other path's root directory. */
+		private Path otherRoot;
+
+		/**
+		 * Initializes a new instance of this class setting only an environment used
+		 * only for writing out messages.
+		 * 
+		 * @param environment an environment
+		 * @param charset charset for decoding files
+		 * @param all indicates that the whole document must be printed
+		 * @param root root directory of this file visitor
+		 * @param otherRoot other path's root directory
+		 */
+		public DiffFileVisitor(Environment environment, Charset charset, boolean all, Path root, Path otherRoot) {
+			this.environment = environment;
+			this.charset = charset;
+			this.all = all;
+			this.root = root;
+			this.otherRoot = otherRoot;
+		}
+
+		@Override
+		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+			Path relative = root.relativize(file);
+			Path otherFile = otherRoot.resolve(relative);
+			
+			if (Files.exists(otherFile)) {
+				processFiles(environment, file, otherFile, charset, all);
+			}
+
+			return FileVisitResult.CONTINUE;
+		}
+		
+		@Override
+		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+			System.out.println("Failed to access " + file);
+			return FileVisitResult.CONTINUE;
 		}
 	}
 

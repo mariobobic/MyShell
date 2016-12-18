@@ -4,12 +4,14 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.Crypto;
 import hr.fer.zemris.java.shell.Helper;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
@@ -100,19 +102,24 @@ public class DownloadCommand extends AbstractCommand {
 			inFromClient.read(); // wait for signal
 			
 			// Send file size
-			byte[] filesize = Long.toString(Files.size(path)).getBytes();
+			byte[] filesize = Long.toString(Crypto.postSize(path)).getBytes();
 			outToClient.write(filesize);
 			inFromClient.read(); // wait for signal
 			
 			// Start streaming file
 			BufferedInputStream fileStream = new BufferedInputStream(Files.newInputStream(path));
+			Crypto crypto = env.getConnection().getCrypto();
 			byte[] bytes = new byte[1024];
 			int len;
 			while ((len = fileStream.read(bytes)) != -1) {
-				outToClient.write(bytes, 0, len);
+				byte[] encrypted = crypto.update(bytes, 0, len);
+				outToClient.write(encrypted);
 			}
+			outToClient.write(crypto.doFinal());
 
 			writeln(env, "Host ended uploading " + path);
+		} catch (SocketException e) {
+			return CommandStatus.TERMINATE; // client has ended connection
 		} catch (IOException e) {
 			writeln(env, "An error occured while downloading " + path);
 			writeln(env, e.getMessage());

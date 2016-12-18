@@ -16,6 +16,8 @@ import java.util.Enumeration;
 import java.util.List;
 
 import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.Crypto;
+import hr.fer.zemris.java.shell.Helper;
 import hr.fer.zemris.java.shell.MyShell;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
@@ -72,6 +74,12 @@ public class HostCommand extends AbstractCommand {
 			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
 		}
+		
+		/* Set the cryptographic cipher. */
+		write(env, "Enter encryption password: ");
+		String hash = Helper.generatePasswordHash(readLine(env));
+		Crypto crypto = new Crypto(hash, Crypto.ENCRYPT);
+		env.getConnection().setCrypto(crypto);
 		
 		/* Print out a message that the connection is ready. */
 		write(env, "Hosting server... connect to " + getLocalIP());

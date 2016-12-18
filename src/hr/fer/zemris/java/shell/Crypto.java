@@ -87,6 +87,18 @@ public class Crypto {
 	}
 	
 	/**
+	 * Calculates the new size of <tt>sourcefile</tt> after its encryption or
+	 * decryption considering the cryptographic padding used.
+	 * 
+	 * @param sourcefile file whose post size is to be calculated
+	 * @return new size of <tt>sourcefile</tt> after encryption/decryption
+	 * @throws IOException if an I/O error occurs
+	 */
+	public static long postSize(Path sourcefile) throws IOException {
+		return (Files.size(sourcefile)/16 + 1) * 16;
+	}
+	
+	/**
 	 * <b>Encrypts</b> or <b>decrypts</b> the file specified by the
 	 * <tt>sourcefile</tt> and generates a file specified by the
 	 * <tt>destfile</tt>. The specified <tt>hash</tt> is used as a password. The
@@ -144,12 +156,14 @@ public class Crypto {
 	 * how this crypto was initialized. The result is stored in a new buffer.
 	 * 
 	 * @return the new buffer with the result
+	 * @throws IOException if this crypto is in decryption mode and its hash
+	 *         does not match the hash used to encrypt bytes.
 	 */
-	public byte[] doFinal() {
+	public byte[] doFinal() throws IOException {
 		try {
 			return cipher.doFinal();
 		} catch (GeneralSecurityException e) {
-			throw new InternalError(e);
+			throw new IOException(e);
 		}
 	}
 

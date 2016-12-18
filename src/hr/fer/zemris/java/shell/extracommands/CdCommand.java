@@ -59,6 +59,8 @@ public class CdCommand extends AbstractCommand {
 		
 		if (!Files.exists(newPath)) {
 			writeln(env, "The system cannot find the path specified.");
+		} else if (!Files.isDirectory(newPath)) {
+			writeln(env, "The specified path must be a directory.");
 		} else {
 			env.setCurrentPath(newPath.toRealPath());
 		}

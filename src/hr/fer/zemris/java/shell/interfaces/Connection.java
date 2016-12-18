@@ -4,6 +4,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
 
+import hr.fer.zemris.java.shell.Crypto;
+
 /**
  * This interface represents a remote connection between two machines. One
  * machine is the host while the other is a client that accesses the host.
@@ -82,5 +84,20 @@ public interface Connection {
 	 * @return path marked with the specified ID number
 	 */
 	Path getMarked(int num);
+
+	/**
+	 * Returns the cryptographic cipher for encrypted connection.
+	 * 
+	 * @return the cryptographic cipher for encrypted connection
+	 */
+	Crypto getCrypto();
+
+	/**
+	 * Sets the cryptographic cipher for encrypted connection to the specified
+	 * <tt>crypto</tt>.
+	 * 
+	 * @param crypto cryptographic cipher to be set
+	 */
+	void setCrypto(Crypto crypto);
 	
 }

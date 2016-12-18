@@ -33,7 +33,7 @@ import hr.fer.zemris.java.shell.interfaces.ShellCommand;
  *
  * @author Mario Bobic
  * @author Marko Čupić
- * @version 2016-11-26 16:30
+ * @version 2016-12-18 17:35
  */
 public class MyShell {
 	
@@ -342,6 +342,8 @@ public class MyShell {
 		private int markNum = 0;
 		/** Map that associates paths ready for download with an ID number. */
 		private Map<Integer, Path> markedForDownload = new HashMap<>();
+		/** Cryptographic cipher for encrypted connection. */
+		private Crypto crypto;
 		
 		@Override
 		public void connectStreams(InputStream in, OutputStream out) {
@@ -395,6 +397,16 @@ public class MyShell {
 		@Override
 		public Path getMarked(int num) {
 			return markedForDownload.get(num);
+		}
+		
+		@Override
+		public Crypto getCrypto() {
+			return crypto;
+		}
+
+		@Override
+		public void setCrypto(Crypto crypto) {
+			this.crypto = crypto;
 		}
 		
 	}

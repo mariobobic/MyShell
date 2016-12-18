@@ -22,6 +22,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.Crypto;
 import hr.fer.zemris.java.shell.Helper;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
@@ -30,9 +31,6 @@ import hr.fer.zemris.java.shell.interfaces.Environment;
  * A command that is used for connecting to another computer running MyShell.
  * The other computer must have executed the {@linkplain HostCommand} in order
  * for this computer to connect to it.
- * <p>
- * <b>Note</b>: This command currently only works on computers that are
- * connected to the same LAN.
  *
  * @author Mario Bobic
  */
@@ -71,6 +69,7 @@ public class ConnectCommand extends AbstractCommand {
 			return CommandStatus.CONTINUE;
 		}
 		
+		/* Read host and port. */
 		String host;
 		int port;
 		try (Scanner sc = new Scanner(s)) {
@@ -80,6 +79,11 @@ public class ConnectCommand extends AbstractCommand {
 			printSyntaxError(env, SYNTAX);
 			return CommandStatus.CONTINUE;
 		}
+		
+		/* Read decryption password. */
+		write(env, "Enter decryption password: ");
+		String hash = Helper.generatePasswordHash(readLine(env));
+		Crypto crypto = new Crypto(hash, Crypto.DECRYPT);
 		
 		try (
 				Socket clientSocket = new Socket(host, port);
@@ -101,15 +105,16 @@ public class ConnectCommand extends AbstractCommand {
 						int len;
 						while ((len = serverReader.read(cbuf)) != -1) {
 							if (isDownloadHint(cbuf)) {
-								startDownload(env, inFromServer, outToServer);
+								startDownload(env, inFromServer, outToServer, crypto);
 							} else {
 								env.write(cbuf, 0, len);
 							}
 						}
 					} catch (IOException e) {
-						/* Do nothing here, it means the connection is closed. */
+						/* Do nothing here, it usually means the connection is closed. */
 					} catch (Exception e) {
 						writeln(env, e.getMessage());
+						e.printStackTrace();
 					}
 				}
 			}, "Reading thread");
@@ -156,9 +161,10 @@ public class ConnectCommand extends AbstractCommand {
 	 * @param env an environment
 	 * @param inFromServer input stream from the server
 	 * @param outToServer output stream to the server
+	 * @param crypto cryptographic cipher for decrypting files
 	 * @throws IOException if an I/O error occurs
 	 */
-	private static void startDownload(Environment env, InputStream inFromServer, OutputStream outToServer) throws IOException {
+	private static void startDownload(Environment env, InputStream inFromServer, OutputStream outToServer, Crypto crypto) throws IOException {
 		byte[] bytes = new byte[1024];
 		outToServer.write(0); // send a signal
 		
@@ -175,7 +181,8 @@ public class ConnectCommand extends AbstractCommand {
 		long size = Long.parseLong(filesize);
 		bytes = new byte[1024];  // reset array
 		
-		writeln(env, "Downloading " + filename + " (" + Helper.humanReadableByteCount(size) + ")");
+		String filenameAndSize = filename + " (" + Helper.humanReadableByteCount(size) + ")";
+		writeln(env, "Downloading " + filenameAndSize);
 		
 		// Start downloading file
 		BufferedInputStream fileInput = new BufferedInputStream(inFromServer);
@@ -185,9 +192,9 @@ public class ConnectCommand extends AbstractCommand {
 		Path file = Paths.get(System.getProperty("user.home"), "Downloads", filename);
 		Files.createDirectories(file.getParent());
 		
-		DownloadStatisticsTeller percentageTeller = new DownloadStatisticsTeller(env, size);
+		Progress progress = new Progress(env, size);
 		ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
-		scheduledExecutor.scheduleWithFixedDelay(percentageTeller, 1, 5, TimeUnit.SECONDS);
+		scheduledExecutor.scheduleWithFixedDelay(progress, 1, 5, TimeUnit.SECONDS);
 		
 		try (BufferedOutputStream fileOutput = new BufferedOutputStream(Files.newOutputStream(file))) {
 			while (totalLen < size) {
@@ -198,14 +205,19 @@ public class ConnectCommand extends AbstractCommand {
 					totalLen = size;
 				}
 				
-				fileOutput.write(bytes, 0, len);
-				percentageTeller.add(len);
+				byte[] decrypted = crypto.update(bytes, 0, len);
+				fileOutput.write(decrypted);
+				progress.add(len);
 			}
+			fileOutput.write(crypto.doFinal());
+		} catch (IOException e) {
+			writeln(env, "Download has ended with some errors. Possibly because of wrong password.");
+			throw e;
+		} finally {
+			scheduledExecutor.shutdown();
 		}
 
-		scheduledExecutor.shutdown();
-		writeln(env, "Finished downloading "+filename
-			+ " ("+Helper.humanReadableByteCount(size)+")");
+		writeln(env, "Finished downloading " + filenameAndSize);
 	}
 	
 	/**
@@ -214,7 +226,7 @@ public class ConnectCommand extends AbstractCommand {
 	 *
 	 * @author Mario Bobic
 	 */
-	private static class DownloadStatisticsTeller implements Runnable {
+	private static class Progress implements Runnable {
 		
 		/** Time this job was constructed. */
 		private final long startTime = System.nanoTime();
@@ -236,7 +248,7 @@ public class ConnectCommand extends AbstractCommand {
 		 * @param environment an environment
 		 * @param size total size to be downloaded
 		 */
-		public DownloadStatisticsTeller(Environment environment, long size) {
+		public Progress(Environment environment, long size) {
 			this.environment = environment;
 			this.size = size;
 			this.downloadedLength = 0;
@@ -266,7 +278,8 @@ public class ConnectCommand extends AbstractCommand {
 				long downloadSpeed = downloadedLength / (elapsedTime/1_000_000_000L);
 				String downloadSpeedStr = Helper.humanReadableByteCount(downloadSpeed) + "/s";
 				
-				String estimatedTime = Helper.humanReadableTimeUnit(1_000_000_000L * (size - downloadedLength) / downloadSpeed);
+				String estimatedTime = downloadSpeed > 0 ?
+					Helper.humanReadableTimeUnit(1_000_000_000L * (size - downloadedLength) / downloadSpeed) : "∞";
 				
 				writeln(environment, String.format(
 					"%d%% downloaded (%s/%s), Elapsed time: %s, Download speed: %s, Estimated time: %s",
