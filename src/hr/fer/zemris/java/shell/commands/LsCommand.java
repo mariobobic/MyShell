@@ -100,10 +100,8 @@ public class LsCommand extends AbstractCommand {
 			return CommandStatus.CONTINUE;
 		}
 		
-		/* Clear previously marked files if this machine is a host. */
-		if (env.isConnected()) {
-			env.getConnection().clearDownloadMarks();
-		}
+		/* Clear previously marked paths. */
+		env.clearMarks();
 		
 		/* Passed all checks, start working. */
 		try (Stream<Path> pathStream = Files.list(dir)) {
@@ -163,9 +161,7 @@ public class LsCommand extends AbstractCommand {
 			
 			/* Fourth column */
 			write(env, " " + path.getFileName());
-			
-			markForDownloadAndPrintNumber(env, path);
-			writeln(env, "");
+			markAndPrintNumber(env, path);
 		} catch (IOException e) {
 			writeln(env, "An I/O error has occured.");
 			writeln(env, e.getMessage());

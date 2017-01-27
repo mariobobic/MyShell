@@ -111,10 +111,8 @@ public class FindCommand extends AbstractCommand {
 			return CommandStatus.CONTINUE;
 		}
 		
-		/* Clear previously marked files if this machine is a host. */
-		if (env.isConnected()) {
-			env.getConnection().clearDownloadMarks();
-		}
+		/* Clear previously marked paths. */
+		env.clearMarks();
 		
 		/* If path is a file, find matching lines inside a file. */
 		if (Files.isRegularFile(path)) {
@@ -176,9 +174,7 @@ public class FindCommand extends AbstractCommand {
 		
 		boolean nameMatches = myPattern.matches(file.getFileName().toString());
 		if (sb.length() != 0 || nameMatches) {
-			write(env, file.toString());
-			markForDownloadAndPrintNumber(env, file);
-			writeln(env, "");
+			markAndPrintPath(env, file);
 			writeln(env, sb.toString());
 		}
 	}

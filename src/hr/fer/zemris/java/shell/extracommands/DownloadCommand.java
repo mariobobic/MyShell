@@ -45,8 +45,6 @@ public class DownloadCommand extends AbstractCommand {
 		List<String> desc = new ArrayList<>();
 		desc.add("Downloads content from the host's computer.");
 		desc.add("This command can only be run when connected to a MyShell host.");
-		desc.add("This command can be used in association with file-printing commands, "
-				+ "which mark files with numbers to be used as a download reference.");
 		desc.add("Syntax: " + SYNTAX);
 		return desc;
 	}
@@ -63,24 +61,12 @@ public class DownloadCommand extends AbstractCommand {
 			return CommandStatus.CONTINUE;
 		}
 		
-		/* If the entered argument is parsable as an integer,
-		 * see if a file is marked with that number. */
-		Path path = null;
-		if (Helper.isInteger(s)) {
-			int num = Integer.parseInt(s);
-			path = env.getConnection().getMarked(num);
-		}
-		
-		/* If not, regularly check for the file. */
-		if (path == null) {
-			path = Helper.resolveAbsolutePath(env, s);
-		}
+		Path path = Helper.resolveAbsolutePath(env, s);
 
 		if (!Files.exists(path)) {
 			writeln(env, "The system cannot find the file specified.");
 			return CommandStatus.CONTINUE;
 		}
-		
 		if (Files.isDirectory(path)) {
 			writeln(env, "Can not download directories (yet).");
 			return CommandStatus.CONTINUE;

@@ -189,7 +189,7 @@ public class ConnectCommand extends AbstractCommand {
 		bytes = new byte[1024];
 		long totalLen = 0;
 		
-		Path file = Paths.get(System.getProperty("user.home"), "Downloads", filename);
+		Path file = Helper.firstAvailable(Paths.get(System.getProperty("user.home"), "Downloads", filename));
 		Files.createDirectories(file.getParent());
 		
 		Progress progress = new Progress(env, size);

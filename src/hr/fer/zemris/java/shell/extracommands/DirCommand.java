@@ -71,6 +71,9 @@ public class DirCommand extends AbstractCommand {
 			return CommandStatus.CONTINUE;
 		}
 		
+		/* Clear previously marked paths. */
+		env.clearMarks();
+		
 		/* Passed all checks, start working. */
 		writeln(env, " Directory of " + dir);
 		writeln(env, "");
@@ -94,7 +97,8 @@ public class DirCommand extends AbstractCommand {
 				noDirs++;
 				write(env, "    <DIR>          ");
 			}
-			writeln(env, name);
+			write(env, name);
+			markAndPrintNumber(env, file.toPath());
 		}
 		writeln(env, String.format("%15d", noFiles) + " File(s), " + DECIMAL_FORMAT.format(filesLength) + " bytes");
 		writeln(env, String.format("%15d", noDirs) + " Dir(s)");

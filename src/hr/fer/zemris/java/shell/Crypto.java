@@ -87,11 +87,22 @@ public class Crypto {
 	}
 	
 	/**
-	 * Calculates the new size of <tt>sourcefile</tt> after its encryption or
-	 * decryption considering the cryptographic padding used.
+	 * Calculates the new size of <tt>sourcefile</tt> after its
+	 * <strong>encryption</strong> considering the cryptographic padding used.
+	 * <p>
+	 * For an example, if the <tt>sourcefile</tt> size is 295 bytes, to
+	 * calculate its size after encryption simply use the following method
+	 * (which will return 304 bytes):
+	 * 
+	 * <pre>
+	 * Crypto.postSize(sourcefile);
+	 * </pre>
+	 * 
+	 * Note that size of decrypted file can not be known in advance because of
+	 * the algorithm padding.
 	 * 
 	 * @param sourcefile file whose post size is to be calculated
-	 * @return new size of <tt>sourcefile</tt> after encryption/decryption
+	 * @return new size of <tt>sourcefile</tt> after encryption
 	 * @throws IOException if an I/O error occurs
 	 */
 	public static long postSize(Path sourcefile) throws IOException {

@@ -2,7 +2,6 @@ package hr.fer.zemris.java.shell.interfaces;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Path;
 
 import hr.fer.zemris.java.shell.Crypto;
 
@@ -58,32 +57,6 @@ public interface Connection {
 	 * @return an output stream for writing to the client
 	 */
 	OutputStream getOutToClient();
-
-	/**
-	 * Marks the specified file <tt>path</tt> for download by associating the
-	 * path object with its ID. This is used in association with
-	 * {@link #getMarked(int)} to get the marked path.
-	 * 
-	 * @param path path to be marked
-	 * @return ID associated with the marked path
-	 */
-	int markForDownload(Path path);
-
-	/**
-	 * Clears all paths marked for download by the
-	 * {@link #markForDownload(Path)} method. This generally means emptying the
-	 * internal collection of ID associated with paths.
-	 */
-	void clearDownloadMarks();
-	
-	/**
-	 * Returns a path marked with the specified ID number. The path must be
-	 * previously marked with the {@link #markForDownload(Path)} method.
-	 * 
-	 * @param num ID number of the path to be returned
-	 * @return path marked with the specified ID number
-	 */
-	Path getMarked(int num);
 
 	/**
 	 * Returns the cryptographic cipher for encrypted connection.

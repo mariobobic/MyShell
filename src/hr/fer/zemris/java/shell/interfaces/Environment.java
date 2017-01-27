@@ -116,6 +116,31 @@ public interface Environment {
 	 * @param symbol the multiline symbol to be used by MyShell
 	 */
 	void setMultilineSymbol(Character symbol);
+
+	/**
+	 * Marks the specified file <tt>path</tt> by associating the path object
+	 * with its ID. This is used in association with {@link #getMarked(int)} to
+	 * get the marked path.
+	 * 
+	 * @param path path to be marked
+	 * @return ID associated with the marked path
+	 */
+	int mark(Path path);
+
+	/**
+	 * Clears all paths marked by the {@link #mark(Path)} method. This generally
+	 * means emptying the internal collection of ID associated with paths.
+	 */
+	void clearMarks();
+	
+	/**
+	 * Returns a path marked with the specified ID number. The path must be
+	 * previously marked with the {@link #mark(Path)} method.
+	 * 
+	 * @param num ID number of the path to be returned
+	 * @return path marked with the specified ID number
+	 */
+	Path getMarked(int num);
 	
 	/**
 	 * Returns the connection object of this environment.

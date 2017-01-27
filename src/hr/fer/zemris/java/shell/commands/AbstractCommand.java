@@ -1,7 +1,6 @@
 package hr.fer.zemris.java.shell.commands;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -100,17 +99,27 @@ public abstract class AbstractCommand implements ShellCommand {
 	}
 	
 	/**
-	 * Marks the specified file <tt>path</tt> for download and prints a download
-	 * number <strong>if this machine is a host</strong>.
+	 * Marks the specified path <tt>path</tt> and prints the full path name with
+	 * its ID number. The printed string is followed by a newline separator.
 	 * 
-	 * @param env environment used to manipulate the connection
-	 * @param path path of the file to be marked
+	 * @param env an environment
+	 * @param path path to be marked and printed out
 	 */
-	protected static final void markForDownloadAndPrintNumber(Environment env, Path path) {
-		if (env.isConnected() && !Files.isDirectory(path)) {
-			int num = env.getConnection().markForDownload(path);
-			write(env, " (" + num + ")");
-		}
+	protected static final void markAndPrintPath(Environment env, Path path) {
+		write(env, path.toString());
+		markAndPrintNumber(env, path);
+	}
+	
+	/**
+	 * Marks the specified path <tt>path</tt> and prints its ID number. The
+	 * printed string is followed by a newline separator.
+	 * 
+	 * @param env an environment
+	 * @param path path to be marked
+	 */
+	protected static void markAndPrintNumber(Environment env, Path path) {
+		int num = env.mark(path);
+		writeln(env, " <" + num + ">");
 	}
 
 	@Override

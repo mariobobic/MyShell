@@ -1,6 +1,5 @@
 package hr.fer.zemris.java.shell.extracommands;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -27,9 +26,6 @@ public class ByteShuffleCommand extends AbstractCommand {
 	
 	/** Defines the proper syntax for using this command. */
 	private static final String SYNTAX = "byteshuffle <filename> (optional: <offset> <length>)";
-
-	/** Name used for temporarily renaming files */
-	private static final String TEMP_NAME = "__temp";
 	
 	/**
 	 * Constructs a new command object of type {@code ByteShuffleCommand}.
@@ -62,9 +58,8 @@ public class ByteShuffleCommand extends AbstractCommand {
 		
 		String[] args = Helper.extractArguments(s);
 		
-		Path path = Helper.resolveAbsolutePath(env, args[0]);
-		
-		if (!Files.isRegularFile(path)) {
+		Path file = Helper.resolveAbsolutePath(env, args[0]);
+		if (!Files.isRegularFile(file)) {
 			writeln(env, "The system cannot find the file specified.");
 			return CommandStatus.CONTINUE;
 		}
@@ -76,24 +71,21 @@ public class ByteShuffleCommand extends AbstractCommand {
 			length = Integer.parseInt(args[2]);
 		} catch (Exception e) {
 			offset = 0;
-			length = Files.size(path);
+			length = Files.size(file);
 			writeln(env, "Offset: " + offset + ", length: " + length); 
 		}
 		
 		long fileEndPoint = offset + length;
-		if (fileEndPoint > Files.size(path)) {
-			writeln(env, "The given offset and length are too big for file " + path.getFileName());
-			writeln(env, "The given file has the length of " + Files.size(path) + " bytes.");
+		if (fileEndPoint > Files.size(file)) {
+			writeln(env, "The given offset and length are too big for file " + file.getFileName());
+			writeln(env, "The given file has the length of " + Files.size(file) + " bytes.");
 			return CommandStatus.CONTINUE;
 		}
 
-		File file = path.toFile();
-		File parent = file.getParentFile();
-		File newFile = new File(parent, TEMP_NAME);
-		
+		Path tempFile = Files.createTempFile(file.getParent(), null, null);
 		try (
-				FileInputStream in = new FileInputStream(file);
-				FileOutputStream out = new FileOutputStream(newFile);
+				FileInputStream in = new FileInputStream(file.toFile());
+				FileOutputStream out = new FileOutputStream(tempFile.toFile());
 		) {
 
 			/* First copy entire file. */
@@ -118,21 +110,9 @@ public class ByteShuffleCommand extends AbstractCommand {
 
 		}
 
-		/* The process of renaming a file. */
-		int namingIndex = 0;
-		String name = path.getFileName().toString();
-		String extension = "";
-		int dotIndex = name.lastIndexOf('.');
-		if (dotIndex > 0) {
-			extension = name.substring(dotIndex);
-			name = name.substring(0, dotIndex);
-		}
-		name += "-";
-		File renamingFile;
-		while ((renamingFile = new File(parent, name + namingIndex + extension)).exists()) {
-			namingIndex++;
-		}
-		newFile.renameTo(renamingFile);
+		/* Rename the temp file. */
+		Path newFile = Helper.firstAvailable(file);
+		Files.move(tempFile, newFile);
 		
 		return CommandStatus.CONTINUE;
 	}

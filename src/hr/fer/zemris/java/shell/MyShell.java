@@ -23,17 +23,17 @@ import hr.fer.zemris.java.shell.interfaces.ShellCommand;
 /**
  * MyShell, this is where the magic happens. Scans the user's input and searches
  * for a matching command. Some commands require arguments, so the user must
- * input them as well. If the inputed command is found, the command is executed,
+ * input them as well. If the input command is found, the command is executed,
  * otherwise an error message is displayed. The program stops and prints out a
- * goodbye message if the inputed command is {@linkplain ExitCommand}. The
- * program also prompts an input symbol while waiting for a command to be
- * inputed. If a critical error occurs, an error message is printed out onto the
- * <b>standard error</b> with a detail message specifying what went wrong and
- * the program terminates.
+ * goodbye message if the input command is {@linkplain ExitCommand}. The program
+ * also prompts an input symbol while waiting for a command to be inputed. If a
+ * critical error occurs, an error message is printed out onto the <b>standard
+ * error</b> with a detail message specifying what went wrong and the program
+ * terminates.
  *
  * @author Mario Bobic
  * @author Marko Čupić
- * @version 2016-12-18 17:35
+ * @version PC
  */
 public class MyShell {
 	
@@ -224,6 +224,11 @@ public class MyShell {
 		/** Multi-line symbol for writing commands in multiple lines. */
 		private Character multilineSymbol = '|';
 		
+		/** Current ID number for marked paths. */
+		private int markNum = 0;
+		/** Map that associates paths with an ID number. */
+		private Map<Integer, Path> markedMap = new HashMap<>();
+		
 		/** Connection object that manages client-host connections. */
 		private ConnectionImpl connection = new ConnectionImpl();
 		
@@ -308,6 +313,23 @@ public class MyShell {
 		public void setMultilineSymbol(Character symbol) {
 			multilineSymbol = symbol;
 		}
+
+		@Override
+		public int mark(Path path) {
+			markedMap.put(++markNum, path);
+			return markNum;
+		}
+
+		@Override
+		public void clearMarks() {
+			markNum = 0;
+			markedMap.clear();
+		}
+		
+		@Override
+		public Path getMarked(int num) {
+			return markedMap.get(num);
+		}
 		
 		@Override
 		public Connection getConnection() {
@@ -337,11 +359,6 @@ public class MyShell {
 		private InputStream inFromClient;
 		/** Output stream to write to the client. */
 		private OutputStream outToClient;
-		
-		/** Current ID number for marked paths. */
-		private int markNum = 0;
-		/** Map that associates paths ready for download with an ID number. */
-		private Map<Integer, Path> markedForDownload = new HashMap<>();
 		/** Cryptographic cipher for encrypted connection. */
 		private Crypto crypto;
 		
@@ -380,23 +397,6 @@ public class MyShell {
 		@Override
 		public OutputStream getOutToClient() {
 			return outToClient;
-		}
-
-		@Override
-		public int markForDownload(Path path) {
-			markedForDownload.put(++markNum, path);
-			return markNum;
-		}
-
-		@Override
-		public void clearDownloadMarks() {
-			markNum = 0;
-			markedForDownload.clear();
-		}
-		
-		@Override
-		public Path getMarked(int num) {
-			return markedForDownload.get(num);
 		}
 		
 		@Override

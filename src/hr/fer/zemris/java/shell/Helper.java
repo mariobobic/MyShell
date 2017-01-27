@@ -1,6 +1,7 @@
 package hr.fer.zemris.java.shell;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,6 +41,9 @@ public abstract class Helper {
 	 * have a root component, in which case this method joins the given path
 	 * with the root and returns the absolute path. If the given path has
 	 * invalid characters an {@code InvalidPathException} is thrown.
+	 * <p>
+	 * The specified string <tt>str</tt> may also be an integer, in which case
+	 * it is first checked if a file marked with that number exists.
 	 * 
 	 * @param env an environment
 	 * @param str the given path string
@@ -47,23 +51,27 @@ public abstract class Helper {
 	 * @throws InvalidPathException if string cannot be converted into a Path
 	 */
 	public static Path resolveAbsolutePath(Environment env, String str) {
-		str = str.replace("\"", "");
+		/* If the entered argument is parsable as an integer,
+		 * see if a file is marked with that number. */
+		if (Helper.isInteger(str)) {
+			int num = Integer.parseInt(str);
+			Path path = env.getMarked(num);
+			if (path != null) return path;
+		}
 		
-		/* May throw an exception. */
-		Path path = Paths.get(str);
+		/* Paths.get() may throw an exception. */
+		Path path = Paths.get(str.replace("\"", ""));
 		
 		/* If it starts with a tilde, recurse back to this method with user.home. */
 		if (path.startsWith(HOME_DIR)) {
 			return resolveAbsolutePath(env, System.getProperty("user.home").concat(str.substring(1)));
 		}
 		
-		Path newPath;
 		if (path.isAbsolute()) {
-			newPath = path;
+			return path;
 		} else {
-			newPath = env.getCurrentPath().resolve(path).normalize();
+			return env.getCurrentPath().resolve(path).normalize();
 		}
-		return newPath;
 	}
 	
 	/**
@@ -141,6 +149,42 @@ public abstract class Helper {
 				continue;
 			}
 		}
+	}
+	
+	/**
+	 * Returns the first available {@code Path} with a unique file name. The
+	 * first available path means that, if a file with the specified
+	 * <tt>path</tt> exists on disk, an index is appended to it. If a file with
+	 * that path still exists, index is incremented and so on, until a unique
+	 * path is generated. This path is then returned.
+	 * <p>
+	 * If a file with the specified <tt>path</tt> does not exist, this method
+	 * trivially returns <tt>path</tt>.
+	 * 
+	 * @param path path from which the first available is returned
+	 * @return a path with a unique file name
+	 */
+	public static Path firstAvailable(Path path) {
+		if (!Files.exists(path))
+			return path;
+		
+		int namingIndex = 0;
+		String parent = path.getParent().toString();
+		String name = path.getFileName().toString();
+		String extension = "";
+		
+		int dotIndex = name.lastIndexOf('.');
+		if (dotIndex > 0) {
+			extension = name.substring(dotIndex);
+			name = name.substring(0, dotIndex);
+		}
+		name += "-";
+		
+		while (Files.exists(path)) {
+			path = Paths.get(parent, name + namingIndex + extension);
+			namingIndex++;
+		}
+		return path;
 	}
 	
 	/**

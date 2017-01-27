@@ -56,10 +56,8 @@ public class FilterCommand extends AbstractCommand {
 			return CommandStatus.CONTINUE;
 		}
 		
-		/* Clear previously marked files if this machine is a host. */
-		if (env.isConnected()) {
-			env.getConnection().clearDownloadMarks();
-		}
+		/* Clear previously marked paths. */
+		env.clearMarks();
 		
 		FilterFileVisitor filterVisitor = new FilterFileVisitor(env, s);
 		Path path = env.getCurrentPath();
@@ -103,9 +101,7 @@ public class FilterCommand extends AbstractCommand {
 			String fileName = file.getFileName().toString().toUpperCase();
 			
 			if (Helper.matches(fileName, patternParts)) {
-				write(environment, file.toString());
-				markForDownloadAndPrintNumber(environment, file);
-				writeln(environment, "");
+				markAndPrintPath(environment, file);
 			}
 			
 			return super.visitFile(file, attrs);
