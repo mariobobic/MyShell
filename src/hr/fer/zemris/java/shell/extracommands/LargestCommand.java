@@ -6,6 +6,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -18,25 +21,47 @@ import hr.fer.zemris.java.shell.interfaces.Environment;
 
 /**
  * Walks the directory tree from the given path, or current path if no path is
- * entered. Prints out the given maximum quantity of largest files (or less, if
- * that many files are not found) to the current environment. If no quantity is
- * given, the quantity is set to 10 by default.
+ * entered. Prints out the given maximum quantity of files, or less if that many
+ * files are not found, to the current environment. If no quantity is given, the
+ * quantity is set to 10 by default.
+ * <p>
+ * Currently supported arguments for file querying are <strong>largest</strong>,
+ * <strong>smallest</strong>, <strong>newest</strong>, <strong>oldest</strong>.
  *
  * @author Mario Bobic
  */
-public class LargestCommand extends AbstractCommand {
+public class ShowCommand extends AbstractCommand {
 
 	/** Defines the proper syntax for using this command. */
-	private static final String SYNTAX = "largest <path> (optional: <quantity>)";
+	private static final String SYNTAX =
+		"show <largest|smallest|newest|oldest> <path> (<quantity>)";
 
 	/** Default amount of top largest files */
 	private static final int DEF_QUANTITY = 10;
+
+	/** The standard date-time formatter. */
+	private static final DateTimeFormatter FORMATTER =
+			DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss").withZone(ZoneId.systemDefault());
+
+	/** A comparator that compares files by their size, smallest first */
+	private static final Comparator<Path> COMP_SMALLEST = (f1, f2) -> {
+		return Long.compare(size(f1), size(f2));
+	};
+	/** A comparator that compares files by their size, largest first */
+	private static final Comparator<Path> COMP_LARGEST = COMP_SMALLEST.reversed();
+	
+	/** A comparator that compares files by their modification date, oldest first. */
+	private static final Comparator<Path> COMP_OLDEST = (f1, f2) -> {
+		return lastModified(f1).compareTo(lastModified(f2));
+	};
+	/** A comparator that compares files by their modification date, newest first. */
+	private static final Comparator<Path> COMP_NEWEST = COMP_OLDEST.reversed();
 	
 	/**
 	 * Constructs a new command object of type {@code LargestCommand}.
 	 */
-	public LargestCommand() {
-		super("LARGEST", createCommandDescription());
+	public ShowCommand() {
+		super("SHOW", createCommandDescription());
 	}
 	
 	/**
@@ -48,7 +73,9 @@ public class LargestCommand extends AbstractCommand {
 	 */
 	private static List<String> createCommandDescription() {
 		List<String> desc = new ArrayList<>();
-		desc.add("Displays the specified quantity of largest files in the specified directory tree.");
+		desc.add("Displays files ordered by a specified attribute in the directory tree.");
+		desc.add("There are four supported arguments for file querying: largest, smallest, newest and oldest.");
+		desc.add("Additionally, amount of files can be specified as the last argument.");
 		desc.add("Syntax: " + SYNTAX);
 		return desc;
 	}
@@ -60,23 +87,37 @@ public class LargestCommand extends AbstractCommand {
 			return CommandStatus.CONTINUE;
 		}
 		
-		int quantity;
-		
 		String[] args = Helper.extractArguments(s);
+		if (args.length > 3) {
+			printSyntaxError(env, SYNTAX);
+			return CommandStatus.CONTINUE;
+		}
 		
-		/* Resolve path from the first argument. */
-		Path dir = Helper.resolveAbsolutePath(env, args[0]);
-		
-		/* Resolve quantity from the second argument, if present. */
+		/* Resolve path from the second argument, if present. */
+		Path dir;
 		if (args.length == 1) {
+			dir = env.getCurrentPath();
+		} else {
+			dir = Helper.resolveAbsolutePath(env, args[1]);
+		}
+		
+		/* Resolve quantity from the third argument, if present. */
+		int quantity;
+		if (args.length <= 2) {
 			quantity = DEF_QUANTITY;
 		} else {
 			try {
-				quantity = Integer.parseInt(args[1]);
+				quantity = Integer.parseInt(args[2]);
 			} catch (NumberFormatException e) {
 				printSyntaxError(env, SYNTAX);
 				return CommandStatus.CONTINUE;
 			}
+		}
+
+		Comparator<Path> comparator = getComparator(args[0]);
+		if (comparator == null) {
+			writeln(env, "Unknown argument: " + args[0]);
+			return CommandStatus.CONTINUE;
 		}
 		
 		/* Make necessary checks. */
@@ -85,17 +126,45 @@ public class LargestCommand extends AbstractCommand {
 			return CommandStatus.CONTINUE;
 		}
 		
-		LargestFileVisitor largestVisitor = new LargestFileVisitor(quantity);
+		ShowFileVisitor largestVisitor = new ShowFileVisitor(quantity, comparator);
 		Files.walkFileTree(dir, largestVisitor);
+
+		/* Clear previously marked paths. */
+		env.clearMarks();
 		
-		List<Path> largestFiles = largestVisitor.getLargest();
+		List<Path> largestFiles = largestVisitor.getFiles();
 		for (Path f : largestFiles) {
-			writeln(env, f.normalize() + " (" + Helper.humanReadableByteCount(size(f)) + ")");
+			String bytes = " (" + Helper.humanReadableByteCount(size(f)) + ")";
+			String modTime = " (" + FORMATTER.format(lastModified(f).toInstant()) + ")";
+			write(env, f.normalize() + bytes + modTime);
+			markAndPrintNumber(env, f);
 		}
 		
 		return CommandStatus.CONTINUE;
 	}
 	
+	/**
+	 * Returns a comparator that matches the specified attribute <tt>attr</tt>.
+	 * 
+	 * @param attr comparation attribute
+	 * @return a comparator that matches the specified attribute
+	 */
+	private static Comparator<Path> getComparator(String attr) {
+		Comparator<Path> comparator = null;
+		
+		if ("largest".equals(attr)) {
+			comparator = COMP_LARGEST;
+		} else if ("smallest".equals(attr)) {
+			comparator = COMP_SMALLEST;
+		} else if ("newest".equals(attr)) {
+			comparator = COMP_NEWEST;
+		} else if ("oldest".equals(attr)) {
+			comparator = COMP_OLDEST;
+		}
+		
+		return comparator;
+	}
+
 	/**
 	 * Returns the size of a file (in bytes). The size may differ from the
 	 * actual size on the file system due to compression, support for sparse
@@ -110,42 +179,60 @@ public class LargestCommand extends AbstractCommand {
 		try {
 			return Files.size(file);
 		} catch (IOException e) {
-			return 0; // ??
+			return -1; // ??
+		}
+	}
+	
+	/**
+	 * Returns a file's last modified time. If an I/O exception occurs while
+	 * trying to obtain the file's last modified time,
+	 * <tt>FileTime.fromMillis(0)</tt> is returned.
+	 *
+	 * @param file the path to the file
+	 * @return a {@code FileTime} representing the time the file was last
+	 *         modified, or an implementation specific default when a time stamp
+	 *         to indicate the time of last modification is not supported by the
+	 *         file system
+	 */
+	private static FileTime lastModified(Path file) {
+		try {
+			return Files.getLastModifiedTime(file);
+		} catch (IOException e) {
+			return FileTime.fromMillis(0); // ??
 		}
 	}
 
 	/**
 	 * A {@linkplain SimpleFileVisitor} extended and used to serve the
-	 * {@linkplain LargestCommand}. Only the <tt>visitFile</tt> method is
-	 * overridden.
+	 * {@linkplain ShowCommand}.
 	 *
 	 * @author Mario Bobic
 	 */
-	private static class LargestFileVisitor extends SimpleFileVisitor<Path> {
+	private static class ShowFileVisitor extends SimpleFileVisitor<Path> {
 
 		/** Number of largest files to be printed out */
 		private int quantity;
+		/** Comparator used to compare files. */
+		private Comparator<Path> comparator;
+		
 		/** List of largest files in the given directory tree */
-		private List<Path> largestFiles;
-
-		/** A comparator that compares files by their size, largest first */
-		private static final Comparator<Path> BY_SIZE = (f1, f2) -> {
-			return -Long.compare(size(f1), size(f2));
-		};
+		private List<Path> filteredFiles;
 		
 		/**
 		 * Initializes a new instance of this class setting the quantity to the
 		 * desired value.
 		 * 
 		 * @param quantity number of largest files to be printed out
+		 * @param comparator comparator used for comparing files
 		 */
-		public LargestFileVisitor(int quantity) {
+		public ShowFileVisitor(int quantity, Comparator<Path> comparator) {
 			this.quantity = quantity;
-			largestFiles = new ArrayList<>();
+			this.comparator = comparator;
+			filteredFiles = new ArrayList<>();
 		}
 		
 		/**
-		 * Adds the file to the list of candidates for largest files.
+		 * Adds the file to the list of candidates.
 		 */
 		@Override
 		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
@@ -154,10 +241,11 @@ public class LargestCommand extends AbstractCommand {
 		}
 		
 		/**
-		 * Continues searching for largest files.
+		 * Continues searching for files.
 		 */
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+//			writeln(environment, "Failed to access " + file);
 			return FileVisitResult.CONTINUE;
 		}
 		
@@ -169,25 +257,25 @@ public class LargestCommand extends AbstractCommand {
 		 * 
 		 * @param file candidate file
 		 */
-		private void addCandidate(Path file) {
+		private synchronized void addCandidate(Path file) {
 			boolean added = false;
 			
-			if (largestFiles.size() < quantity) {
-				largestFiles.add(file);
+			if (filteredFiles.size() < quantity) {
+				filteredFiles.add(file);
 				added = true;
 			} else {
 				int lastIndex = quantity-1;
-				Path lastFile = largestFiles.get(lastIndex);
-				if (size(lastFile) < size(file)) {
-					largestFiles.remove(lastIndex);
-					largestFiles.add(file);
+				Path lastFile = filteredFiles.get(lastIndex);
+				if (comparator.compare(lastFile, file) > 0) {
+					filteredFiles.remove(lastIndex);
+					filteredFiles.add(file);
 					added = true;
 				}
 			}
 			
 			// Only sort if a file was added
 			if (added) {
-				Collections.sort(largestFiles, BY_SIZE);
+				Collections.sort(filteredFiles, comparator);
 			}
 		}
 		
@@ -196,8 +284,8 @@ public class LargestCommand extends AbstractCommand {
 		 * 
 		 * @return the list of largest files in the directory tree
 		 */
-		public List<Path> getLargest() {
-			return largestFiles;
+		public List<Path> getFiles() {
+			return filteredFiles;
 		}
 	}
 

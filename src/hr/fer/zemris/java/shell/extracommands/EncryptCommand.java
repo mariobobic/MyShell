@@ -59,7 +59,6 @@ public class EncryptCommand extends AbstractCommand {
 			return CommandStatus.CONTINUE;
 		}
 		
-		String hash = Helper.generatePasswordHash(args[0]);
 		Path sourcefile = Helper.resolveAbsolutePath(env, args[1]);
 		if (!Files.isRegularFile(sourcefile)) {
 			writeln(env, "The system cannot find the file specified.");
@@ -73,7 +72,8 @@ public class EncryptCommand extends AbstractCommand {
 				return CommandStatus.CONTINUE;
 			}
 		}
-		
+
+		String hash = Helper.generatePasswordHash(args[0]);
 		Crypto crypto = new Crypto(hash, Crypto.ENCRYPT);
 		crypto.execute(sourcefile, destfile);
 

@@ -1,18 +1,17 @@
 package hr.fer.zemris.java.shell.extracommands;
 
-import java.util.List;
-
-import hr.fer.zemris.java.shell.CommandStatus;
-import hr.fer.zemris.java.shell.Helper;
-import hr.fer.zemris.java.shell.commands.AbstractCommand;
-import hr.fer.zemris.java.shell.interfaces.Environment;
-
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+
+import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.Helper;
+import hr.fer.zemris.java.shell.commands.AbstractCommand;
+import hr.fer.zemris.java.shell.interfaces.Environment;
 
 /**
  * A command that is used for renaming all files and directories with the path
@@ -27,7 +26,8 @@ import java.util.Collections;
  *    example099
  *    example100
  * </blockquote></pre>
- * A start index can also be specified for this command
+ * A start index can also be specified for this command, as well as the position
+ * of file index in its file name.
  *
  * @author Mario Bobic
  */
@@ -56,9 +56,10 @@ public class RenameAllCommand extends AbstractCommand {
 	private static List<String> createCommandDescription() {
 		List<String> desc = new ArrayList<>();
 		desc.add("Renames all files and directories to the new name.");
-		desc.add("The new name may contain an asterisk symbol (*) where "
-				+ "the file index will be inserted upon renaming.");
 		desc.add("Optional start index may be included.");
+		desc.add("To position the file index in its name, write the {i} "
+				+ "sequence which will be substituted by the index.");
+		desc.add("To get the last index, use the {n} sequence.");
 		desc.add("Syntax: " + SYNTAX);
 		return desc;
 	}
@@ -77,7 +78,6 @@ public class RenameAllCommand extends AbstractCommand {
 		}
 		
 		Path path = Helper.resolveAbsolutePath(env, args[0]);
-		
 		if (!Files.exists(path) || !Files.isDirectory(path)) {
 			writeln(env, "The system cannot find the path specified.");
 			return CommandStatus.CONTINUE;
@@ -112,14 +112,14 @@ public class RenameAllCommand extends AbstractCommand {
 		}
 		
 		/* All occurrences of * symbols will be replaced with file index. */
-		boolean containsAsterisk = name.contains("*");
-		name = name.replace("{*}", Integer.toString(n+offset-1));
+		name = name.replace("{n}", Integer.toString(n+offset-1));
+		boolean containsSubs = name.contains("{i}");
 		
 		/* Rename all files. */
 		for (int i = 0; i < n; i++) {
 			int index = i + offset;
 			String number = getLeadingZeros(n, offset, index) + index;
-			String newName = containsAsterisk ? name.replace("*", number) : name+number;
+			String newName = containsSubs ? name.replace("{i}", number) : name+number;
 			
 			File originalFile = listOfFiles.get(i);
 			File renamingFile = new File(dir, newName);
@@ -128,7 +128,7 @@ public class RenameAllCommand extends AbstractCommand {
 			if (renamed) {
 				writeln(env, originalFile.getName() + " renamed to " + renamingFile.getName());
 			} else {
-				writeln(env, originalFile.getName() + " cannot be renamed to " + renamingFile.getName());
+				writeln(env, originalFile.getName() + " cannot be renamed to " + newName);
 			}
 		}
 		

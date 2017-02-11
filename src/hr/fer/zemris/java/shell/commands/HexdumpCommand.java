@@ -95,7 +95,7 @@ public class HexdumpCommand extends AbstractCommand {
 	 * @param total total length processed so far
 	 * @return a string representation of the bytes
 	 */
-	private String bytesToString(byte[] bytes, int len, long total) {
+	private static String bytesToString(byte[] bytes, int len, long total) {
 		StringBuilder sb = new StringBuilder();
 		
 		/* Segment 0 */

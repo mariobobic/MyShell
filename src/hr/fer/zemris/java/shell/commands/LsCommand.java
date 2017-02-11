@@ -133,39 +133,65 @@ public class LsCommand extends AbstractCommand {
 	 */
 	private static void printFile(Environment env, Path path, boolean humanReadable) {
 		try {
-			/* First column */
-			write(env, String.format("%c%c%c%c",
-				Files.isDirectory(path)	? 'd' : '-',
-				Files.isReadable(path)	? 'r' : '-',
-				Files.isWritable(path)	? 'w' : '-',
-				Files.isExecutable(path)? 'x' : '-'
-			));
-			
-			/* Second column */
-			long size = Files.size(path);
-			write(env, !humanReadable ?
-				String.format(" %10d" , size) :
-				String.format(" %10s", Helper.humanReadableByteCount(size))
-			);
-			
-			/* Third column */
-			BasicFileAttributeView faView = Files.getFileAttributeView(
-					path, BasicFileAttributeView.class, LinkOption.NOFOLLOW_LINKS
-			);
-			BasicFileAttributes attributes = faView.readAttributes();
-			
-			FileTime fileTime = attributes.creationTime();
-			String formattedDateTime = DATE_FORMAT.format(new Date(fileTime.toMillis()));
-			
-			write(env, " " + formattedDateTime);
-			
-			/* Fourth column */
-			write(env, " " + path.getFileName());
+			write(env, getFileString(path, humanReadable));
 			markAndPrintNumber(env, path);
 		} catch (IOException e) {
 			writeln(env, "An I/O error has occured.");
 			writeln(env, e.getMessage());
 		}
+	}
+	
+	/**
+	 * Returns a string representation of a single file or directory specified
+	 * by the <tt>path</tt>. The path is written in four columns:
+	 * <ol>
+	 * <li>The first column indicates if current object is directory (d),
+	 * readable (r), writable (w) and executable (x).
+	 * <li>The second column contains object size in bytes that is right aligned
+	 * and occupies 10 characters.
+	 * <li>The third column shows file creation date and time with, where the
+	 * date format is specified by the {@linkplain #DATE_FORMAT}.
+	 * <li>The fourth column contains the name of the file or directory.
+	 * </ol>
+	 * 
+	 * @param path path to be written
+	 * @param humanReadable if file size should be in human readable byte count
+	 * @return a string representation of a single file or directory
+	 * @throws IOException if an I/O error occurs when reading the path
+	 */
+	public static String getFileString(Path path, boolean humanReadable) throws IOException {
+		StringBuilder sb = new StringBuilder();
+		
+		/* First column */
+		sb.append(String.format("%c%c%c%c",
+			Files.isDirectory(path)	? 'd' : '-',
+			Files.isReadable(path)	? 'r' : '-',
+			Files.isWritable(path)	? 'w' : '-',
+			Files.isExecutable(path)? 'x' : '-'
+		));
+		
+		/* Second column */
+		long size = Files.size(path);
+		sb.append(!humanReadable ?
+			String.format(" %10d" , size) :
+			String.format(" %10s", Helper.humanReadableByteCount(size))
+		);
+		
+		/* Third column */
+		BasicFileAttributeView faView = Files.getFileAttributeView(
+				path, BasicFileAttributeView.class, LinkOption.NOFOLLOW_LINKS
+		);
+		BasicFileAttributes attributes = faView.readAttributes();
+		
+		FileTime fileTime = attributes.creationTime();
+		String formattedDateTime = DATE_FORMAT.format(new Date(fileTime.toMillis()));
+		
+		sb.append(" " + formattedDateTime);
+		
+		/* Fourth column */
+		sb.append(" " + path.getFileName());
+		
+		return sb.toString();
 	}
 
 }

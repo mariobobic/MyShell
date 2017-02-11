@@ -16,9 +16,7 @@ import java.util.stream.Collectors;
 
 import hr.fer.zemris.java.shell.commands.*;
 import hr.fer.zemris.java.shell.extracommands.*;
-import hr.fer.zemris.java.shell.interfaces.Connection;
-import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.interfaces.ShellCommand;
+import hr.fer.zemris.java.shell.interfaces.*;
 
 /**
  * MyShell, this is where the magic happens. Scans the user's input and searches
@@ -56,6 +54,8 @@ public class MyShell {
 
 				new ByteShuffleCommand(),
 				new CdCommand(),
+				new ClearCommand(),
+				new CountCommand(),
 				new DateCommand(),
 				new DecryptCommand(),
 				new DiffCommand(),
@@ -65,17 +65,21 @@ public class MyShell {
 				new ExtractCommand(),
 				new FilterCommand(),
 				new FindCommand(),
-				new LargestCommand(),
+				new MoveCommand(),
 				new NameShuffleCommand(),
 				new OpenCommand(),
 				new PwdCommand(),
 				new RenameAllCommand(),
+				new ReplaceCommand(),
 				new RmCommand(),
 				new RmdirCommand(),
+				new ShowCommand(),
+				new TouchCommand(),
 				
 				new HostCommand(),
 				new ConnectCommand(),
-				new DownloadCommand()
+				new DownloadCommand(),
+				new HttpServerCommand(),
 		};
 		for (ShellCommand c : cc) {
 			commands.put(c.getCommandName(), c);
@@ -99,7 +103,7 @@ public class MyShell {
 		
 		while (true) {
 			Path path = environment.getCurrentPath();
-			Path pathName = path.equals(path.getRoot()) ? path : path.getFileName();
+			Path pathName = Helper.getFileName(path);
 			environment.write("$" + pathName + environment.promptSymbol + " ");
 			
 			String line = readInput();
@@ -238,13 +242,13 @@ public class MyShell {
 		}
 		
 		@Override
-		public void write(String s) throws IOException {
+		public synchronized void write(String s) throws IOException {
 			writer.write(s);
 			writer.flush();
 		}
 		
 		@Override
-		public void write(char cbuf[], int off, int len){
+		public synchronized void write(char cbuf[], int off, int len){
 			try {
 				writer.write(cbuf, off, len);
 				writer.flush();
@@ -252,7 +256,7 @@ public class MyShell {
 		}
 		
 		@Override
-		public void writeln(String s) throws IOException {
+		public synchronized void writeln(String s) throws IOException {
 			write(s);
 			writer.newLine();
 			writer.flush();
@@ -260,8 +264,7 @@ public class MyShell {
 		
 		@Override
 		public Iterable<ShellCommand> commands() {
-			return commands.values()
-				.stream()
+			return commands.values().stream()
 				.sorted((cmd1, cmd2) -> cmd1.getCommandName().compareTo(cmd2.getCommandName()))
 				.collect(Collectors.toList());
 		}

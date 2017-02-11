@@ -85,11 +85,11 @@ public class DiffCommand extends AbstractCommand {
 		Path path1 = Helper.resolveAbsolutePath(env, args[0]);
 		Path path2 = Helper.resolveAbsolutePath(env, args[1]);
 		if (!Files.exists(path1)) {
-			writeln(env, "The system cannot find the file " + path1);
+			writeln(env, "The system cannot find the path specified: " + path1);
 			return CommandStatus.CONTINUE;
 		}
 		if (!Files.exists(path2)) {
-			writeln(env, "The system cannot find the file " + path2);
+			writeln(env, "The system cannot find the path specified: " + path2);
 			return CommandStatus.CONTINUE;
 		}
 		
@@ -133,11 +133,22 @@ public class DiffCommand extends AbstractCommand {
 		/* Passed all checks, start working. */
 		path1 = path1.toRealPath();
 		path2 = path2.toRealPath();
+		int fails = 0;
+		
 		if (path1IsFile) {
-			processFiles(env, path1, path2, charset, all);	
+			boolean success = processFiles(env, path1, path2, charset, all);
+			if (!success) fails = 1;
 		} else {
 			DiffFileVisitor diffVisitor = new DiffFileVisitor(env, charset, all, path1, path2);
 			Files.walkFileTree(path1, diffVisitor);
+			fails = diffVisitor.getFails();
+		}
+		
+		if (fails != 0) {
+			writeln(env, String.format(
+				"Could not decode %d files using %s encoding. Try a different encoding.",
+				fails, charset
+			));
 		}
 		
 		return CommandStatus.CONTINUE;
@@ -160,21 +171,30 @@ public class DiffCommand extends AbstractCommand {
 	}
 	
 	/**
-	 * 
+	 * Processes the two files <tt>file1</tt> and <tt>file2</tt> and writes out
+	 * its differences, with line numbers included in front of the lines that
+	 * differ. If the boolean <tt>all</tt> is <tt>true</tt>, both files are
+	 * written out until the end.
+	 * <p>
+	 * This method returns a boolean value that indicates if the processing was
+	 * successful. The processing may not succeed if one of the files does not
+	 * exist, is not accessible or can not be decoded using the specified
+	 * <tt>charset</tt>.
 	 * 
 	 * @param env an environment
 	 * @param file1 first file to be processed
 	 * @param file2 second file to be processed
 	 * @param charset charset for decoding files
 	 * @param all indicates that the whole document should be printed
+	 * @return true if processing succeeds, false otherwise.
 	 */
-	private static void processFiles(Environment env, Path file1, Path file2, Charset charset, boolean all) {
-		writeln(env, "Analyzing files " + file1 + " and " + file2);
+	private static boolean processFiles(Environment env, Path file1, Path file2, Charset charset, boolean all) {
 		try {
 			Iterator<String> iter1 = Files.lines(file1, charset).iterator();
 			Iterator<String> iter2 = Files.lines(file2, charset).iterator();
 			
 			int counter = 0;
+			int numDifferences = 0;
 			while (true) {
 				counter++;
 				
@@ -187,36 +207,48 @@ public class DiffCommand extends AbstractCommand {
 				if (line1 == null && line2 == null) break;
 				if (!all && (line1 == null || line2 == null)) break;
 				
-				writeDifferences(env, line1, line2, counter, all);
+				String differences = getDifferences(line1, line2, counter, all);
+				if (differences == null) continue;
+				
+				numDifferences++;
+				if (numDifferences == 1) {
+					writeln(env, "Analyzing files " + file1 + " and " + file2);
+				}
+				writeln(env, differences);
 			}
 			
+			return true;
 		} catch (Exception e) {
-			writeln(env, "Cannot decode files using " + charset + " encoding. Try a different encoding.");
+			return false;
 		}
 	}
 	
 	/**
-	 * Writes out differences of the two specified lines <tt>line1</tt> and
+	 * Returns differences of the two specified lines <tt>line1</tt> and
 	 * <tt>line2</tt>, with line number included in front. If the boolean
 	 * <tt>all</tt> is <tt>true</tt> and if the specified lines do not differ,
-	 * the line is written out.
+	 * or more formally if <tt>line1.equals(line2)</tt>, one of the lines is
+	 * returned.
 	 * 
-	 * @param env an environment
 	 * @param line1 first line for comparison
 	 * @param line2 second line for comparison
 	 * @param lineNum line number
-	 * @param all indicates if the line should be written out even if there are
-	 *        no differences between the two lines
+	 * @param all indicates if the line should be returned even if there are no
+	 *        differences between the two lines
+	 * @return differences between the two lines
 	 */
-	private static void writeDifferences(Environment env, String line1, String line2, int lineNum, boolean all) {
+	private static String getDifferences(String line1, String line2, int lineNum, boolean all) {
 		if (line1 == null) line1 = "";
 		if (line2 == null) line2 = "";
 		
+		String differences = null;
 		if (!Objects.equals(line1, line2)) {
-			writeln(env, "  " + lineNum + ": " + line1 + " --> " + line2);
+			differences = "  " + lineNum + ": " + line1 + " --> " + line2;
 		} else if (all) {
-			writeln(env, "  " + lineNum + ": " + line1);
+			differences = "  " + lineNum + ": " + line1;
 		}
+		
+		return differences;
 	}
 	
 	/**
@@ -238,6 +270,9 @@ public class DiffCommand extends AbstractCommand {
 		private Path root;
 		/** Other path's root directory. */
 		private Path otherRoot;
+		
+		/** Number of files that failed to be processed. */
+		private int fails;
 
 		/**
 		 * Initializes a new instance of this class setting only an environment used
@@ -255,6 +290,7 @@ public class DiffCommand extends AbstractCommand {
 			this.all = all;
 			this.root = root;
 			this.otherRoot = otherRoot;
+			this.fails = 0;
 		}
 
 		@Override
@@ -263,7 +299,8 @@ public class DiffCommand extends AbstractCommand {
 			Path otherFile = otherRoot.resolve(relative);
 			
 			if (Files.exists(otherFile)) {
-				processFiles(environment, file, otherFile, charset, all);
+				boolean success = processFiles(environment, file, otherFile, charset, all);
+				if (!success) fails++;
 			}
 
 			return FileVisitResult.CONTINUE;
@@ -271,8 +308,17 @@ public class DiffCommand extends AbstractCommand {
 		
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-			System.out.println("Failed to access " + file);
+			writeln(environment, "Failed to access " + file);
 			return FileVisitResult.CONTINUE;
+		}
+
+		/**
+		 * Returns the number of files that failed to be processed.
+		 * 
+		 * @return the number of files that failed to be processed
+		 */
+		public int getFails() {
+			return fails;
 		}
 	}
 

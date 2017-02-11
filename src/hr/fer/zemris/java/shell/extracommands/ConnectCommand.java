@@ -148,7 +148,7 @@ public class ConnectCommand extends AbstractCommand {
 	 * @param cbuf a char array buffer
 	 * @return true if <tt>cbuf</tt> contains a download hint
 	 */
-	private boolean isDownloadHint(char[] cbuf) {
+	private static boolean isDownloadHint(char[] cbuf) {
 		char[] cbuf2 = Arrays.copyOf(cbuf, Helper.DOWNLOAD_KEYWORD.length);
 		return Arrays.equals(cbuf2, Helper.DOWNLOAD_KEYWORD);
 	}
@@ -211,7 +211,7 @@ public class ConnectCommand extends AbstractCommand {
 			}
 			fileOutput.write(crypto.doFinal());
 		} catch (IOException e) {
-			writeln(env, "Download has ended with some errors. Possibly because of wrong password.");
+			writeln(env, "An unexpected error occurred while downloading " + file);
 			throw e;
 		} finally {
 			scheduledExecutor.shutdown();
@@ -237,6 +237,11 @@ public class ConnectCommand extends AbstractCommand {
 		private final long size;
 		/** Currently downloaded length. */
 		private long downloadedLength;
+
+		/** Recently elapsed time. */
+		private long recentStartTime = startTime;
+		/** Recently downloaded length. */
+		private long recentDownloadedLength;
 		
 		/** Total size to be downloaded converted to a human readable string. */
 		private final String sizeStr;
@@ -264,20 +269,28 @@ public class ConnectCommand extends AbstractCommand {
 		 */
 		public void add(long length) {
 			downloadedLength += length;
+			recentDownloadedLength += length;
 		}
 
 		@Override
+		@SuppressWarnings("unused")
 		public void run() {
 			try {
+				/* Percentage */
 				int percent = (int) (100 * downloadedLength / size);
 				String downloaded = Helper.humanReadableByteCount(downloadedLength);
-				
+
+				/* Time */
 				long elapsedTime = System.nanoTime() - startTime;
+				long recentElapsedTime = System.nanoTime() - recentStartTime;
 				String elapsedTimeStr = Helper.humanReadableTimeUnit(elapsedTime);
-				
-				long downloadSpeed = downloadedLength / (elapsedTime/1_000_000_000L);
+
+				/* Speed */
+				long averageSpeed = downloadedLength / (elapsedTime/1_000_000_000L);
+				long downloadSpeed = recentDownloadedLength / (recentElapsedTime/1_000_000_000L);
 				String downloadSpeedStr = Helper.humanReadableByteCount(downloadSpeed) + "/s";
-				
+
+				/* Estimation */
 				String estimatedTime = downloadSpeed > 0 ?
 					Helper.humanReadableTimeUnit(1_000_000_000L * (size - downloadedLength) / downloadSpeed) : "∞";
 				
@@ -285,6 +298,10 @@ public class ConnectCommand extends AbstractCommand {
 					"%d%% downloaded (%s/%s), Elapsed time: %s, Download speed: %s, Estimated time: %s",
 					percent, downloaded, sizeStr, elapsedTimeStr, downloadSpeedStr, estimatedTime
 				));
+				
+				// Reset 'recent' calculations
+				recentDownloadedLength = 0;
+				recentStartTime = System.nanoTime();
 				
 //				writeln(environment, String.format("%d%% downloaded (%s/%s)", percent, downloaded, sizeStr));
 //				writeln(environment, "   Elapsed time: " + elapsedTimeStr);

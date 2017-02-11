@@ -1,18 +1,10 @@
 package hr.fer.zemris.java.shell.extracommands;
 
-import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 
 import hr.fer.zemris.java.shell.CommandStatus;
@@ -82,8 +74,8 @@ public class HostCommand extends AbstractCommand {
 		env.getConnection().setCrypto(crypto);
 		
 		/* Print out a message that the connection is ready. */
-		write(env, "Hosting server... connect to " + getLocalIP());
-		writeln(env, " / " + getPublicIP());
+		write(env, "Hosting server... connect to " + Helper.getLocalIP());
+		writeln(env, " / " + Helper.getPublicIP());
 		
 		/* Create a host access point and redirect the input and output stream. */
 		try (
@@ -112,58 +104,5 @@ public class HostCommand extends AbstractCommand {
 		
 		return CommandStatus.CONTINUE;
 	}
-
-	/**
-	 * Returns this computer's local IP address to which another user on the
-	 * same LAN network may connect using the {@linkplain ConnectCommand}.
-	 * Returns {@code null} if the IP address is inaccessible.
-	 * 
-	 * @return this computer's local IP address
-	 */
-	private static String getLocalIP() {
-		try {
-			Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces();
-			while (en.hasMoreElements()) {
-				NetworkInterface n = (NetworkInterface) en.nextElement();
-				
-				Enumeration<InetAddress> ee = n.getInetAddresses();
-			    while (ee.hasMoreElements()) {
-			        InetAddress addr = (InetAddress) ee.nextElement();
-			        if (!addr.isLoopbackAddress() && !addr.isLinkLocalAddress()) {
-			        	return addr.getHostAddress();
-			        }
-			    }
-			}
-		} catch (SocketException e) {}
-		return null;
-	}
-	
-	/**
-	 * Returns the external IP address to which another user on the
-	 * internet may connect using the {@linkplain ConnectCommand}.
-	 * Returns {@code null} if the IP address is inaccessible.
-	 * 
-	 * @return this computer's local IP address
-	 */
-	private static String getPublicIP() {
-		try {
-			URL whatismyip = new URL("http://checkip.amazonaws.com");
-			
-			BufferedReader in = null;
-			try {
-				in = new BufferedReader(
-					new InputStreamReader(whatismyip.openStream())
-				);
-				String ip = in.readLine();
-				return ip;
-			} finally {
-				if (in != null) {
-					try { in.close(); } catch (IOException e) {}
-				}
-			}
-		} catch (IOException e) {
-			return null;
-		}
-    }
 
 }

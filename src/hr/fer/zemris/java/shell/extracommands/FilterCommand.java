@@ -63,6 +63,10 @@ public class FilterCommand extends AbstractCommand {
 		Path path = env.getCurrentPath();
 		
 		Files.walkFileTree(path, filterVisitor);
+		int fails = filterVisitor.getFails();
+		if (fails != 0) {
+			writeln(env, "Failed to access " + fails + " paths.");
+		}
 
 		return CommandStatus.CONTINUE;
 	}
@@ -79,6 +83,9 @@ public class FilterCommand extends AbstractCommand {
 		private Environment environment;
 		/** Parts of the pattern to be matched against. */
 		private String[] patternParts;
+		
+		/** Number of files that failed to be accessed. */
+		private int fails;
 
 		/**
 		 * Initializes a new instance of this class setting the desired pattern and
@@ -103,8 +110,8 @@ public class FilterCommand extends AbstractCommand {
 			if (Helper.matches(fileName, patternParts)) {
 				markAndPrintPath(environment, file);
 			}
-			
-			return super.visitFile(file, attrs);
+
+			return FileVisitResult.CONTINUE;
 		}
 		
 		/**
@@ -113,8 +120,18 @@ public class FilterCommand extends AbstractCommand {
 		 */
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-			writeln(environment, "Failed to access " + file);
+//			writeln(environment, "Failed to access " + file);
+			fails++;
 			return FileVisitResult.CONTINUE;
+		}
+
+		/**
+		 * Returns the number of files that failed to be accessed.
+		 * 
+		 * @return the number of files that failed to be accessed
+		 */
+		public int getFails() {
+			return fails;
 		}
 		
 		/**
@@ -129,6 +146,7 @@ public class FilterCommand extends AbstractCommand {
 		 * @deprecated this method can have only 2 parts of the pattern. Use
 		 *             {@link Helper#matches(String, String)} instead
 		 */
+		@Deprecated
 		@SuppressWarnings("unused")
 		private static boolean matches(String name, String pattern) {
 			if (pattern.contains("*")) {

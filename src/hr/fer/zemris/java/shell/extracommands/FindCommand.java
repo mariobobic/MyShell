@@ -254,7 +254,7 @@ public class FindCommand extends AbstractCommand {
 		/** Files that were too big to process. */
 		private List<Path> bigFiles = new ArrayList<>();
 		/** Indicates if big files should be printed out. */
-		private boolean printBigFiles = false;
+		private boolean printBigFiles = true;
 
 		/**
 		 * Initializes a new instance of this class setting the desired pattern
@@ -283,8 +283,8 @@ public class FindCommand extends AbstractCommand {
 			} else {
 				bigFiles.add(file);
 			}
-			
-			return super.visitFile(file, attrs);
+
+			return FileVisitResult.CONTINUE;
 		}
 
 		/**
@@ -318,7 +318,7 @@ public class FindCommand extends AbstractCommand {
 				bigFiles.clear();
 			}
 			
-			return super.postVisitDirectory(dir, exc);
+			return FileVisitResult.CONTINUE;
 		}
 	}
 

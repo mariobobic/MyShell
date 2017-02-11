@@ -1,5 +1,12 @@
 package hr.fer.zemris.java.shell;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -8,6 +15,7 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,6 +23,7 @@ import java.util.regex.Pattern;
 import javax.xml.bind.DatatypeConverter;
 
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
+import hr.fer.zemris.java.shell.extracommands.ConnectCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 
 /**
@@ -75,8 +84,23 @@ public abstract class Helper {
 	}
 	
 	/**
-	 * Used for extracting arguments passed to a function. This method supports
-	 * an unlimited number of arguments, and can be inputed either with
+	 * Returns the name of the file or directory denoted by this path as a
+	 * {@code Path} object. The file name is the <em>farthest</em> element from
+	 * the root in the directory hierarchy.
+	 * <p>
+	 * If <tt>path</tt> is a root directory, it's name is returned.
+	 *
+	 * @param path path whose file name is to be returned
+	 * @return a path representing the name of the file or directory, or
+	 *         {@code null} if this path has zero elements
+	 */
+	public static Path getFileName(Path path) {
+		return path.equals(path.getRoot()) ? path : path.getFileName();
+	}
+	
+	/**
+	 * Extracts arguments from the specified string <tt>s</tt>. This method
+	 * supports an unlimited number of arguments, and can be entered either with
 	 * quotation marks or not. Returns an array of strings containing the
 	 * extracted arguments.
 	 * <p>
@@ -91,9 +115,9 @@ public abstract class Helper {
 	}
 	
 	/**
-	 * Used for extracting arguments passed to a function. This method splits
-	 * arguments until it runs out of matches or reaches the specified
-	 * <tt>limit</tt>, which ever comes first. Arguments can be inputed either
+	 * Extracts arguments from the specified string <tt>s</tt>. This method
+	 * splits arguments until it runs out of matches or reaches the specified
+	 * <tt>limit</tt>, which ever comes first. Arguments can be entered either
 	 * with quotation marks or not. Returns an array of strings containing the
 	 * extracted arguments.
 	 * 
@@ -169,7 +193,6 @@ public abstract class Helper {
 			return path;
 		
 		int namingIndex = 0;
-		String parent = path.getParent().toString();
 		String name = path.getFileName().toString();
 		String extension = "";
 		
@@ -181,7 +204,7 @@ public abstract class Helper {
 		name += "-";
 		
 		while (Files.exists(path)) {
-			path = Paths.get(parent, name + namingIndex + extension);
+			path = path.resolveSibling(name + namingIndex + extension);
 			namingIndex++;
 		}
 		return path;
@@ -460,5 +483,57 @@ public abstract class Helper {
 		
 		return DatatypeConverter.printHexBinary(md.digest(passwordBytes));
 	}
+
+	/**
+	 * Returns this computer's local IP address to which another user on the
+	 * same LAN network may connect using the {@linkplain ConnectCommand}.
+	 * Returns {@code null} if the IP address is inaccessible.
+	 * 
+	 * @return this computer's local IP address
+	 */
+	public static String getLocalIP() {
+		try {
+			Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces();
+			while (en.hasMoreElements()) {
+				NetworkInterface n = en.nextElement();
+				
+				Enumeration<InetAddress> ee = n.getInetAddresses();
+			    while (ee.hasMoreElements()) {
+			        InetAddress addr = ee.nextElement();
+			        if (!addr.isLoopbackAddress() && !addr.isLinkLocalAddress()) {
+			        	return addr.getHostAddress();
+			        }
+			    }
+			}
+		} catch (SocketException e) {}
+		return null;
+	}
+	
+	/**
+	 * Returns the external IP address of the router this computer is connected
+	 * to. Returns {@code null} if the IP address is inaccessible.
+	 * 
+	 * @return this computer's local IP address
+	 */
+	public static String getPublicIP() {
+		try {
+			URL whatismyip = new URL("http://checkip.amazonaws.com");
+			
+			BufferedReader in = null;
+			try {
+				in = new BufferedReader(
+					new InputStreamReader(whatismyip.openStream())
+				);
+				String ip = in.readLine();
+				return ip;
+			} finally {
+				if (in != null) {
+					try { in.close(); } catch (IOException e) {}
+				}
+			}
+		} catch (IOException e) {
+			return null;
+		}
+    }
 	
 }

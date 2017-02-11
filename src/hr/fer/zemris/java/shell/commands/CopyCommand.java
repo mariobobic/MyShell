@@ -84,7 +84,7 @@ public class CopyCommand extends AbstractCommand {
 	 * @param dst the path to destination file or directory
 	 * @param env an environment
 	 */
-	private void copyFile(Path src, Path dst, Environment env) {
+	private static void copyFile(Path src, Path dst, Environment env) {
 		if (!Files.exists(src)) {
 			writeln(env, "The system cannot find the file specified.");
 			return;
@@ -115,7 +115,7 @@ public class CopyCommand extends AbstractCommand {
 	 * @param dst the destination directory
 	 * @param env an environment
 	 */
-	private void createNewFile(Path src, Path dst, Environment env) {
+	private static void createNewFile(Path src, Path dst, Environment env) {
 		if (Files.exists(dst)) {
 			if (!Helper.promptConfirm(env, "File " + dst + " already exists. Overwrite?")) {
 				writeln(env, "Cancelled.");
