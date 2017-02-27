@@ -8,15 +8,58 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import hr.fer.zemris.java.shell.commands.*;
-import hr.fer.zemris.java.shell.extracommands.*;
-import hr.fer.zemris.java.shell.interfaces.*;
+import hr.fer.zemris.java.shell.commands.AbstractCommand;
+import hr.fer.zemris.java.shell.commands.listing.CountCommand;
+import hr.fer.zemris.java.shell.commands.listing.DiffCommand;
+import hr.fer.zemris.java.shell.commands.listing.FilterCommand;
+import hr.fer.zemris.java.shell.commands.listing.FindCommand;
+import hr.fer.zemris.java.shell.commands.listing.ShowCommand;
+import hr.fer.zemris.java.shell.commands.listing.TreeCommand;
+import hr.fer.zemris.java.shell.commands.network.ConnectCommand;
+import hr.fer.zemris.java.shell.commands.network.DownloadCommand;
+import hr.fer.zemris.java.shell.commands.network.HostCommand;
+import hr.fer.zemris.java.shell.commands.network.HttpServerCommand;
+import hr.fer.zemris.java.shell.commands.network.PingCommand;
+import hr.fer.zemris.java.shell.commands.reading.CatCommand;
+import hr.fer.zemris.java.shell.commands.reading.HexdumpCommand;
+import hr.fer.zemris.java.shell.commands.system.CdCommand;
+import hr.fer.zemris.java.shell.commands.system.CharsetsCommand;
+import hr.fer.zemris.java.shell.commands.system.ClearCommand;
+import hr.fer.zemris.java.shell.commands.system.DateCommand;
+import hr.fer.zemris.java.shell.commands.system.DirCommand;
+import hr.fer.zemris.java.shell.commands.system.EditCommand;
+import hr.fer.zemris.java.shell.commands.system.ExitCommand;
+import hr.fer.zemris.java.shell.commands.system.HelpCommand;
+import hr.fer.zemris.java.shell.commands.system.LsCommand;
+import hr.fer.zemris.java.shell.commands.system.OpenCommand;
+import hr.fer.zemris.java.shell.commands.system.PwdCommand;
+import hr.fer.zemris.java.shell.commands.system.SymbolCommand;
+import hr.fer.zemris.java.shell.commands.writing.ByteShuffleCommand;
+import hr.fer.zemris.java.shell.commands.writing.CopyCommand;
+import hr.fer.zemris.java.shell.commands.writing.DecryptCommand;
+import hr.fer.zemris.java.shell.commands.writing.DumpCommand;
+import hr.fer.zemris.java.shell.commands.writing.EncryptCommand;
+import hr.fer.zemris.java.shell.commands.writing.ExtractCommand;
+import hr.fer.zemris.java.shell.commands.writing.MkdirCommand;
+import hr.fer.zemris.java.shell.commands.writing.MoveCommand;
+import hr.fer.zemris.java.shell.commands.writing.NameShuffleCommand;
+import hr.fer.zemris.java.shell.commands.writing.RenameAllCommand;
+import hr.fer.zemris.java.shell.commands.writing.ReplaceCommand;
+import hr.fer.zemris.java.shell.commands.writing.RmCommand;
+import hr.fer.zemris.java.shell.commands.writing.RmdirCommand;
+import hr.fer.zemris.java.shell.commands.writing.TouchCommand;
+import hr.fer.zemris.java.shell.interfaces.Connection;
+import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.interfaces.ShellCommand;
+import hr.fer.zemris.java.shell.utility.Crypto;
+import hr.fer.zemris.java.shell.utility.Helper;
 
 /**
  * MyShell, this is where the magic happens. Scans the user's input and searches
@@ -31,7 +74,7 @@ import hr.fer.zemris.java.shell.interfaces.*;
  *
  * @author Mario Bobic
  * @author Marko Čupić
- * @version PC
+ * @version PC 20:00
  */
 public class MyShell {
 	
@@ -41,46 +84,56 @@ public class MyShell {
 	static {
 		commands = new HashMap<>();
 		ShellCommand[] cc = {
-				new CatCommand(),
-				new CharsetsCommand(),
-				new CopyCommand(),
-				new ExitCommand(),
-				new HelpCommand(),
-				new HexdumpCommand(),
-				new LsCommand(),
-				new MkdirCommand(),
-				new SymbolCommand(),
-				new TreeCommand(),
-
-				new ByteShuffleCommand(),
-				new CdCommand(),
-				new ClearCommand(),
+				/* Listing */
 				new CountCommand(),
-				new DateCommand(),
-				new DecryptCommand(),
 				new DiffCommand(),
-				new DirCommand(),
-				new EncryptCommand(),
-				new DumpCommand(),
-				new ExtractCommand(),
 				new FilterCommand(),
 				new FindCommand(),
-				new MoveCommand(),
-				new NameShuffleCommand(),
+				new ShowCommand(),
+				new TreeCommand(),
+				
+				/* Network */
+				new ConnectCommand(),
+				new DownloadCommand(),
+				new HostCommand(),
+				new HttpServerCommand(),
+				new PingCommand(),
+				
+				/* Reading */
+				new CatCommand(),
+				new HexdumpCommand(),
+				
+				/* System */
+				new CdCommand(),
+				new CharsetsCommand(),
+				new ClearCommand(),
+				new DateCommand(),
+				new DirCommand(),
+				new EditCommand(),
+				new ExitCommand(),
+				new HelpCommand(),
+				new LsCommand(),
 				new OpenCommand(),
 				new PwdCommand(),
+				new SymbolCommand(),
+				
+				/* Writing */
+				new ByteShuffleCommand(),
+				new CopyCommand(),
+				new DecryptCommand(),
+				new DumpCommand(),
+				new EncryptCommand(),
+				new ExtractCommand(),
+				new MkdirCommand(),
+				new MoveCommand(),
+				new NameShuffleCommand(),
 				new RenameAllCommand(),
 				new ReplaceCommand(),
 				new RmCommand(),
 				new RmdirCommand(),
-				new ShowCommand(),
 				new TouchCommand(),
-				
-				new HostCommand(),
-				new ConnectCommand(),
-				new DownloadCommand(),
-				new HttpServerCommand(),
 		};
+		
 		for (ShellCommand c : cc) {
 			commands.put(c.getCommandName(), c);
 		}
@@ -88,6 +141,9 @@ public class MyShell {
 	
 	/** An environment used by MyShell. */
 	private static EnvironmentImpl environment = new EnvironmentImpl();
+
+	/** Writer saved before redirecting output to a file. */
+	private static BufferedWriter lastWriter;
 	
 	/**
 	 * Program entry point.
@@ -110,7 +166,7 @@ public class MyShell {
 			
 			String cmd;
 			String arg;
-			int splitter = indexOfWhitespace(line);
+			int splitter = Helper.indexOfWhitespace(line);
 			if (splitter != -1) {
 				cmd = line.substring(0, splitter).toUpperCase();
 				arg = line.substring(splitter+1).trim();
@@ -125,30 +181,32 @@ public class MyShell {
 				continue;
 			}
 			
-			CommandStatus executionStatus;
+			// If this machine is a host, write the command to its standard output
+			if (environment.isConnected()) {
+				System.out.println(""+path + environment.promptSymbol + " " + line);
+			}
+			
 			try {
-				// If this machine is a host, write the command to its standard output
-				if (environment.isConnected()) {
-					System.out.println(""+path + environment.promptSymbol + " " + line);
+				arg = checkEnvironment(arg);
+				CommandStatus executionStatus = shellCommand.execute(environment, arg);
+				restoreEnvironment();
+				if (executionStatus == CommandStatus.TERMINATE) {
+					break;
 				}
-				executionStatus = shellCommand.execute(environment, arg);
 			} catch (RuntimeException critical) {
 				System.err.println("A critical error occured: " + critical.getMessage());
 				System.err.println("Stack trace:");
 				critical.printStackTrace();
 				return;
 			}
-			
-			if (executionStatus == CommandStatus.TERMINATE) {
-				break;
-			} else {
-				environment.writeln("");
-			}
+
+			// Increase readability
+			environment.writeln("");
 		}
 		
 		environment.writeln("Thank you for using this shell. Goodbye!");
 	}
-	
+
 	/**
 	 * Reads the input from the current {@link EnvironmentImpl#reader reader}
 	 * considering the {@link EnvironmentImpl#morelinesSymbol morelinesSymbol}
@@ -166,10 +224,9 @@ public class MyShell {
 		if (line == null) {
 			environment.writeln("Input unavailable. Closing MyShell...");
 			System.exit(-1);
-		} else {
-			line = line.trim();
 		}
 		
+		line = line.trim();
 		while (line.endsWith(" " + environment.morelinesSymbol)) {
 			line = line.substring(0, line.length()-1); // remove the symbol
 			
@@ -181,20 +238,62 @@ public class MyShell {
 	}
 	
 	/**
-	 * Returns the index within the specified string <tt>str</tt> of the first
-	 * occurrence of a whitespace character determined by the
-	 * {@linkplain Character#isWhitespace(char)} method.
+	 * Checks if the <tt>input</tt> string contains an output redirect to a
+	 * file. If there is no &gt; symbol in the input, the same input is
+	 * returned. Else the file path is parsed and it is attempted to redirect
+	 * the shell output stream to the file. This method fails if the specified
+	 * path is already a directory. If a file already exists on the specified
+	 * path, it is prompted to overwrite it.
 	 * 
-	 * @param str string whose index of the first whitespace is to be returned
-	 * @return the index of the first occurrence of a whitespace character
+	 * @param input input to be checked for file redirection
+	 * @return input without the file redirection substring
+	 * @throws IOException if an I/O error occurs
 	 */
-	private static int indexOfWhitespace(String str) {
-		for (int i = 0, n = str.length(); i < n; i++) {
-			if (Character.isWhitespace(str.charAt(i))) {
-				return i;
+	private static String checkEnvironment(String input) throws IOException {
+		if (input == null) {
+			return input;
+		}
+		
+		int index = input.lastIndexOf(">");
+		if (index == -1) {
+			return input;
+		}
+		
+		/* Extract the output file from the given input string. */
+		String output = input.substring(0, index).trim();
+		String argument = input.substring(index+1).trim();
+		Path outputFile = Helper.resolveAbsolutePath(environment, argument);
+		
+		/* Check conditions. */
+		if (Files.isDirectory(outputFile)) {
+			environment.writeln("Specified path is a directory!");
+			return output;
+		}
+		
+		if (Files.exists(outputFile)) {
+			boolean overwrite = AbstractCommand.promptConfirm(environment, "File " + outputFile + " already exists. Overwrite?");
+			if (!overwrite) {
+				environment.writeln("Cancelled.");
+				return output;
 			}
 		}
-		return -1;
+		
+		/* Save the out writer and redirect the output stream. */
+		lastWriter = environment.writer;
+		environment.writer = Files.newBufferedWriter(outputFile);
+		
+		return output;
+	}
+
+	/**
+	 * Restores the environment to the state before output stream to file
+	 * redirection.
+	 */
+	private static void restoreEnvironment() {
+		if (lastWriter != null) {
+			environment.writer = lastWriter;
+			lastWriter = null;
+		}
 	}
 	
 	/**
@@ -243,6 +342,9 @@ public class MyShell {
 		
 		@Override
 		public synchronized void write(String s) throws IOException {
+			if (s == null) {
+				s = "null";
+			}
 			writer.write(s);
 			writer.flush();
 		}

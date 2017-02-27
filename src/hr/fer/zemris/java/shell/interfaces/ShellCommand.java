@@ -12,16 +12,16 @@ import hr.fer.zemris.java.shell.CommandStatus;
 public interface ShellCommand {
 
 	/**
-	 * Returns the name of the Shell command.
+	 * Returns the name of this Shell command.
 	 * 
-	 * @return the name of the Shell command
+	 * @return the name of this Shell command
 	 */
 	public String getCommandName();
 	
 	/**
-	 * Returns the description of the Shell command.
+	 * Returns the description of this Shell command.
 	 * 
-	 * @return the description of the Shell command
+	 * @return the description of this Shell command
 	 */
 	public List<String> getCommandDescription();
 	

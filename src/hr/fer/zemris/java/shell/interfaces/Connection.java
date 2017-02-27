@@ -3,7 +3,7 @@ package hr.fer.zemris.java.shell.interfaces;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import hr.fer.zemris.java.shell.Crypto;
+import hr.fer.zemris.java.shell.utility.Crypto;
 
 /**
  * This interface represents a remote connection between two machines. One

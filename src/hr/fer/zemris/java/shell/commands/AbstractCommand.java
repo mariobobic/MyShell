@@ -3,12 +3,19 @@ package hr.fer.zemris.java.shell.commands;
 import java.io.IOException;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.commands.system.HelpCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.interfaces.ShellCommand;
+import hr.fer.zemris.java.shell.utility.CommandArguments;
+import hr.fer.zemris.java.shell.utility.FlagDescription;
+import hr.fer.zemris.java.shell.utility.InvalidFlagException;
+import hr.fer.zemris.java.shell.utility.SyntaxException;
 
 /**
  * Used as a superclass for other, usable Shell commands.
@@ -17,44 +24,96 @@ import hr.fer.zemris.java.shell.interfaces.ShellCommand;
  */
 public abstract class AbstractCommand implements ShellCommand {
 	
-	/** Name of the Shell command. */
+	/** Name of this Shell command. */
 	private String commandName;
-	/** Description of the Shell command. */
+	/** Description of this Shell command. */
 	private List<String> commandDescription;
+	/** Flag descriptions of this Shell command. */
+	@SuppressWarnings("unused")
+	private List<FlagDescription> flagDescriptions;
+	
+	/** Command arguments and flags reader. */
+	protected CommandArguments commandArguments;
 
 	/**
-	 * Generates a new command of a type extending {@code AbstractCommand}.
+	 * Constructs a new command of a type extending {@code AbstractCommand} with
+	 * an empty list of flag descriptions.
 	 * 
-	 * @param commandName name of the Shell command
-	 * @param commandDescription description of the Shell command
+	 * @param commandName name of this Shell command
+	 * @param commandDescription description of this Shell command
 	 */
 	protected AbstractCommand(String commandName, List<String> commandDescription) {
-		this.commandName = commandName;
-		this.commandDescription = commandDescription;
+		this(commandName, commandDescription, new ArrayList<>());
 	}
 	
 	/**
-	 * Writes out the syntax error of a command. Also shows what the command
-	 * expected as arguments.
+	 * Constructs a new command of a type extending {@code AbstractCommand}.
 	 * 
-	 * @param env an environment
-	 * @param syntax the expected syntax
+	 * @param commandName name of this Shell command
+	 * @param commandDescription description of this Shell command
+	 * @param flagDescriptions flag descriptions of this Shell command
 	 */
-	protected static final void printSyntaxError(Environment env, String syntax) {
-		writeln(env, "The syntax of the command is incorrect. Expected: " + syntax);
+	protected AbstractCommand(String commandName, List<String> commandDescription, List<FlagDescription> flagDescriptions) {
+		this.commandArguments = new CommandArguments();
+		
+		this.commandName = commandName;
+		this.flagDescriptions = flagDescriptions;
+		this.commandDescription = mergeDescriptions(commandDescription, flagDescriptions);
+		
+		// Add the help flag support
+		this.commandArguments.addFlagDefinition("help", false);
 	}
 	
 	/**
-	 * Reads the user's input from the specified enviroment <tt>env</tt> and
-	 * returns it as a string. This method calls the
-	 * {@link Environment#readLine() env.readLine()} method and throws a
-	 * {@linkplain RuntimeException} if an I/O exception occurs.
+	 * Modifies a list of strings where each string represents a new line of
+	 * this command's description. Includes descriptions of flags if this
+	 * command contains any.
+	 * 
+	 * @param commandDescription description of this Shell command
+	 * @param flagDescriptions flag descriptions of this Shell command
+	 * @return description of the command with flags descriptions included
+	 */
+	private List<String> mergeDescriptions(List<String> commandDescription, List<FlagDescription> flagDescriptions) {
+		String usage = String.format("Usage: %s %s%s",
+			getCommandName().toLowerCase(),
+			flagDescriptions.isEmpty() ? "" : flagDescriptions+" ",
+			getCommandSyntax()
+		);
+		
+		List<String> desc = new ArrayList<>(commandDescription);
+		desc.add(usage);
+		
+		if (!flagDescriptions.isEmpty()) {
+			/* Get the maximum flag header length. */
+			int len = flagDescriptions.stream()
+				.map(FlagDescription::getHeader)
+				.mapToInt(String::length)
+				.max()
+				.getAsInt();
+			
+			/* For each flag, add its header and description. */
+			desc.add("");
+			desc.add("Flags:");
+			flagDescriptions.stream().sorted().forEach(flag -> {
+				desc.add(String.format("   %-"+len+"s  %s", flag.getHeader(), flag.description));
+			});
+		}
+		
+		return Collections.unmodifiableList(desc);
+	}
+	
+	/**
+	 * Reads the user's input from the specified environment <tt>env</tt> and
+	 * returns it as a string.
+	 * <p>
+	 * This method calls the {@link Environment#readLine() env.readLine()}
+	 * method and throws a {@code RuntimeException} if an I/O exception occurs.
 	 * 
 	 * @param env environment from where to read
 	 * @return the user's input
 	 * @throws RuntimeException if an I/O exception occurs
 	 */
-	public static final String readLine(Environment env) {
+	protected static final String readLine(Environment env) {
 		try {
 			return env.readLine();
 		} catch (IOException e) {
@@ -64,15 +123,16 @@ public abstract class AbstractCommand implements ShellCommand {
 	
 	/**
 	 * Writes the specified string <tt>s</tt> to the specified environment
-	 * <tt>env</tt> without a newline separator. This method calls the
-	 * {@link Environment#write(String) env.write(String)} method and throws a
-	 * {@linkplain RuntimeException} if an I/O exception occurs.
+	 * <tt>env</tt> without a newline separator.
+	 * <p>
+	 * This method calls the {@link Environment#write(String) env.write(String)}
+	 * method and throws a {@code RuntimeException} if an I/O exception occurs.
 	 * 
 	 * @param env environment where to write
 	 * @param s string to be written to the environment
 	 * @throws RuntimeException if an I/O exception occurs
 	 */
-	public static final void write(Environment env, String s) {
+	protected static final void write(Environment env, String s) {
 		try {
 			env.write(s);
 		} catch (IOException e) {
@@ -82,19 +142,89 @@ public abstract class AbstractCommand implements ShellCommand {
 	
 	/**
 	 * Writes the specified string <tt>s</tt> to the specified environment
-	 * <tt>env</tt> with a newline separator. This method calls the
-	 * {@link Environment#writeln(String) env.writeln(String)} method and throws a
-	 * {@linkplain RuntimeException} if an I/O exception occurs.
+	 * <tt>env</tt> with a newline separator.
+	 * <p>
+	 * This method calls the {@link Environment#writeln(String)
+	 * env.writeln(String)} method and throws a {@code RuntimeException} if an
+	 * I/O exception occurs.
 	 * 
 	 * @param env environment where to write
 	 * @param s string to be written to the environment
 	 * @throws RuntimeException if an I/O exception occurs
 	 */
-	public static final void writeln(Environment env, String s) {
+	protected static final void writeln(Environment env, String s) {
 		try {
 			env.writeln(s);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
+		}
+	}
+	
+	/**
+	 * Writes a formatted string to the specified environment <tt>env</tt> using
+	 * the specified format string and arguments. If there are more arguments
+	 * than format specifiers, the extra arguments are ignored. The number of
+	 * arguments is variable and may be zero.
+	 * <p>
+	 * This method calls the {@link Environment#write(String) env.write(String)}
+	 * method with a string returned by the
+	 * {@link String#format(String, Object...)} method. Throws a
+	 * {@code RuntimeException} if an I/O exception occurs.
+	 * 
+	 * @param env environment where to write
+	 * @param format format string to be written
+	 * @param args arguments referenced by the format specifiers in the format
+	 *        string
+	 * @throws RuntimeException if an I/O exception occurs
+	 */
+	protected static final void format(Environment env, String format, Object... args) {
+		try {
+			env.write(String.format(format, args));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	/**
+	 * Writes a formatted string to the specified environment <tt>env</tt> using
+	 * the specified format string and arguments <strong>followed by a newline
+	 * separator</strong>.
+	 * 
+	 * @param env environment where to write
+	 * @param format format string to be written
+	 * @param args arguments referenced by the format specifiers in the format
+	 *        string
+	 * @throws RuntimeException if an I/O exception occurs
+	 * @see #format(Environment, String, Object...)
+	 */
+	protected static final void formatln(Environment env, String format, Object... args) {
+		format(env, format+"%n", args);
+	}
+
+	/**
+	 * Prompts the user to confirm an action. The user is expected to input
+	 * <tt>Y</tt> as a <i>yes</i> or <tt>N</tt> as a <i>no</i>. Returns true if
+	 * the user answered yes, false if no.
+	 * <p>
+	 * This method blocks until the user answers yes or no.
+	 * 
+	 * @param env an environment
+	 * @param message message to be written out before prompting
+	 * @return true if the user answered yes, false if no
+	 */
+	public static boolean promptConfirm(Environment env, String message) {
+		write(env, message + " (Y/N) ");
+		while (true) {
+			String line = readLine(env);
+			
+			if (line.equalsIgnoreCase("Y")) {
+				return true;
+			} else if (line.equalsIgnoreCase("N")) {
+				return false;
+			} else {
+				write(env, "Please answer Y / N: ");
+				continue;
+			}
 		}
 	}
 	
@@ -121,6 +251,17 @@ public abstract class AbstractCommand implements ShellCommand {
 		int num = env.mark(path);
 		writeln(env, " <" + num + ">");
 	}
+	
+	/**
+	 * Writes out a syntax error of this command, showing what the command
+	 * actually expected as input arguments.
+	 * 
+	 * @param env an environment
+	 */
+	protected final void printSyntaxError(Environment env) {
+		formatln(env, "The syntax of the command is incorrect. Expected: %s %s", 
+			getCommandName().toLowerCase(), getCommandSyntax());
+	}
 
 	@Override
 	public String getCommandName() {
@@ -129,21 +270,54 @@ public abstract class AbstractCommand implements ShellCommand {
 
 	@Override
 	public List<String> getCommandDescription() {
-		return Collections.unmodifiableList(commandDescription);
+		return commandDescription;
+	}
+	
+	/**
+	 * Returns the syntax for proper usage of this Shell command.
+	 * 
+	 * @return the syntax of this Shell command
+	 */
+	protected abstract String getCommandSyntax();
+	
+	/**
+	 * Compiles the specified input string <tt>s</tt> using this command's flags
+	 * and returns a string cleared of flags. For more information, check the
+	 * {@link CommandArguments#compile(String)} method.
+	 * 
+	 * @param env an environment
+	 * @param s input string possibly containing flags
+	 * @return the string <tt>s</tt> cleared of flags
+	 */
+	protected String compileFlags(Environment env, String s) {
+		return commandArguments.compile(s);
 	}
 
 	@Override
 	public CommandStatus execute(Environment env, String s) {
+		CommandStatus status = CommandStatus.CONTINUE;
+		
 		try {
-			return execute0(env, s);
+			s = compileFlags(env, s);
+			
+			if (commandArguments.containsFlag("help")) {
+				HelpCommand.printFullDescription(env, this);
+			} else {
+				status = execute0(env, s);
+			}
 		} catch (IOException e) {
 			writeln(env, "An I/O error occured: ");
 			writeln(env, e.getMessage());
 		} catch (InvalidPathException e) {
 			writeln(env, "Invalid path: " + e.getInput());
+		} catch (SyntaxException e) {
+			printSyntaxError(env);
+		} catch (InvalidFlagException e) {
+			writeln(env, e.getMessage());
 		}
 		
-		return CommandStatus.CONTINUE;
+		commandArguments.clearFlags();
+		return status;
 	}
 	
 	/**
@@ -156,6 +330,7 @@ public abstract class AbstractCommand implements ShellCommand {
 	 * @return the status of this command
 	 * @throws IOException if an I/O error occurs
 	 */
+	// TODO throw an exception when path is not a directory, readable, a file etc.?
 	protected abstract CommandStatus execute0(Environment env, String s) throws IOException;
 
 	@Override
@@ -175,12 +350,7 @@ public abstract class AbstractCommand implements ShellCommand {
 		if (!(obj instanceof AbstractCommand))
 			return false;
 		AbstractCommand other = (AbstractCommand) obj;
-		if (commandName == null) {
-			if (other.commandName != null)
-				return false;
-		} else if (!commandName.equals(other.commandName))
-			return false;
-		return true;
+		return Objects.equals(commandName, other.commandName);
 	}
 
 }
