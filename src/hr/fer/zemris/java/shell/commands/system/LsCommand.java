@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 import hr.fer.zemris.java.shell.CommandStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
 
 /**
@@ -43,6 +44,7 @@ public class LsCommand extends AbstractCommand {
 	/** Date format used for formatting file date attribute. */
 	private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	
+	/* Flags */
 	/** Indicates if file sizes should be printed in human readable byte count. */
 	private boolean humanReadable;
 	
@@ -50,7 +52,8 @@ public class LsCommand extends AbstractCommand {
 	 * Constructs a new command object of type {@code LsCommand}.
 	 */
 	public LsCommand() {
-		super("LS", createCommandDescription());
+		super("LS", createCommandDescription(), createFlagDescriptions());
+		commandArguments.addFlagDefinition("h", false);
 	}
 	
 	@Override
@@ -74,33 +77,42 @@ public class LsCommand extends AbstractCommand {
 		desc.add("Use ls to list contents of the current directory.");
 		return desc;
 	}
+	
+	/**
+	 * Creates a list of {@code FlagDescription} objects where each entry
+	 * describes the available flags of this command. This method is generates
+	 * description exclusively for the command that this class represents.
+	 * 
+	 * @return a list of strings that represents description
+	 */
+	private static List<FlagDescription> createFlagDescriptions() {
+		List<FlagDescription> desc = new ArrayList<>();
+		desc.add(new FlagDescription("h", null, null, "Print human readable sizes (e.g. 1kiB, 256MiB)."));
+		return desc;
+	}
+	
+	@Override
+	protected String compileFlags(Environment env, String s) {
+		/* Initialize default values. */
+		humanReadable = false;
+
+		/* Compile! */
+		s = commandArguments.compile(s);
+		
+		/* Replace default values with flag values, if any. */
+		if (commandArguments.containsFlag("h")) {
+			humanReadable = true;
+		}
+
+		return super.compileFlags(env, s);
+	}
 
 	@Override
 	protected CommandStatus execute0(Environment env, String s) throws IOException {
-		String[] args = Helper.extractArguments(s, 2);
-
-		Path dir = env.getCurrentPath();
-		humanReadable = false;
-		if (args.length == 1) {
-			if ("-h".equals(args[0])) humanReadable = true;
-			else dir = Helper.resolveAbsolutePath(env, args[0]);
-		} else if (args.length == 2) {
-			if ("-h".equals(args[0])) {
-				humanReadable = true;
-				dir = Helper.resolveAbsolutePath(env, args[1]);
-			} else {
-				dir = Helper.resolveAbsolutePath(env, s);
-			}
-		}
+		Path dir = s == null ?
+			env.getCurrentPath() : Helper.resolveAbsolutePath(env, s);
 		
-		if (!Files.exists(dir)) {
-			writeln(env, "The system cannot find the path specified: " + dir);
-			return CommandStatus.CONTINUE;
-		}
-		if (!Files.isDirectory(dir)) {
-			writeln(env, "The specified path must be a directory.");
-			return CommandStatus.CONTINUE;
-		}
+		Helper.requireDirectory(dir);
 		
 		/* Clear previously marked paths. */
 		env.clearMarks();

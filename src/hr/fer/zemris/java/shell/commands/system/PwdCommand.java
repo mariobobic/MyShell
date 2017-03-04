@@ -41,7 +41,7 @@ public class PwdCommand extends AbstractCommand {
 
 	@Override
 	protected CommandStatus execute0(Environment env, String s) {
-		writeln(env, env.getCurrentPath().toString());
+		writeln(env, env.getCurrentPath());
 		return CommandStatus.CONTINUE;
 	}
 

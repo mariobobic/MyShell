@@ -7,6 +7,7 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -159,6 +160,101 @@ public abstract class Helper {
 			path = path.resolveSibling(name + namingIndex + extension);
 			namingIndex++;
 		}
+		return path;
+	}
+	
+	/**
+	 * Returns the file name extension of the specified <tt>path</tt>. Extension
+	 * is considered as the last period symbol in the file name that may be
+	 * followed by sequence of characters.
+	 * <p>
+	 * If the specified path does not have an extension, or in other words if
+	 * its file name does not contain a period symbol, the extension is
+	 * considered non-existent and an empty string is returned.
+	 * <p>
+	 * If the file name ends with a period symbol, the period is returned as an
+	 * extension.
+	 * 
+	 * @param path path whose extension is to be determined
+	 * @return the file name extension of the specified path
+	 */
+	public static String extension(Path path) {
+		String name = path.getFileName().toString();
+		String extension = "";
+		
+		int dotIndex = name.lastIndexOf('.');
+		if (dotIndex > 0) {
+			extension = name.substring(dotIndex);
+		}
+		
+		return extension;
+	}
+	
+	/**
+	 * Checks that the specified <tt>path</tt> exists . This method is designed
+	 * primarily for doing parameter validation in methods and constructors, as
+	 * demonstrated below:
+	 * <blockquote><pre>
+     * public Foo(Path path) {
+     *     this.path = Helper.requireExists(path);
+     * }
+     * </pre></blockquote>
+	 *
+	 * @param path path to be checked
+	 * @return <tt>path</tt> if it exists
+	 * @throws IllegalPathException if path does not exist
+	 */
+	public static Path requireExists(Path path) {
+		if (!Files.exists(path)) {
+			throw new IllegalPathException("The system cannot find the path specified: " + path);
+		}
+		
+		return path;
+	}
+	
+	/**
+	 * Checks that the specified <tt>path</tt> exists and is a directory. This
+	 * method is designed primarily for doing parameter validation in methods
+	 * and constructors, as demonstrated below:
+	 * <blockquote><pre>
+     * public Foo(Path path) {
+     *     this.path = Helper.requireDirectory(path);
+     * }
+     * </pre></blockquote>
+	 *
+	 * @param path path to be checked
+	 * @return <tt>path</tt> if it exists and is a directory
+	 * @throws IllegalPathException if path does not exist or is not a directory
+	 */
+	public static Path requireDirectory(Path path) {
+		requireExists(path);
+		if (!Files.isDirectory(path)) {
+			throw new IllegalPathException("The specified path must be a directory: " + path);
+		}
+		
+		return path;
+	}
+	
+	/**
+	 * Checks that the specified <tt>path</tt> exists and is a regular file.
+	 * This method is designed primarily for doing parameter validation in
+	 * methods and constructors, as demonstrated below:
+	 * <blockquote><pre>
+     * public Foo(Path path) {
+     *     this.path = Helper.requireFile(path);
+     * }
+     * </pre></blockquote>
+	 *
+	 * @param path path to be checked
+	 * @return <tt>path</tt> if it exists and is a regular file
+	 * @throws IllegalPathException if path does not exist or is not a file
+	 */
+	public static Path requireFile(Path path) {
+		requireExists(path);
+		if (!Files.isRegularFile(path)) {
+			throw new IllegalPathException("The specified path must be a file: " + path);
+		}
+		
 		return path;
 	}
 	
@@ -484,6 +580,22 @@ public abstract class Helper {
 	}
 	
 	/**
+	 * Returns a charset object for the named charset, or <tt>null</tt> if a
+	 * charset with the specified <tt>name<tt> can not be resolved.
+	 * 
+	 * @param name name of the requested charset; may be either a canonical name
+	 *        or an alias
+	 * @return a charset object for the named charset
+	 */
+	public static Charset resolveCharset(String name) {
+		try {
+			return Charset.forName(name);
+		} catch (IllegalArgumentException e) {
+			return null;
+		}
+	}
+	
+	/**
 	 * Returns true if string <tt>s</tt> can be parsed as an <tt>Integer</tt>
 	 * using the {@linkplain Integer#parseInt(String)} method. False otherwise.
 	 * 
@@ -599,24 +711,18 @@ public abstract class Helper {
 	 * Returns the external IP address of the router this computer is connected
 	 * to. Returns {@code null} if the IP address is inaccessible.
 	 * 
-	 * @return this computer's local IP address or <tt>null</tt>
+	 * @return this computer's public IP address or <tt>null</tt>
 	 */
 	// TODO Any better way of obtaining public IP address?
 	public static String getPublicIP() {
 		try {
 			URL whatismyip = new URL("http://checkip.amazonaws.com");
 			
-			BufferedReader in = null;
-			try {
-				in = new BufferedReader(
+			try (BufferedReader in = new BufferedReader(
 					new InputStreamReader(whatismyip.openStream())
-				);
+			)) {
 				String ip = in.readLine();
 				return ip;
-			} finally {
-				if (in != null) {
-					try { in.close(); } catch (IOException e) {}
-				}
 			}
 		} catch (IOException e) {
 			return null;

@@ -14,6 +14,7 @@ import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.interfaces.ShellCommand;
 import hr.fer.zemris.java.shell.utility.CommandArguments;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
+import hr.fer.zemris.java.shell.utility.IllegalPathException;
 import hr.fer.zemris.java.shell.utility.InvalidFlagException;
 import hr.fer.zemris.java.shell.utility.SyntaxException;
 
@@ -73,6 +74,7 @@ public abstract class AbstractCommand implements ShellCommand {
 	 * @param flagDescriptions flag descriptions of this Shell command
 	 * @return description of the command with flags descriptions included
 	 */
+	// TODO put command descriptions for all commands in a single .properties file?
 	private List<String> mergeDescriptions(List<String> commandDescription, List<FlagDescription> flagDescriptions) {
 		String usage = String.format("Usage: %s %s%s",
 			getCommandName().toLowerCase(),
@@ -129,12 +131,12 @@ public abstract class AbstractCommand implements ShellCommand {
 	 * method and throws a {@code RuntimeException} if an I/O exception occurs.
 	 * 
 	 * @param env environment where to write
-	 * @param s string to be written to the environment
+	 * @param obj object to be written to the environment
 	 * @throws RuntimeException if an I/O exception occurs
 	 */
-	protected static final void write(Environment env, String s) {
+	protected static final void write(Environment env, Object obj) {
 		try {
-			env.write(s);
+			env.write(String.valueOf(obj));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -149,12 +151,12 @@ public abstract class AbstractCommand implements ShellCommand {
 	 * I/O exception occurs.
 	 * 
 	 * @param env environment where to write
-	 * @param s string to be written to the environment
+	 * @param obj object to be written to the environment
 	 * @throws RuntimeException if an I/O exception occurs
 	 */
-	protected static final void writeln(Environment env, String s) {
+	protected static final void writeln(Environment env, Object obj) {
 		try {
-			env.writeln(s);
+			env.writeln(String.valueOf(obj));
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -236,7 +238,7 @@ public abstract class AbstractCommand implements ShellCommand {
 	 * @param path path to be marked and printed out
 	 */
 	protected static final void markAndPrintPath(Environment env, Path path) {
-		write(env, path.toString());
+		write(env, path);
 		markAndPrintNumber(env, path);
 	}
 	
@@ -301,18 +303,21 @@ public abstract class AbstractCommand implements ShellCommand {
 			s = compileFlags(env, s);
 			
 			if (commandArguments.containsFlag("help")) {
+				// TODO Don't access HelpCommand from AbstractCommand!
 				HelpCommand.printFullDescription(env, this);
 			} else {
 				status = execute0(env, s);
 			}
 		} catch (IOException e) {
-			writeln(env, "An I/O error occured: ");
+			writeln(env, "An I/O error occured:");
 			writeln(env, e.getMessage());
 		} catch (InvalidPathException e) {
 			writeln(env, "Invalid path: " + e.getInput());
 		} catch (SyntaxException e) {
 			printSyntaxError(env);
 		} catch (InvalidFlagException e) {
+			writeln(env, e.getMessage());
+		} catch (IllegalPathException e) {
 			writeln(env, e.getMessage());
 		}
 		
@@ -329,8 +334,16 @@ public abstract class AbstractCommand implements ShellCommand {
 	 * @param s arguments
 	 * @return the status of this command
 	 * @throws IOException if an I/O error occurs
+	 * @throws InvalidPathException if a path string cannot be converted to a
+	 *         {@code Path}
+	 * @throws SyntaxException if the argument <tt>s</tt> has an invalid syntax
+	 * @throws InvalidFlagException if a flag found in the argument <tt>s</tt>
+	 *         was not defined, or there are multiple one-letter flags where at
+	 *         least one receives an argument or there is no argument provided
+	 *         for a flag that is defined to require an argument
+	 * @throws IllegalPathException if a path on the file system is required but
+	 *         does not exist or a file is required but directory is given etc.
 	 */
-	// TODO throw an exception when path is not a directory, readable, a file etc.?
 	protected abstract CommandStatus execute0(Environment env, String s) throws IOException;
 
 	@Override

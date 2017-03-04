@@ -9,6 +9,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -75,10 +77,8 @@ public class HelperTests {
 	
 	@Test
 	public void testIsHidden() throws IOException {
-		Path hiddenFile = Paths.get("./hidden.txt");
-		
 		// Create it and set to hidden
-		Files.createFile(hiddenFile);
+		Path hiddenFile = Files.createTempFile(null, null);
 		Files.setAttribute(hiddenFile, "dos:hidden", Boolean.TRUE);
 		
 		assertTrue(Helper.isHidden(hiddenFile));
@@ -88,10 +88,23 @@ public class HelperTests {
 	}
 	
 	@Test
-	public void testFirstAvailable() throws IOException {
+	public void testFirstAvailable1() throws IOException {
 		// Create a file
-		Path file = Paths.get("./file.txt").toAbsolutePath().normalize();
-		Files.createFile(file);
+		Path file = Files.createTempFile(null, ".txt");
+		
+		// Get the first available file (should not be 'file')
+		Path firstAvailable = Helper.firstAvailable(file).toAbsolutePath();
+		assertTrue(!file.equals(firstAvailable));
+		assertTrue(firstAvailable.toString().endsWith(".txt"));
+		
+		// Delete the file afterwards
+		Files.delete(file);
+	}
+	
+	@Test
+	public void testFirstAvailable2() throws IOException {
+		// Create a file
+		Path file = Files.createTempFile(null, null);
 		
 		// Get the first available file (should not be 'file')
 		Path firstAvailable = Helper.firstAvailable(file).toAbsolutePath();
@@ -99,6 +112,74 @@ public class HelperTests {
 		
 		// Delete the file afterwards
 		Files.delete(file);
+	}
+	
+	@Test
+	public void testExtension1() {
+		Path file = Paths.get("./file.txt");
+		assertEquals(".txt", Helper.extension(file));
+	}
+	
+	@Test
+	public void testExtension2() {
+		Path file = Paths.get("./file.");
+		assertEquals(".", Helper.extension(file));
+	}
+	
+	@Test
+	public void testExtension3() {
+		Path file = Paths.get("./file");
+		assertEquals("", Helper.extension(file));
+	}
+	
+	@Test
+	public void testRequireExists1() throws IOException {
+		// Create a file
+		Path file = Files.createTempFile(null, null);
+		Helper.requireExists(file);
+		
+		// Delete the file afterwards
+		Files.delete(file);
+	}
+	
+	@Test(expected = IllegalPathException.class)
+	public void testRequireExists2() throws IOException {
+		Path file = Paths.get("./non-existent-file");
+		Helper.requireExists(file);
+	}
+	
+	@Test
+	public void testRequireDirectory1() throws IOException {
+		// Create a directory
+		Path dir = Files.createTempDirectory(null);
+		Helper.requireDirectory(dir);
+		
+		// Delete the directory afterwards
+		Files.delete(dir);
+	}
+	
+	@Test(expected = IllegalPathException.class)
+	public void testRequireDirectory2() throws IOException {
+		// Create a file
+		Path file = Files.createTempFile(null, null);
+		Helper.requireDirectory(file);
+	}
+	
+	@Test
+	public void testRequireFile1() throws IOException {
+		// Create a file
+		Path file = Files.createTempFile(null, null);
+		Helper.requireFile(file);
+		
+		// Delete the file afterwards
+		Files.delete(file);
+	}
+	
+	@Test(expected = IllegalPathException.class)
+	public void testRequireFile2() throws IOException {
+		// Create a directory
+		Path dir = Files.createTempDirectory(null);
+		Helper.requireFile(dir);
 	}
 	
 	@Test
@@ -198,6 +279,16 @@ public class HelperTests {
 		Helper.parseSize("Foo");
 	}
 	
+	@Test(expected = IllegalArgumentException.class)
+	public void testParseSize7() {
+		Helper.parseSize("1.21 GW");
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testParseSize8() {
+		Helper.parseSize("14 jB");
+	}
+	
 	@Test
 	public void testHumanReadableTimeUnit1() {
 		final long us = 1000L;
@@ -271,6 +362,18 @@ public class HelperTests {
 	public void testGeneratePasswordHash() {
 		String hash = Helper.generatePasswordHash("password");
 		assertNotEquals("password", hash);
+	}
+	
+	@Test
+	public void testResolveCharset1() {
+		Charset charset = Helper.resolveCharset("UTF-8");
+		assertEquals(StandardCharsets.UTF_8, charset);
+	}
+	
+	@Test
+	public void testResolveCharset2() {
+		Charset charset = Helper.resolveCharset("nothing");
+		assertEquals(null, charset);
 	}
 	
 	@Test

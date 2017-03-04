@@ -260,7 +260,7 @@ public class CommandArguments {
 				}
 				
 				// If argument includes space, wrap it in double quotes again
-				if (Helper.indexOfWhitespace(arg) > 0) {
+				if (Helper.indexOfWhitespace(arg) >= 0) {
 					arg = '"'+arg+'"';
 				}
 				
@@ -305,9 +305,9 @@ public class CommandArguments {
 	 * @param n number of flags contained within one argument
 	 * @return the argument index <tt>i</tt> which may be increased by one
 	 * @throws InvalidFlagException if a flag found in <tt>s</tt> was not
-	 *         defined, there are multiple one-letter flags where at least one
-	 *         receives an argument or there is no argument provided for a flag
-	 *         that is defined to require an argument
+	 *         defined, or there are multiple one-letter flags where at least
+	 *         one receives an argument or there is no argument provided for a
+	 *         flag that is defined to require an argument
 	 */
 	private int processFlag(String name, Set<String> undefinedFlags, String[] args, int n, int i) {
 		// Flag name has to be predefined
@@ -574,6 +574,28 @@ public class CommandArguments {
 		}
 		
 		/**
+		 * Returns this flag's first argument as a positive integer. Throws an
+		 * exception if the argument is not 32-bit integer, or is negative or
+		 * zero. May throw an exception if zero is not allowed but the argument
+		 * is zero.
+		 * 
+		 * @param zeroAllowed indicates if zero value is allowed
+		 * @return the argument of this flag as a positive integer
+		 * @throws InvalidFlagException if parsing to an integer fails or the
+		 *         integer is not positive
+		 */
+		public int getPositiveIntArgument(boolean zeroAllowed) {
+			try {
+				int i = Integer.parseInt(getArgument());
+				if (i < 0 || !zeroAllowed && i == 0)
+					throw new IllegalArgumentException();
+				return i;
+			} catch (IllegalArgumentException e) {
+				throw exceptionForType("a 32-bit positive integer");
+			}
+		}
+		
+		/**
 		 * Returns this flag's first argument as a long integer.
 		 * 
 		 * @return the argument of this flag as a long integer
@@ -584,6 +606,28 @@ public class CommandArguments {
 				return Long.parseLong(getArgument());
 			} catch (IllegalArgumentException e) {
 				throw exceptionForType("a 64-bit integer");
+			}
+		}
+		
+		/**
+		 * Returns this flag's first argument as a positive long integer. Throws
+		 * an exception if the argument is not 64-bit integer, or is negative.
+		 * May throw an exception if zero is not allowed but the argument is
+		 * zero.
+		 * 
+		 * @param zeroAllowed indicates if zero value is allowed
+		 * @return the argument of this flag as a positive integer
+		 * @throws InvalidFlagException if parsing to a long integer fails or
+		 *         the long integer is not positive
+		 */
+		public long getPositiveLongArgument(boolean zeroAllowed) {
+			try {
+				long i = Long.parseLong(getArgument());
+				if (i < 0 || !zeroAllowed && i == 0)
+					throw new IllegalArgumentException();
+				return i;
+			} catch (IllegalArgumentException e) {
+				throw exceptionForType("a 32-bit positive integer");
 			}
 		}
 		

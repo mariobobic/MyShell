@@ -99,6 +99,31 @@ public class CommandArgumentsTests {
 		assertEquals("byteshuffle \"/home/space name.ext\"", bsArgs.getCleanArgument());
 	}
 	
+	@Test
+	public void testCompileEscapedDash() {
+		CommandArguments cmdArgs = new CommandArguments();
+		cmdArgs.addFlagDefinition("flag", true);
+		
+		cmdArgs.compile("cmd --flag arg \\-not-flag path");
+
+		assertEquals(1, cmdArgs.getFlags().size());
+		assertEquals("cmd -not-flag path", cmdArgs.getCleanArgument());
+	}
+	
+	@Test
+	public void testCompileMultipleFlags() {
+		CommandArguments findArgs = new CommandArguments();
+		findArgs.addFlagDefinition("e", true);
+		
+		findArgs.compile("find -e path1 -e path2 path");
+
+		List<String> expected = Arrays.asList("path1", "path2");
+		List<String> actual = findArgs.getFlag("e").getArguments();
+		
+		assertEquals(expected, actual);
+		assertEquals("find path", findArgs.getCleanArgument());
+	}
+	
 	@Test(expected = InvalidFlagException.class)
 	public void testCompileException1() {
 		CommandArguments cmdArgs = new CommandArguments();
@@ -196,6 +221,7 @@ public class CommandArgumentsTests {
 		assertEquals("argument", flag.getArgument());
 	}
 	
+	
 	@Test
 	public void testGetArguments() {
 		Flag flag = new Flag("name", "argument");
@@ -234,6 +260,13 @@ public class CommandArgumentsTests {
 		assertTrue(flag.getArguments().contains("arg2"));
 	}
 	
+	
+	@Test
+	public void testGetIntArgument() {
+		Flag flag = new Flag("negative-one", "-1");
+		assertEquals(-1, flag.getIntArgument());
+	}
+	
 	@Test
 	public void testGetLongArgument() {
 		Flag flag = new Flag("speed-limit", "299792458");
@@ -252,6 +285,12 @@ public class CommandArgumentsTests {
 		assertEquals(4L*1024L*1024L*1024L, flag.getSizeArgument());
 	}
 	
+	
+	@Test(expected = InvalidFlagException.class)
+	public void testGetIntArgumentException() {
+		new Flag("second", "9192631770").getIntArgument();
+	}
+	
 	@Test(expected = InvalidFlagException.class)
 	public void testGetLongArgumentException() {
 		new Flag("name", "random string").getLongArgument();
@@ -265,6 +304,55 @@ public class CommandArgumentsTests {
 	@Test(expected = InvalidFlagException.class)
 	public void testGetSizeArgumentException() {
 		new Flag("name", "random string").getSizeArgument();
+	}
+	
+	
+	@Test
+	public void testGetPositiveIntArgument1() {
+		Flag flag = new Flag("positive-one", "1");
+		assertEquals(1, flag.getPositiveIntArgument(false));
+	}
+	
+	@Test
+	public void testGetPositiveIntArgument2() {
+		Flag flag = new Flag("zero", "0");
+		assertEquals(0, flag.getPositiveIntArgument(true));
+	}
+	
+	@Test(expected = InvalidFlagException.class)
+	public void testGetPositiveIntArgumentException1() {
+		Flag flag = new Flag("negative-one", "-1");
+		flag.getPositiveIntArgument(false);
+	}
+	
+	@Test(expected = InvalidFlagException.class)
+	public void testGetPositiveIntArgumentException2() {
+		Flag flag = new Flag("zero", "0");
+		flag.getPositiveIntArgument(false);
+	}
+	
+	@Test
+	public void testGetPositiveLongArgument1() {
+		Flag flag = new Flag("second", "9192631770");
+		assertEquals(9192631770L, flag.getPositiveLongArgument(false));
+	}
+
+	@Test
+	public void testGetPositiveLongArgument2() {
+		Flag flag = new Flag("zero", "0");
+		assertEquals(0L, flag.getPositiveLongArgument(true));
+	}
+
+	@Test(expected = InvalidFlagException.class)
+	public void testGetPositiveLongArgumentException1() {
+		Flag flag = new Flag("negative-one", "-1");
+		flag.getPositiveLongArgument(false);
+	}
+
+	@Test(expected = InvalidFlagException.class)
+	public void testGetPositiveLongArgumentException2() {
+		Flag flag = new Flag("zero", "0");
+		flag.getPositiveLongArgument(false);
 	}
 	
 	/* -------------------------------- Utility --------------------------------- */

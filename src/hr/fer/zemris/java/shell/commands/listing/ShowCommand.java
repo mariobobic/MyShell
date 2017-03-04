@@ -17,6 +17,7 @@ import java.util.List;
 import hr.fer.zemris.java.shell.CommandStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
 import hr.fer.zemris.java.shell.utility.SyntaxException;
 
@@ -33,8 +34,8 @@ import hr.fer.zemris.java.shell.utility.SyntaxException;
  */
 public class ShowCommand extends VisitorCommand {
 
-	/** Default amount of top largest files */
-	private static final int DEF_QUANTITY = 10;
+	/** Default amount of files to be shown. */
+	private static final int DEFAULT_QUANTITY = 10;
 
 	/** The standard date-time formatter. */
 	private static final DateTimeFormatter FORMATTER =
@@ -50,16 +51,21 @@ public class ShowCommand extends VisitorCommand {
 		return lastModified(f1).compareTo(lastModified(f2));
 	};
 	
+	/* Flags */
+	/** Amount of files to be shown. */
+	private int count;
+	
 	/**
 	 * Constructs a new command object of type {@code LargestCommand}.
 	 */
 	public ShowCommand() {
-		super("SHOW", createCommandDescription());
+		super("SHOW", createCommandDescription(), createFlagDescriptions());
+		commandArguments.addFlagDefinition("n", "count", true);
 	}
 	
 	@Override
 	protected String getCommandSyntax() {
-		return "<largest|smallest|newest|oldest> <path> (<quantity>)";
+		return "<largest|smallest|newest|oldest> (<path>)";
 	}
 	
 	/**
@@ -73,8 +79,36 @@ public class ShowCommand extends VisitorCommand {
 		List<String> desc = new ArrayList<>();
 		desc.add("Displays files ordered by a specified attribute in the directory tree.");
 		desc.add("There are four supported arguments for file querying: largest, smallest, newest and oldest.");
-		desc.add("Additionally, amount of files can be specified as the last argument.");
 		return desc;
+	}
+	
+	/**
+	 * Creates a list of {@code FlagDescription} objects where each entry
+	 * describes the available flags of this command. This method is generates
+	 * description exclusively for the command that this class represents.
+	 * 
+	 * @return a list of strings that represents description
+	 */
+	private static List<FlagDescription> createFlagDescriptions() {
+		List<FlagDescription> desc = new ArrayList<>();
+		desc.add(new FlagDescription("n", "count", "count", "Amount of files to be shown."));
+		return desc;
+	}
+	
+	@Override
+	protected String compileFlags(Environment env, String s) {
+		/* Initialize default values. */
+		count = DEFAULT_QUANTITY;
+
+		/* Compile! */
+		s = commandArguments.compile(s);
+		
+		/* Replace default values with flag values, if any. */
+		if (commandArguments.containsFlag("n", "count")) {
+			count = commandArguments.getFlag("n", "count").getPositiveIntArgument(false);
+		}
+
+		return super.compileFlags(env, s);
 	}
 	
 	@Override
@@ -83,10 +117,7 @@ public class ShowCommand extends VisitorCommand {
 			throw new SyntaxException();
 		}
 		
-		String[] args = Helper.extractArguments(s);
-		if (args.length > 3) {
-			throw new SyntaxException();
-		}
+		String[] args = Helper.extractArguments(s, 2);
 		
 		/* Resolve path from the second argument, if present. */
 		Path dir;
@@ -94,18 +125,6 @@ public class ShowCommand extends VisitorCommand {
 			dir = env.getCurrentPath();
 		} else {
 			dir = Helper.resolveAbsolutePath(env, args[1]);
-		}
-		
-		/* Resolve quantity from the third argument, if present. */
-		int quantity;
-		if (args.length <= 2) {
-			quantity = DEF_QUANTITY;
-		} else {
-			try {
-				quantity = Integer.parseInt(args[2]);
-			} catch (NumberFormatException e) {
-				throw new SyntaxException();
-			}
 		}
 
 		Comparator<Path> comparator = getComparator(args[0]);
@@ -115,13 +134,10 @@ public class ShowCommand extends VisitorCommand {
 		}
 		
 		/* Make necessary checks. */
-		if (!Files.isDirectory(dir)) {
-			writeln(env, "The specified path must be a directory.");
-			return CommandStatus.CONTINUE;
-		}
+		Helper.requireDirectory(dir);
 		
-		ShowFileVisitor largestVisitor = new ShowFileVisitor(quantity, comparator);
-		Files.walkFileTree(dir, largestVisitor);
+		ShowFileVisitor largestVisitor = new ShowFileVisitor(comparator);
+		walkFileTree(dir, largestVisitor);
 
 		/* Clear previously marked paths. */
 		env.clearMarks();
@@ -140,7 +156,7 @@ public class ShowCommand extends VisitorCommand {
 	/**
 	 * Returns a comparator that matches the specified attribute <tt>attr</tt>.
 	 * 
-	 * @param attr comparation attribute
+	 * @param attr comparison attribute
 	 * @return a comparator that matches the specified attribute
 	 */
 	private static Comparator<Path> getComparator(String attr) {
@@ -204,8 +220,6 @@ public class ShowCommand extends VisitorCommand {
 	 */
 	private class ShowFileVisitor extends SimpleFileVisitor<Path> {
 
-		/** Number of largest files to be printed out */
-		private int quantity;
 		/** Comparator used to compare files. */
 		private Comparator<Path> comparator;
 		
@@ -216,22 +230,11 @@ public class ShowCommand extends VisitorCommand {
 		 * Initializes a new instance of this class setting the quantity to the
 		 * desired value.
 		 * 
-		 * @param quantity number of largest files to be printed out
 		 * @param comparator comparator used for comparing files
 		 */
-		public ShowFileVisitor(int quantity, Comparator<Path> comparator) {
-			this.quantity = quantity;
+		public ShowFileVisitor(Comparator<Path> comparator) {
 			this.comparator = comparator;
 			filteredFiles = new ArrayList<>();
-		}
-		
-		@Override
-		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-			if (isExcluded(dir)) {
-				return FileVisitResult.SKIP_SUBTREE;
-			}
-
-			return FileVisitResult.CONTINUE;
 		}
 		
 		/**
@@ -239,10 +242,6 @@ public class ShowCommand extends VisitorCommand {
 		 */
 		@Override
 		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-			if (isExcluded(file)) {
-				return FileVisitResult.CONTINUE;
-			}
-			
 			addCandidate(file);
 			return FileVisitResult.CONTINUE;
 		}
@@ -267,11 +266,11 @@ public class ShowCommand extends VisitorCommand {
 		private synchronized void addCandidate(Path file) {
 			boolean added = false;
 			
-			if (filteredFiles.size() < quantity) {
+			if (filteredFiles.size() < count) {
 				filteredFiles.add(file);
 				added = true;
 			} else {
-				int lastIndex = quantity-1;
+				int lastIndex = count-1;
 				Path lastFile = filteredFiles.get(lastIndex);
 				if (comparator.compare(lastFile, file) > 0) {
 					filteredFiles.remove(lastIndex);

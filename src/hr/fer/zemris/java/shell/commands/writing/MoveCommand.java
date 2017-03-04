@@ -18,9 +18,9 @@ import hr.fer.zemris.java.shell.utility.SyntaxException;
  * location. The destination directory may or may not exist before the copying
  * is done. If the destination directory does not exist, a corresponding
  * directory structure is created. If the last name in the path name sequence is
- * an existing directory, the newly made file will be named as the original
- * file. Else if the last name in the pathname's name sequence is a non-existing
- * directory (a file), the newly made file will be named as it.
+ * an existing directory, the moving file name will be kept. Else if the last
+ * name in the pathname's name sequence is a non-existing directory (a file),
+ * the moving file will be renamed.
  *
  * @author Mario Bobic
  */
@@ -48,10 +48,11 @@ public class MoveCommand extends AbstractCommand {
 	private static List<String> createCommandDescription() {
 		List<String> desc = new ArrayList<>();
 		desc.add("Moves one file to another location.");
+		desc.add("Can be used to trivially rename files and directories.");
 		desc.add("The first argument must be a source file to be moved, "
 				+ "whereas the second argument may be either a file or a directory.");
-		desc.add("If the second argument is not a directory, it means it is a new file name.");
-		desc.add("If the second argument is a directory, a file with the same name is copied into it.");
+		desc.add("If the second argument is not a directory, the file is moved and named as specified.");
+		desc.add("If the second argument is a directory, the file is moved into the directory.");
 		desc.add("The destination directory may or may not exist before the copying is done.");
 		desc.add("If the destination directory does not exist, a corresponding directory structure is created.");
 		return desc;
@@ -59,38 +60,49 @@ public class MoveCommand extends AbstractCommand {
 
 	@Override
 	protected CommandStatus execute0(Environment env, String s) {
-		String[] args = Helper.extractArguments(s, 2);
+		String[] args = Helper.extractArguments(s);
 		if (args.length != 2) {
 			throw new SyntaxException();
 		}
 		
 		Path source = Helper.resolveAbsolutePath(env, args[0]);
 		Path target = Helper.resolveAbsolutePath(env, args[1]);
+		Helper.requireExists(source);
 		
-		if (!Files.exists(source)) {
-			writeln(env, "The system cannot find the file specified: " + source);
-			return CommandStatus.CONTINUE;
-		}
+		moveFile(source, target, env);
 		
-		if (Files.isDirectory(target)) {
+		return CommandStatus.CONTINUE;
+	}
+	
+	/**
+	 * Validates both paths and moves <tt>source</tt> to <tt>target</tt>. This
+	 * method also writes out the full path to the newly created file upon
+	 * succeeding.
+	 * 
+	 * @param source the path to file to be copied
+	 * @param target the path to destination file or directory
+	 * @param env an environment
+	 */
+	private static void moveFile(Path source, Path target, Environment env) {
+		if (Files.isDirectory(target) && !source.equals(target)) {
 			target = target.resolve(source.getFileName());
 		}
 		
-		if (Files.exists(target)) {
+		if (Files.exists(target) && !source.equals(target)) {
 			boolean overwrite = promptConfirm(env, "File " + target + " already exists. Overwrite?");
 			if (!overwrite) {
 				writeln(env, "Cancelled.");
-				return CommandStatus.CONTINUE;
+				return;
 			}
 		}
 	
 		try {
-			Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+			Files.createDirectories(target.getParent());
+			Files.move(source, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+			writeln(env, "Moved: " + target);
 		} catch (IOException e) {
 			writeln(env, "Could not move " + source + " to " + target);
 		}
-		
-		return CommandStatus.CONTINUE;
 	}
 
 }

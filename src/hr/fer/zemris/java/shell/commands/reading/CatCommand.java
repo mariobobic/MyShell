@@ -13,7 +13,9 @@ import java.util.List;
 import hr.fer.zemris.java.shell.CommandStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.InvalidFlagException;
 import hr.fer.zemris.java.shell.utility.SyntaxException;
 
 /**
@@ -27,16 +29,21 @@ import hr.fer.zemris.java.shell.utility.SyntaxException;
  */
 public class CatCommand extends AbstractCommand {
 
+	/* Flags */
+	/** Charset for decoding files. */
+	private Charset charset;
+	
 	/**
 	 * Constructs a new command object of type {@code CatCommand}.
 	 */
 	public CatCommand() {
-		super("CAT", createCommandDescription());
+		super("CAT", createCommandDescription(), createFlagDescriptions());
+		commandArguments.addFlagDefinition("c", "charset", true);
 	}
 
 	@Override
 	protected String getCommandSyntax() {
-		return "<filename> (<charset>)";
+		return "<filename>";
 	}
 	
 	/**
@@ -49,12 +56,42 @@ public class CatCommand extends AbstractCommand {
 	private static List<String> createCommandDescription() {
 		List<String> desc = new ArrayList<>();
 		desc.add("Displays the contents of a file.");
-		desc.add("The command expects one or two arguments.");
-		desc.add("The first argument must be a path to a file, "
-				+ "while the second argument is optional but must be "
-				+ "a charset name that is used to interpret chars from bytes.");
-		desc.add("If the second argument is not provided, a default platform charset is used.");
+		desc.add("Argument must be a path to a file, ");
+		desc.add("If a charset is not provided, default platform charset is used.");
 		return desc;
+	}
+	
+	/**
+	 * Creates a list of {@code FlagDescription} objects where each entry
+	 * describes the available flags of this command. This method is generates
+	 * description exclusively for the command that this class represents.
+	 * 
+	 * @return a list of strings that represents description
+	 */
+	private static List<FlagDescription> createFlagDescriptions() {
+		List<FlagDescription> desc = new ArrayList<>();
+		desc.add(new FlagDescription("c", "charset", "charset", "Specify the charset to be used."));
+		return desc;
+	}
+	
+	@Override
+	protected String compileFlags(Environment env, String s) {
+		/* Initialize default values. */
+		charset = Charset.defaultCharset();
+
+		/* Compile! */
+		s = commandArguments.compile(s);
+
+		/* Replace default values with flag values, if any. */
+		if (commandArguments.containsFlag("c", "charset")) {
+			String arg = commandArguments.getFlag("c", "charset").getArgument();
+			charset = Helper.resolveCharset(arg);
+			if (charset == null) {
+				throw new InvalidFlagException("Invalid charset: " + arg);
+			}
+		}
+		
+		return super.compileFlags(env, s);
 	}
 
 	@Override
@@ -63,39 +100,14 @@ public class CatCommand extends AbstractCommand {
 			throw new SyntaxException();
 		}
 		
-		String[] args = Helper.extractArguments(s);
-		
-		Path path = Helper.resolveAbsolutePath(env, args[0]);
-		
-		Charset charset = Charset.defaultCharset();
-		if (args.length > 1) {
-			if (args.length != 2) {
-				throw new SyntaxException();
-			}
-			
-			try {
-				charset = Charset.forName(args[1]);
-			} catch (IllegalArgumentException e) {
-				writeln(env, "Invalid charset: " + args[1]);
-				writeln(env, "Check available charsets with charsets command.");
-				return CommandStatus.CONTINUE;
-			}
-		}
-		
-		if (!Files.exists(path)) {
-			writeln(env, "The system cannot find the file specified.");
-			return CommandStatus.CONTINUE;
-		}
-		if (!Files.isRegularFile(path)) {
-			writeln(env, "The specified path must be a file.");
-			return CommandStatus.CONTINUE;
-		}
+		Path file = Helper.resolveAbsolutePath(env, s);
+		Helper.requireFile(file);
 		
 		/* Passed all checks, start working. */
 		try (BufferedReader br = new BufferedReader(
 				new InputStreamReader(
 					new BufferedInputStream(
-						Files.newInputStream(path)), charset))
+						Files.newInputStream(file)), charset))
 		) {
 			
 			String line;

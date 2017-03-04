@@ -81,62 +81,36 @@ public class DumpCommand extends AbstractCommand {
 		}
 
 		Path path = Helper.resolveAbsolutePath(env, pathname);
-		
 		if (Files.isDirectory(path)) {
 			writeln(env, "Directory " + path.getFileName() + " already exists.");
 			return CommandStatus.CONTINUE;
 		}
-		
 		if (Files.exists(path)) {
-			if (!promptOverwrite(env, path)) {
+			if (!promptConfirm(env, "File " + path + " already exists. Overwrite?")) {
+				writeln(env, "Cancelled.");
 				return CommandStatus.CONTINUE;
 			}
 		}
 		
-		dumpBytes(env, path, size);
+		dumpBytes(path, size);
 		writeln(env, "Dumped " + Helper.humanReadableByteCount(size) + " in file " + path.getFileName());
 		
 		return CommandStatus.CONTINUE;
 	}
 	
 	/**
-	 * Prompts the user to overwrite the currently existing file. Returns true
-	 * if the user answers "yes" and false if the user answers "no". Goes in an
-	 * infinite loop if none of the answers are given.
+	 * Dumps binary zeros into the given <tt>file</tt> with the given
+	 * <tt>size</tt>.
 	 * 
-	 * @param env an environment
-	 * @param file the currently existing file
-	 * @return true if the user answers "yes", false if "no"
-	 */
-	private static boolean promptOverwrite(Environment env, Path file) {
-		write(env, "File " + file.getFileName() + " already exists. Overwrite? (Y/N) ");
-		while (true) {
-			String answer = readLine(env);
-			if ("y".equalsIgnoreCase(answer) || "yes".equalsIgnoreCase(answer)) {
-				return true;
-			} else if ("n".equalsIgnoreCase(answer) || "no".equalsIgnoreCase(answer)) {
-				return false;
-			} else {
-				writeln(env, "Unknown answer: " + answer);
-			}
-		}
-	}
-	
-	/**
-	 * Dumps random bytes into the given {@code file} with the given
-	 * {@code size}.
-	 * 
-	 * @param env an environment
 	 * @param file file to be created
 	 * @param size number of bytes to be generated
 	 * @throws IOException if an I/O error occurs
 	 */
-	private static void dumpBytes(Environment env, Path file, long size) throws IOException {
-		long writtenBytes = 0;
-		
+	private static void dumpBytes(Path file, long size) throws IOException {
 		try (BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(file))) {
 			int len = STD_LOADER_SIZE;
 			byte[] bytes = new byte[STD_LOADER_SIZE];
+			long writtenBytes = 0;
 
 			while (writtenBytes < size) {
 				if (size - writtenBytes < len) {

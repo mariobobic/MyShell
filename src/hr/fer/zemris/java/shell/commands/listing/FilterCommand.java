@@ -2,7 +2,6 @@ package hr.fer.zemris.java.shell.commands.listing;
 
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -63,7 +62,7 @@ public class FilterCommand extends VisitorCommand {
 		FilterFileVisitor filterVisitor = new FilterFileVisitor(env, s);
 		Path path = env.getCurrentPath();
 		
-		Files.walkFileTree(path, filterVisitor);
+		walkFileTree(path, filterVisitor);
 		int fails = filterVisitor.getFails();
 		if (fails != 0) {
 			writeln(env, "Failed to access " + fails + " paths.");
@@ -99,15 +98,6 @@ public class FilterCommand extends VisitorCommand {
 			this.environment = environment;
 			this.patternParts = Helper.splitPattern(pattern.trim().toUpperCase());
 		}
-		
-		@Override
-		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-			if (isExcluded(dir)) {
-				return FileVisitResult.SKIP_SUBTREE;
-			}
-
-			return FileVisitResult.CONTINUE;
-		}
 
 		/**
 		 * Checks if the file matches the given {@link #patternParts} and writes
@@ -115,10 +105,6 @@ public class FilterCommand extends VisitorCommand {
 		 */
 		@Override
 		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-			if (isExcluded(file)) {
-				return FileVisitResult.CONTINUE;
-			}
-			
 			String fileName = file.getFileName().toString().toUpperCase();
 			
 			if (Helper.matches(fileName, patternParts)) {
@@ -134,7 +120,7 @@ public class FilterCommand extends VisitorCommand {
 		 */
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-//			writeln(environment, "Failed to access " + file);
+			writeln(environment, "Failed to access " + file);
 			fails++;
 			return FileVisitResult.CONTINUE;
 		}

@@ -1,7 +1,6 @@
 package hr.fer.zemris.java.shell.commands.system;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
@@ -42,7 +41,7 @@ public class DirCommand extends AbstractCommand {
 
 	@Override
 	protected String getCommandSyntax() {
-		return "<path>";
+		return "(<path>)";
 	}
 	
 	/**
@@ -55,6 +54,7 @@ public class DirCommand extends AbstractCommand {
 	private static List<String> createCommandDescription() {
 		List<String> desc = new ArrayList<>();
 		desc.add("Lists directory contents with a CMD-like environment.");
+		desc.add("A directory path may be specified to list its contents.");
 		return desc;
 	}
 
@@ -63,14 +63,7 @@ public class DirCommand extends AbstractCommand {
 		Path dir = s == null ?
 			env.getCurrentPath() : Helper.resolveAbsolutePath(env, s);
 		
-		if (!Files.exists(dir)) {
-			writeln(env, "The system cannot find the path specified.");
-			return CommandStatus.CONTINUE;
-		}
-		if (!Files.isDirectory(dir)) {
-			writeln(env, "The specified path must be a directory.");
-			return CommandStatus.CONTINUE;
-		}
+		Helper.requireDirectory(dir);
 		
 		/* Clear previously marked paths. */
 		env.clearMarks();

@@ -20,6 +20,7 @@ import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.InvalidFlagException;
 import hr.fer.zemris.java.shell.utility.SyntaxException;
 
 /**
@@ -110,7 +111,11 @@ public class DiffCommand extends VisitorCommand {
 
 		/* Replace default values with flag values, if any. */
 		if (commandArguments.containsFlag("c", "charset")) {
-			charset = resolveCharset(commandArguments.getFlag("c", "charset").getArgument());
+			String arg = commandArguments.getFlag("c", "charset").getArgument();
+			charset = Helper.resolveCharset(arg);
+			if (charset == null) {
+				throw new InvalidFlagException("Invalid charset: " + arg);
+			}
 		}
 		
 		if (commandArguments.containsFlag("a", "all")) {
@@ -135,22 +140,8 @@ public class DiffCommand extends VisitorCommand {
 		/* Resolve paths. */
 		Path path1 = Helper.resolveAbsolutePath(env, args[0]);
 		Path path2 = Helper.resolveAbsolutePath(env, args[1]);
-		if (!Files.exists(path1)) {
-			writeln(env, "The system cannot find the path specified: " + path1);
-			return CommandStatus.CONTINUE;
-		}
-		if (!Files.exists(path2)) {
-			writeln(env, "The system cannot find the path specified: " + path2);
-			return CommandStatus.CONTINUE;
-		}
-		
-		/* If the flag procedure didn't give a valid charset, scream! */
-		if (charset == null) {
-			String arg = commandArguments.getFlag("c", "charset").getArgument();
-			writeln(env, "Invalid charset: " + arg);
-			writeln(env, "Check available charsets with charsets command.");
-			return CommandStatus.CONTINUE;
-		}
+		Helper.requireExists(path1);
+		Helper.requireExists(path2);
 		
 		/* Both paths must be of same type. */
 		boolean path1IsFile = Files.isRegularFile(path1);
@@ -163,18 +154,12 @@ public class DiffCommand extends VisitorCommand {
 		/* Passed all checks, start working. */
 		path1 = path1.toRealPath();
 		path2 = path2.toRealPath();
-		Map<Path, Path> fails = new LinkedHashMap<>();
 
-		if (path1IsFile) {
-			boolean success = processFiles(env, path1, path2, charset, all);
-			if (!success) fails.put(path1, path2);
-		} else {
-			DiffFileVisitor diffVisitor = new DiffFileVisitor(env, path1, path2);
-			Files.walkFileTree(path1, diffVisitor);
-			fails = diffVisitor.getFails();
-		}
+		DiffFileVisitor diffVisitor = new DiffFileVisitor(env, path1, path2);
+		walkFileTree(path1, diffVisitor);
 		
 		/* If there are decoding fails, print it. */
+		Map<Path, Path> fails = diffVisitor.getFails();
 		if (fails.size() != 0) {
 			formatln(env,
 				"Could not decode %d files using %s encoding. Try a different encoding.",
@@ -183,7 +168,7 @@ public class DiffCommand extends VisitorCommand {
 		}
 
 		/* Print errors if not silent. */
-		if (!silent && fails.size() != 0) {
+		if (!isSilent() && fails.size() != 0) {
 			writeln(env, "Files that failed to be decoded:");
 			fails.forEach((file1, file2) -> {
 				writeln(env, file1 + " against " + file2);
@@ -191,22 +176,6 @@ public class DiffCommand extends VisitorCommand {
 		}
 		
 		return CommandStatus.CONTINUE;
-	}
-	
-	/**
-	 * Returns a charset object for the named charset, or <tt>null</tt> if a
-	 * charset with the specified <tt>name<tt> can not be resolved.
-	 * 
-	 * @param name name of the requested charset; may be either a canonical name
-	 *        or an alias
-	 * @return a charset object for the named charset
-	 */
-	private static Charset resolveCharset(String name) {
-		try {
-			return Charset.forName(name);
-		} catch (IllegalArgumentException e) {
-			return null;
-		}
 	}
 	
 	/**
@@ -311,8 +280,8 @@ public class DiffCommand extends VisitorCommand {
 		private Map<Path, Path> fails;
 
 		/**
-		 * Initializes a new instance of this class setting only an environment used
-		 * only for writing out messages.
+		 * Constructs an instance of {@code DiffFileVisitor} with the specified
+		 * arguments.
 		 * 
 		 * @param environment an environment
 		 * @param root root directory of this file visitor
@@ -324,22 +293,9 @@ public class DiffCommand extends VisitorCommand {
 			this.otherRoot = otherRoot;
 			this.fails = new LinkedHashMap<>();
 		}
-		
-		@Override
-		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-			if (isExcluded(dir)) {
-				return FileVisitResult.SKIP_SUBTREE;
-			}
-
-			return FileVisitResult.CONTINUE;
-		}
 
 		@Override
 		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-			if (isExcluded(file)) {
-				return FileVisitResult.CONTINUE;
-			}
-			
 			Path relative = root.relativize(file);
 			Path otherFile = otherRoot.resolve(relative);
 			

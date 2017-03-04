@@ -201,17 +201,39 @@ public class ConnectCommand extends AbstractCommand {
 	 * @throws IOException if an I/O error occurs
 	 */
 	private static void startDownload(Environment env, InputStream inFromServer, OutputStream outToServer, Crypto crypto) throws IOException {
+		// Accept download
 		byte[] bytes = new byte[1024];
-		outToServer.write(0); // send a signal
+		outToServer.write(1); // send a signal: accepted download
 		
+		// Read file name
 		inFromServer.read(bytes);
-		outToServer.write(0); // send a signal
+		outToServer.write(1); // send a signal: received file name
 		
 		String filename = new String(bytes).trim();
 		bytes = new byte[1024]; // reset array
+		
+		Path path = Paths.get(System.getProperty("user.home"), "Downloads", filename);
+		Files.createDirectories(path.getParent());
 
+		// Read file type
+		boolean isDirectory = inFromServer.read() == 1;
+		outToServer.write(1); // send a signal: received file type
+		
+		if (isDirectory) {
+			if (Files.isRegularFile(path)) {
+				formatln(env, "Could not create directory %s because a file with that name already exists.", path);
+				outToServer.write(0); // send a signal: download failed
+				return;
+			}
+			
+			Files.createDirectories(path);
+			outToServer.write(1); // send a signal: download done
+			return;
+		}
+		
+		// Read file size
 		inFromServer.read(bytes);
-		outToServer.write(0); // send a signal
+		outToServer.write(0); // send a signal: received file size
 		
 		String filesize = new String(bytes).trim();
 		long size = Long.parseLong(filesize);
@@ -225,14 +247,13 @@ public class ConnectCommand extends AbstractCommand {
 		bytes = new byte[1024];
 		long totalLen = 0;
 		
-		Path file = Helper.firstAvailable(Paths.get(System.getProperty("user.home"), "Downloads", filename));
-		Files.createDirectories(file.getParent());
+		path = Helper.firstAvailable(path);
 		
 		Progress progress = new Progress(env, size);
 		ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
 		scheduledExecutor.scheduleWithFixedDelay(progress, 1, 5, TimeUnit.SECONDS);
 		
-		try (BufferedOutputStream fileOutput = new BufferedOutputStream(Files.newOutputStream(file))) {
+		try (BufferedOutputStream fileOutput = new BufferedOutputStream(Files.newOutputStream(path))) {
 			while (totalLen < size) {
 				int len = fileInput.read(bytes);
 				totalLen += len;
@@ -247,16 +268,17 @@ public class ConnectCommand extends AbstractCommand {
 			}
 			fileOutput.write(crypto.doFinal());
 		} catch (BadPaddingException e) {
-			writeln(env, "An error occured while downloading " + file);
+			writeln(env, "An error occured while downloading " + path);
 			writeln(env, "This is probably due to incorrect password.");
 			throw new IOException(e);
 		} catch (IOException e) {
-			writeln(env, "An unexpected error occurred while downloading " + file);
+			writeln(env, "An unexpected error occurred while downloading " + path);
 			throw e;
 		} finally {
 			scheduledExecutor.shutdown();
 		}
-
+		
+		outToServer.write(1); // send a signal: download done
 		writeln(env, "Finished downloading " + filenameAndSize);
 	}
 	

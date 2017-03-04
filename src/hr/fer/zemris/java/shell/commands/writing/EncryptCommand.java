@@ -63,10 +63,7 @@ public class EncryptCommand extends AbstractCommand {
 		}
 		
 		Path sourcefile = Helper.resolveAbsolutePath(env, args[1]);
-		if (!Files.isRegularFile(sourcefile)) {
-			writeln(env, "The system cannot find the file specified.");
-			return CommandStatus.CONTINUE;
-		}
+		Helper.requireFile(sourcefile);
 		
 		Path destfile = Paths.get(sourcefile + Helper.CRYPT_FILE_EXT);
 		if (Files.exists(destfile)) {

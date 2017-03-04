@@ -55,6 +55,7 @@ import hr.fer.zemris.java.shell.commands.writing.ReplaceCommand;
 import hr.fer.zemris.java.shell.commands.writing.RmCommand;
 import hr.fer.zemris.java.shell.commands.writing.RmdirCommand;
 import hr.fer.zemris.java.shell.commands.writing.TouchCommand;
+import hr.fer.zemris.java.shell.commands.writing.ZipCommand;
 import hr.fer.zemris.java.shell.interfaces.Connection;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.interfaces.ShellCommand;
@@ -74,7 +75,7 @@ import hr.fer.zemris.java.shell.utility.Helper;
  *
  * @author Mario Bobic
  * @author Marko Čupić
- * @version PC 20:00
+ * @version PC
  */
 public class MyShell {
 	
@@ -132,6 +133,7 @@ public class MyShell {
 				new RmCommand(),
 				new RmdirCommand(),
 				new TouchCommand(),
+				new ZipCommand(),
 		};
 		
 		for (ShellCommand c : cc) {
@@ -254,7 +256,8 @@ public class MyShell {
 			return input;
 		}
 		
-		int index = input.lastIndexOf(">");
+		// TODO BUG this may occur in some pattern or string argument
+		int index = input.lastIndexOf("> ");
 		if (index == -1) {
 			return input;
 		}
@@ -266,8 +269,7 @@ public class MyShell {
 		
 		/* Check conditions. */
 		if (Files.isDirectory(outputFile)) {
-			environment.writeln("Specified path is a directory!");
-			return output;
+			outputFile = Helper.firstAvailable(outputFile.resolve("output.txt"));
 		}
 		
 		if (Files.exists(outputFile)) {
@@ -480,6 +482,11 @@ public class MyShell {
 		
 		@Override
 		public void disconnectStreams() {
+			try { inFromClient.close(); } catch (Exception e) {}
+			try { outToClient.close();  } catch (Exception e) {}
+			try { environment.reader.close(); } catch (Exception e) {}
+			try { environment.writer.close(); } catch (Exception e) {}
+			
 			inFromClient = null;
 			outToClient = null;
 			

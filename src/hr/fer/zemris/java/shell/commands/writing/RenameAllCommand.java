@@ -1,16 +1,18 @@
 package hr.fer.zemris.java.shell.commands.writing;
 
-import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import hr.fer.zemris.java.shell.CommandStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
 import hr.fer.zemris.java.shell.utility.SyntaxException;
 
@@ -34,19 +36,24 @@ import hr.fer.zemris.java.shell.utility.SyntaxException;
  */
 public class RenameAllCommand extends AbstractCommand {
 
-	/** Default numbering start index */
+	/** Default numbering start index. */
 	private static final int DEFAULT_START_INDEX = 0;
+	
+	/* Flags */
+	/** Numbering start index. */
+	private int startIndex;
 	
 	/**
 	 * Constructs a new command object of type {@code RenameAllCommand}.
 	 */
 	public RenameAllCommand() {
-		super("RENAMEALL", createCommandDescription());
+		super("RENAMEALL", createCommandDescription(), createFlagDescriptions());
+		commandArguments.addFlagDefinition("i", "start", true);
 	}
 
 	@Override
 	protected String getCommandSyntax() {
-		return "<path> <newname> (<startindex>)";
+		return "<path> <newname>";
 	}
 	
 	/**
@@ -60,14 +67,46 @@ public class RenameAllCommand extends AbstractCommand {
 		List<String> desc = new ArrayList<>();
 		desc.add("Renames all files and directories to the new name.");
 		desc.add("Optional start index may be included.");
-		desc.add("To position the file index in its name, write the {i} "
-				+ "sequence which will be substituted by the index.");
-		desc.add("To get the last index, use the {n} sequence.");
+		desc.add("Wildcards can be used to be substituted with some elements in file names:");
+		desc.add("Use the {i} sequence to substitute it with a file index.");
+		desc.add("Use the {n} sequence to substitute it with the last index.");
+		desc.add("Use the {ext} sequence to substitue it with a file extension. "
+				+ "The extension includes a period symbol.");
+		desc.add("USE THIS COMMAND WITH CAUTION!");
+		return desc;
+	}
+	
+	/**
+	 * Creates a list of {@code FlagDescription} objects where each entry
+	 * describes the available flags of this command. This method is generates
+	 * description exclusively for the command that this class represents.
+	 * 
+	 * @return a list of strings that represents description
+	 */
+	private static List<FlagDescription> createFlagDescriptions() {
+		List<FlagDescription> desc = new ArrayList<>();
+		desc.add(new FlagDescription("i", "start", "index", "Numbering start index."));
 		return desc;
 	}
 	
 	@Override
-	protected CommandStatus execute0(Environment env, String s) {
+	protected String compileFlags(Environment env, String s) {
+		/* Initialize default values. */
+		startIndex = DEFAULT_START_INDEX;
+
+		/* Compile! */
+		s = commandArguments.compile(s);
+		
+		/* Replace default values with flag values, if any. */
+		if (commandArguments.containsFlag("i", "start")) {
+			startIndex = commandArguments.getFlag("i", "start").getIntArgument();
+		}
+
+		return super.compileFlags(env, s);
+	}
+	
+	@Override
+	protected CommandStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			throw new SyntaxException();
 		}
@@ -78,29 +117,15 @@ public class RenameAllCommand extends AbstractCommand {
 		}
 		
 		Path path = Helper.resolveAbsolutePath(env, args[0]);
-		if (!Files.exists(path) || !Files.isDirectory(path)) {
-			writeln(env, "The system cannot find the path specified.");
+		Helper.requireDirectory(path);
+		
+		if (startIndex < 0) {
+			writeln(env, "The start index must be positive: " + startIndex);
 			return CommandStatus.CONTINUE;
 		}
-		
-		String name = args[1];
-		
-		int offset = DEFAULT_START_INDEX;
-		try {
-			offset = Integer.parseInt(args[2]);
-		} catch (NumberFormatException e) {
-			throw new SyntaxException();
-		} catch (IndexOutOfBoundsException ignorable) {}
-		
-		if (offset < 0) {
-			writeln(env, "The start index must be positive: " + offset);
-			return CommandStatus.CONTINUE;
-		}
-
-		File dir = path.toFile();
 		
 		/* Create a sorted list of files in the specified directory. */
-		List<File> listOfFiles = Arrays.asList(dir.listFiles());
+		List<Path> listOfFiles = Files.list(path).collect(Collectors.toList());
 		Collections.sort(listOfFiles);
 		
 		/* Check if the directory was empty. */
@@ -110,24 +135,27 @@ public class RenameAllCommand extends AbstractCommand {
 			return CommandStatus.CONTINUE;
 		}
 		
-		/* All occurrences of * symbols will be replaced with file index. */
-		name = name.replace("{n}", Integer.toString(n+offset-1));
-		boolean containsSubs = name.contains("{i}");
+		/* Substitute values. */
+		String name = args[1];
+		name = name.replace("{n}", Integer.toString(n+startIndex-1));
+		boolean containsIndex = name.contains("{i}");
 		
 		/* Rename all files. */
 		for (int i = 0; i < n; i++) {
-			int index = i + offset;
-			String number = getLeadingZeros(n, offset, index) + index;
-			String newName = containsSubs ? name.replace("{i}", number) : name+number;
+			int index = i + startIndex;
+			String number = getLeadingZeros(n, startIndex, index) + index;
+			String newName = containsIndex ? name.replace("{i}", number) : name+number;
 			
-			File originalFile = listOfFiles.get(i);
-			File renamingFile = new File(dir, newName);
+			Path originalFile = listOfFiles.get(i);
+			newName = newName.replace("{ext}", Helper.extension(originalFile));
 			
-			boolean renamed = originalFile.renameTo(renamingFile);
-			if (renamed) {
-				writeln(env, originalFile.getName() + " renamed to " + renamingFile.getName());
-			} else {
-				writeln(env, originalFile.getName() + " cannot be renamed to " + newName);
+			Path renamingFile = path.resolve(newName);
+			
+			try {
+				Files.move(originalFile, renamingFile, StandardCopyOption.ATOMIC_MOVE);
+				writeln(env, originalFile.getFileName() + " renamed to " + renamingFile.getFileName());
+			} catch (Exception e) {
+				writeln(env, originalFile.getFileName() + " cannot be renamed to " + newName);
 			}
 		}
 		
@@ -136,15 +164,15 @@ public class RenameAllCommand extends AbstractCommand {
 	
 	/**
 	 * Returns a string of zeroes that should be leading the
-	 * <code>currentIndex</code> in relation to <code>numOfFiles</code>.
+	 * <tt>currentIndex</tt> in relation to <tt>total</tt>.
 	 * 
-	 * @param numOfFiles total number of files
-	 * @param offset start index a.k.a. index offset
-	 * @param currentIndex index of the current processing object
+	 * @param total total number of items
+	 * @param offset index offset
+	 * @param currentIndex index of the current processing item
 	 * @return a string of leading zeroes
 	 */
-	private static String getLeadingZeros(int numOfFiles, int offset, int currentIndex) {
-		int decimalPlaces = Integer.toString(numOfFiles+offset-1).length();
+	private static String getLeadingZeros(int total, int offset, int currentIndex) {
+		int decimalPlaces = Integer.toString(total+offset-1).length();
 		int numZeroes = decimalPlaces - (Integer.toString(currentIndex).length() % 10);
 		
 		StringBuilder sb = new StringBuilder();

@@ -60,11 +60,7 @@ public class HexdumpCommand extends AbstractCommand {
 		}
 		
 		Path file = Helper.resolveAbsolutePath(env, s);
-		
-		if (!Files.isRegularFile(file)) {
-			writeln(env, "The specified path must be a file.");
-			return CommandStatus.CONTINUE;
-		}
+		Helper.requireFile(file);
 		
 		/* Passed all checks, start working. */
 		try (BufferedInputStream in = new BufferedInputStream(Files.newInputStream(file))) {

@@ -80,9 +80,6 @@ public class HttpServerCommand extends VisitorCommand {
 	private static final int NUM_THREADS = 5;
 	/** Thread pool of client workers. */
 	private ExecutorService threadPool = Executors.newFixedThreadPool(NUM_THREADS);
-	
-	/** Environment given to the {@link #execute0(Environment, String)} method. */
-	private static Environment env;
 
 	/**
 	 * Constructs a new command object of type {@code HttpServerCommand}.
@@ -93,7 +90,7 @@ public class HttpServerCommand extends VisitorCommand {
 	
 	@Override
 	protected String getCommandSyntax() {
-		return "| httpserver start (<port>) | httpserver stop (<path>|all)";
+		return "| start (<port>) | stop (<path>|all)";
 	}
 	
 	/**
@@ -116,8 +113,6 @@ public class HttpServerCommand extends VisitorCommand {
 	
 	@Override
 	protected CommandStatus execute0(Environment env, String s) {
-		HttpServerCommand.env = env;
-
 		String[] args = Helper.extractArguments(s, 2);
 		if (args.length == 0) {
 			if (serversMap.isEmpty()) {
@@ -130,9 +125,9 @@ public class HttpServerCommand extends VisitorCommand {
 		}
 		
 		if ("start".equals(args[0])) {
-			start(args);
+			start(args, env);
 		} else if ("stop".equals(args[0])) {
-			stop(args);
+			stop(args, env);
 		} else {
 			writeln(env, "Unknown argument: " + args[0]);
 		}
@@ -156,9 +151,10 @@ public class HttpServerCommand extends VisitorCommand {
 	 * 
 	 * @param args arguments for the start method, including 'start' on the
 	 *        first position
+	 * @param env an environment
 	 * @return true if a HTTP server is successfully started, false otherwise
 	 */
-	private boolean start(String[] args) {
+	private boolean start(String[] args, Environment env) {
 		Path path = env.getCurrentPath();
 		
 		if (serversMap.containsKey(path)) {
@@ -219,9 +215,10 @@ public class HttpServerCommand extends VisitorCommand {
 	 * 
 	 * @param args arguments for the stop method, including 'stop' on the
 	 *        first position
+	 * @param env an environment
 	 * @return true if a HTTP server is successfully stopped, false otherwise
 	 */
-	private boolean stop(String[] args) {
+	private boolean stop(String[] args, Environment env) {
 		Path path = env.getCurrentPath();
 		
 		if (args.length == 2) {
@@ -239,10 +236,7 @@ public class HttpServerCommand extends VisitorCommand {
 			path = Helper.resolveAbsolutePath(env, args[1]);
 		}
 		
-		if (!Files.isDirectory(path)) {
-			writeln(env, "The system cannot find the directory specified.");
-			return false;
-		}
+		Helper.requireDirectory(path);
 		if (!serversMap.containsKey(path)) {
 			writeln(env, "There is no HTTP server running for path " + path);
 			return false;
@@ -458,7 +452,7 @@ public class HttpServerCommand extends VisitorCommand {
 					return;
 				}
 				
-				formatln(env, "%s accessed %s at %s",
+				System.out.format("%s accessed %s at %s%n",
 					csocket, requestedPath, FORMATTER.format(LocalDateTime.now())
 				);
 				

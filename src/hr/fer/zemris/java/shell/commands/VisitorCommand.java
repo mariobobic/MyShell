@@ -1,6 +1,11 @@
 package hr.fer.zemris.java.shell.commands;
 
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -10,6 +15,7 @@ import java.util.stream.Collectors;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.InvalidFlagException;
 
 /**
  * Used as a superclass for Shell commands that implement the Visitor pattern.
@@ -72,6 +78,59 @@ public abstract class VisitorCommand extends AbstractCommand {
 		flagDescriptions.add(new FlagDescription("s", "silent", null, "Suppress error printing on command execution."));
 		return flagDescriptions;
 	}
+	
+	/**
+	 * Walks a file tree.
+	 * <p>
+	 * This method works as if invoking it were equivalent to evaluating the
+	 * expression:
+	 * <blockquote><pre>
+	 * walkFileTree(start, EnumSet.noneOf(FileVisitOption.class), Integer.MAX_VALUE, visitor)
+	 * </pre></blockquote>
+	 * In other words, it does not follow symbolic links, and visits all
+	 * levels of the file tree.
+	 * <p>
+	 * A new {@code FileVisitor} object is created which takes care of flag
+	 * implementations, like the silent function when a file visit fails and
+	 * excluded files and directories.
+	 * 
+	 * @param start the starting
+	 * @param visitor the file visitor to invoke for each file
+	 * @return the starting file
+	 * @throws IOException if an I/O error is thrown by a visitor method
+	 */
+	protected Path walkFileTree(Path start, FileVisitor<? super Path> visitor) throws IOException {
+		return Files.walkFileTree(start, new FileVisitor<Path>() {
+			@Override
+			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+				if (isExcluded(dir)) {
+					return FileVisitResult.SKIP_SUBTREE;
+				}
+				return visitor.preVisitDirectory(dir, attrs);
+			}
+
+			@Override
+			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+				if (isExcluded(file)) {
+					return FileVisitResult.CONTINUE;
+				}
+				return visitor.visitFile(file, attrs);
+			}
+
+			@Override
+			public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+				if (isSilent()) {
+					return FileVisitResult.CONTINUE;
+				}
+				return visitor.visitFileFailed(file, exc);
+			}
+
+			@Override
+			public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+				return visitor.postVisitDirectory(dir, exc);
+			}
+		});
+	}
 
 	@Override
 	protected String compileFlags(Environment env, String s) {
@@ -92,6 +151,18 @@ public abstract class VisitorCommand extends AbstractCommand {
 			excludes = args.stream()
 				.map(str -> Helper.resolveAbsolutePath(env, str))
 				.collect(Collectors.toSet());
+			
+			/* If excluding paths are set, but one does not exist. */
+			boolean success = true;
+			for (Path exclude : excludes) {
+				if (!Files.exists(exclude)) {
+					writeln(env, "Excluded path " + exclude + " does not exist.");
+					success = false;
+				}
+			}
+			
+			if (!success)
+				throw new InvalidFlagException("");
 		}
 		
 		return super.compileFlags(env, s);

@@ -67,10 +67,9 @@ public class TouchCommand extends AbstractCommand {
 			throw new SyntaxException();
 		}
 		
-		String[] args = Helper.extractArguments(s);
-		
-		Path path = Helper.resolveAbsolutePath(env, args[0]);
+		Path path = Helper.resolveAbsolutePath(env, s);
 		if (!Files.exists(path)) {
+			Files.createDirectories(path.getParent());
 			Files.createFile(path);
 		} else {
 			FileTime now = FileTime.fromMillis(System.currentTimeMillis());

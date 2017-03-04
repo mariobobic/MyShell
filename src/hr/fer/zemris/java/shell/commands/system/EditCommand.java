@@ -4,7 +4,6 @@ import java.awt.Desktop;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -95,18 +94,11 @@ public class EditCommand extends VisitorCommand {
 		}
 		
 		Path path = Helper.resolveAbsolutePath(env, s);
-		if (!Files.exists(path)) {
-			writeln(env, "The system cannot find the file specified.");
-			return CommandStatus.CONTINUE;
-		}
+		Helper.requireExists(path);
 		
 		/* Edit file(s). */
-		if (!Files.isDirectory(path)) {
-			edit(env, path);
-		} else {
-			EditFileVisitor editVisitor = new EditFileVisitor(env);
-			Files.walkFileTree(path, editVisitor);
-		}
+		EditFileVisitor editVisitor = new EditFileVisitor(env);
+		walkFileTree(path, editVisitor);
 		
 		return CommandStatus.CONTINUE;
 	}
@@ -160,28 +152,14 @@ public class EditCommand extends VisitorCommand {
 		}
 
 		@Override
-		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-			if (isExcluded(dir)) {
-				return FileVisitResult.SKIP_SUBTREE;
-			}
-			
-			return FileVisitResult.CONTINUE;
-		}
-
-		@Override
 		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-			if (isExcluded(file)) {
-				return FileVisitResult.CONTINUE;
-			}
-			
 			edit(environment, file);
-			
 			return FileVisitResult.CONTINUE;
 		}
 
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-//			writeln(environment, "Failed to access " + file);
+			writeln(environment, "Failed to access " + file);
 			return FileVisitResult.CONTINUE;
 		}
 		

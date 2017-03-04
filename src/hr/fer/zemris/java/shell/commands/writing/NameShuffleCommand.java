@@ -1,10 +1,9 @@
 package hr.fer.zemris.java.shell.commands.writing;
 
-import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -49,65 +48,53 @@ public class NameShuffleCommand extends AbstractCommand {
 		List<String> desc = new ArrayList<>();
 		desc.add("Shuffles the file names of a specified directory.");
 		desc.add("Argument must be an existing directory.");
-		desc.add("BE CAREFUL WHILE USING THIS COMMAND!");
+		desc.add("USE THIS COMMAND WITH CAUTION!");
 		return desc;
 	}
 	
 	@Override
-	protected CommandStatus execute0(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			throw new SyntaxException();
 		}
 		
 		Path path = Helper.resolveAbsolutePath(env, s);
+		Helper.requireDirectory(path);
 		
-		if (!Files.exists(path)) {
-			writeln(env, "The system cannot find the path specified.");
-			return CommandStatus.CONTINUE;
-		}
-		if (!Files.isDirectory(path)) {
-			writeln(env, "The specified path must be a directory.");
-			return CommandStatus.CONTINUE;
-		}
+		/* Create an original list of files and keep it for later printing. */
+		List<Path> originalListOfFiles = Files.list(path).collect(Collectors.toList());
 		
-		File dir = path.toFile();
-		
-		/* Create an original list of files and keep it for later printing */
-		List<File> originalListOfFiles = Arrays.asList(dir.listFiles());
-		
-		/* Check if the directory was empty */
+		/* Check if the directory was empty. */
 		if (originalListOfFiles.size() == 0) {
 			writeln(env, "There are no files in the specified directory.");
 			return CommandStatus.CONTINUE;
 		}
 		
-		/* Create a list of file names and shuffle it */
+		/* Create a list of file names and shuffle it. */
 		List<String> listOfFileNames = originalListOfFiles.stream()
-				.map((file) -> {
-					return file.getName();
-				})
+				.map(Path::getFileName)
+				.map(String::valueOf)
 				.collect(Collectors.toList());
-		
 		Collections.shuffle(listOfFileNames);
 		
-		/* Temporarily rename all files */
+		/* Temporarily rename all files. */
 		for (int i = 0, n = originalListOfFiles.size(); i < n; i++) {
-			File tempFile = new File(dir, RENAMING_PREFIX + Integer.toString(i));
-			originalListOfFiles.get(i).renameTo(tempFile);
+			Path tempFile = path.resolve(RENAMING_PREFIX + Integer.toString(i) + ".tmp");
+			Files.move(originalListOfFiles.get(i), tempFile);
 		}
 		
-		/* Make a list of temp files */
-		List<File> tempListOfFiles = Arrays.asList(dir.listFiles());
+		/* Make a list of temporary files. */
+		List<Path> listOfTempFiles = Files.list(path).collect(Collectors.toList());
 		
-		/* Start shuffle-renaming */
-		for (int i = 0, n = tempListOfFiles.size(); i < n; i++) {
-			File originalFile = originalListOfFiles.get(i);
-			File tempFile = tempListOfFiles.get(i);
-			File renamingFile = new File(dir, listOfFileNames.get(i));
+		/* Start shuffle-renaming. */
+		for (int i = 0, n = listOfTempFiles.size(); i < n; i++) {
+			Path originalFile = originalListOfFiles.get(i);
+			Path tempFile = listOfTempFiles.get(i);
+			Path renamingFile = path.resolve(listOfFileNames.get(i));
 			
-			tempFile.renameTo(renamingFile);
+			Files.move(tempFile, renamingFile);
 			
-			writeln(env, originalFile.getName() + " renamed to " + renamingFile.getName());
+			writeln(env, originalFile.getFileName() + " renamed to " + renamingFile.getFileName());
 		}
 		
 		return CommandStatus.CONTINUE;

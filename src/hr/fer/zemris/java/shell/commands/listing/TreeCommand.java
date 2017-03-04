@@ -3,10 +3,10 @@ package hr.fer.zemris.java.shell.commands.listing;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import hr.fer.zemris.java.shell.CommandStatus;
@@ -56,13 +56,11 @@ public class TreeCommand extends VisitorCommand {
 		Path path = s == null ?
 			env.getCurrentPath() : Helper.resolveAbsolutePath(env, s);
 		
-		if (!Files.isDirectory(path)) {
-			writeln(env, "The specified path must be a directory.");
-			return CommandStatus.CONTINUE;
-		}
+		Helper.requireDirectory(path);
 		
 		/* Passed all checks, start working. */
-		Files.walkFileTree(path, new TreeFileVisitor(env));
+		TreeFileVisitor treeVisitor = new TreeFileVisitor(env);
+		walkFileTree(path, treeVisitor);
 		
 		return CommandStatus.CONTINUE;
 	}
@@ -93,28 +91,25 @@ public class TreeCommand extends VisitorCommand {
 
 		@Override
 		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-			if (isExcluded(dir)) {
-				return FileVisitResult.SKIP_SUBTREE;
+			if (level == 0) {
+				writeln(environment, dir.normalize().toAbsolutePath());
+			} else {
+				print(dir);
 			}
 			
-			print(dir);
 			level++;
 			return FileVisitResult.CONTINUE;
 		}
 
 		@Override
 		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-			if (isExcluded(file)) {
-				return FileVisitResult.CONTINUE;
-			}
-			
 			print(file);
 			return FileVisitResult.CONTINUE;
 		}
 
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-//			writeln(environment, "Failed to access " + file);
+			writeln(environment, "Failed to access " + file);
 			return FileVisitResult.CONTINUE;
 		}
 
@@ -131,22 +126,19 @@ public class TreeCommand extends VisitorCommand {
 		 * @param path path to be written out
 		 */
 		private void print(Path path) {
-			if (level == 0) {
-				writeln(environment, path.normalize().toAbsolutePath().toString());
-			} else {
-				printSpaces(level);
-				writeln(environment, path.getFileName().toString());
-			}
+			writeln(environment, spaces(level)+path.getFileName());
 		}
 		
 		/**
-		 * Prints the <tt>amount</tt> of spaces onto the environment in a single
-		 * line.
+		 * Returns <tt>2*amount</tt> of spaces in a single line.
 		 * 
-		 * @param amount the amount of spaces to be written out
+		 * @param amount the amount times two of spaces to be returned
+		 * @return the specified amount times two of spaces in a string
 		 */
-		private void printSpaces(int amount) {
-			format(environment, "%" + (2*amount) + "s", "");
+		private String spaces(int amount) {
+			char[] chars = new char[2*amount];
+			Arrays.fill(chars, ' ');
+			return new String(chars);
 		}
 		
 	}

@@ -39,6 +39,10 @@ public class FindCommand extends VisitorCommand {
 	/* Flags */
 	/** True if regular expression should be used for pattern matching. */
 	private boolean useRegex;
+	/** True if regular expression pattern should be case sensitive. */
+	private boolean caseSensitive;
+	/** True if lines should be trimmed before printing. */
+	private boolean trim;
 	/** Size limit of files that will be accessed and opened. */
 	private long sizeLimit;
 
@@ -48,7 +52,9 @@ public class FindCommand extends VisitorCommand {
 	public FindCommand() {
 		super("FIND", createCommandDescription(), createFlagDescriptions());
 		commandArguments.addFlagDefinition("r", false);
+		commandArguments.addFlagDefinition("c", false);
 		commandArguments.addFlagDefinition("l", "limit", true);
+		commandArguments.addFlagDefinition("t", "trim", false);
 	}
 
 	@Override
@@ -63,7 +69,6 @@ public class FindCommand extends VisitorCommand {
 	 * 
 	 * @return a list of strings that represents description
 	 */
-	// TODO put command descriptions for all commands in a single .properties file?
 	private static List<String> createCommandDescription() {
 		List<String> desc = new ArrayList<>();
 		desc.add("Searches for the pattern provided as argument, looking in file names and their content.");
@@ -84,7 +89,9 @@ public class FindCommand extends VisitorCommand {
 	private static List<FlagDescription> createFlagDescriptions() {
 		List<FlagDescription> desc = new ArrayList<>();
 		desc.add(new FlagDescription("r", null, null, "Use regex pattern matching."));
+		desc.add(new FlagDescription("c", null, null, "Regex pattern is case sensitive."));
 		desc.add(new FlagDescription("l", "limit", "limit", "Size limit for accessing files. Use 0 for unlimited."));
+		desc.add(new FlagDescription("t", "trim", null, "Trim lines before printing."));
 		return desc;
 	}
 	
@@ -92,6 +99,8 @@ public class FindCommand extends VisitorCommand {
 	protected String compileFlags(Environment env, String s) {
 		/* Initialize default values. */
 		useRegex = false;
+		caseSensitive = false;
+		trim = false;
 		sizeLimit = DEFAULT_SIZE_LIMIT;
 
 		/* Compile! */
@@ -100,6 +109,14 @@ public class FindCommand extends VisitorCommand {
 		/* Replace default values with flag values, if any. */
 		if (commandArguments.containsFlag("r")) {
 			useRegex = true;
+		}
+		
+		if (commandArguments.containsFlag("c")) {
+			caseSensitive = true;
+		}
+		
+		if (commandArguments.containsFlag("t", "trim")) {
+			trim = true;
 		}
 		
 		if (commandArguments.containsFlag("l", "limit")) {
@@ -140,7 +157,9 @@ public class FindCommand extends VisitorCommand {
 		MyPattern myPattern;
 		try {
 			if (useRegex) {
-				myPattern = new MyPattern(Pattern.compile(filter, Pattern.CASE_INSENSITIVE));
+				myPattern = caseSensitive ?
+					new MyPattern(Pattern.compile(filter)) :
+					new MyPattern(Pattern.compile(filter, Pattern.CASE_INSENSITIVE));
 			} else {
 				myPattern = new MyPattern(filter);
 			}
@@ -153,22 +172,9 @@ public class FindCommand extends VisitorCommand {
 		/* Clear previously marked paths. */
 		env.clearMarks();
 
-		/* If path is a file, find matching lines inside a file. */
-		if (Files.isRegularFile(path)) {
-			printMatches(env, myPattern, path);
-			return CommandStatus.CONTINUE;
-		}
-
-		/* If excluding paths are set, but one does not exist. */
-		for (Path exclude : excludes) {
-			if (!Files.exists(exclude)) {
-				writeln(env, "Excluded path " + exclude + " does not exist.");
-				return CommandStatus.CONTINUE;
-			}
-		}
-
-		FindFileVisitor filterVisitor = new FindFileVisitor(env, path, myPattern);
-		Files.walkFileTree(path, filterVisitor);
+		/* Visit file or directory. */
+		FindFileVisitor findVisitor = new FindFileVisitor(env, path, myPattern);
+		walkFileTree(path, findVisitor);
 
 		return CommandStatus.CONTINUE;
 	}
@@ -192,40 +198,41 @@ public class FindCommand extends VisitorCommand {
 	 * @param env an environment
 	 * @param myPattern pattern to be matched against
 	 * @param file file upon which pattern matching is executed
+	 * @param trim indicates if lines should be trimmed before printing
 	 * @throws IOException if an I/O exception occurs
 	 */
-	private static void printMatches(Environment env, MyPattern myPattern, Path file) throws IOException {
+	private static void printMatches(Environment env, MyPattern myPattern, Path file, boolean trim) throws IOException {
 		if (!Files.isReadable(file)) {
 			writeln(env, "Failed to access " + file);
 			return;
 		}
 
-		BufferedReader br = new BufferedReader(
+		try (BufferedReader br = new BufferedReader(
 			new InputStreamReader(
 				new BufferedInputStream(
-					Files.newInputStream(file)), StandardCharsets.UTF_8));
+					Files.newInputStream(file)), StandardCharsets.UTF_8))) {
 		
-//		BufferedReader br = Files.newBufferedReader(file, StandardCharsets.UTF_8);
-
-		StringBuilder sb = new StringBuilder();
-		int counter = 0;
-		String line;
-		while ((line = br.readLine()) != null) {
-			counter++;
-			line.replace((char) 7, (char) 0);
-			if (myPattern.matches(line)) {
-				sb	.append("   ")
-					.append(counter)
-					.append(": ")
-					.append(line)
-					.append("\n");
+			StringBuilder sb = new StringBuilder();
+			int counter = 0;
+			String line;
+			while ((line = br.readLine()) != null) {
+				counter++;
+				line = line.replace((char) 7, (char) 0);
+				if (trim) line = line.trim();
+				if (myPattern.matches(line)) {
+					sb	.append("   ")
+						.append(counter)
+						.append(": ")
+						.append(line)
+						.append("\n");
+				}
 			}
-		}
-
-		boolean nameMatches = myPattern.matches(file.getFileName().toString());
-		if (sb.length() != 0 || nameMatches) {
-			markAndPrintPath(env, file);
-			writeln(env, sb.toString());
+	
+			boolean nameMatches = myPattern.matches(file.getFileName().toString());
+			if (sb.length() != 0 || nameMatches) {
+				markAndPrintPath(env, file);
+				writeln(env, sb.toString());
+			}
 		}
 	}
 
@@ -321,29 +328,15 @@ public class FindCommand extends VisitorCommand {
 			this.limitStr = Helper.humanReadableByteCount(sizeLimit);
 		}
 
-		@Override
-		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-			// TODO is it possible to separate isExcluded(dir) and isExcluded(file) logic from each command?
-			if (isExcluded(dir)) {
-				return FileVisitResult.SKIP_SUBTREE;
-			}
-
-			return FileVisitResult.CONTINUE;
-		}
-
 		/**
 		 * Checks if the file name or content match the given
 		 * {@link FindFileVisitor#pattern pattern} and writes it out if it does.
 		 */
 		@Override
 		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-			if (isExcluded(file)) {
-				return FileVisitResult.CONTINUE;
-			}
-
 			if (Files.size(file) <= sizeLimit) {
 				try {
-					printMatches(environment, pattern, file);
+					printMatches(environment, pattern, file, trim);
 				} catch (IOException e) {
 					visitFileFailed(file, e);
 				}

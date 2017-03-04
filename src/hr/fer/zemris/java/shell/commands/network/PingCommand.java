@@ -27,7 +27,8 @@ public class PingCommand extends AbstractCommand {
 	private static final int DEFAULT_TTL = 0;
 	/** Maximum amount of time, in milliseconds, the try should take. */
 	private static final int DEFAULT_TIMEOUT = 5000;
-	
+	/** Default time, in milliseconds, between each echo request. */
+	private static final long DEFAULT_INTERVAL = 1000;
 	
 	/* Flags */
 	/** Number of echo requests to send. */
@@ -36,6 +37,8 @@ public class PingCommand extends AbstractCommand {
 	private int timeout;
 	/** Time to live (maximum number of hops to try). */
 	private int ttl;
+	/** Time, in milliseconds, between each echo request. */
+	private long interval;
 	
 	/**
 	 * Constructs a new command object of type {@code PingCommand}.
@@ -45,6 +48,7 @@ public class PingCommand extends AbstractCommand {
 		commandArguments.addFlagDefinition("n", "count", true);
 		commandArguments.addFlagDefinition("t", "timeout", true);
 		commandArguments.addFlagDefinition("T", "ttl", true);
+		commandArguments.addFlagDefinition("i", "interval", true);
 	}
 	
 	@Override
@@ -79,6 +83,7 @@ public class PingCommand extends AbstractCommand {
 		desc.add(new FlagDescription("n", "count", "count", "Number of echo requests to send."));
 		desc.add(new FlagDescription("t", "timeout", "timeout", "Timeout in milliseconds to wait for each reply."));
 		desc.add(new FlagDescription("T", "ttl", "ttl", "Time to live."));
+		desc.add(new FlagDescription("i", "interval", "time", "Time in milliseconds between each echo request."));
 		return desc;
 	}
 	
@@ -88,21 +93,26 @@ public class PingCommand extends AbstractCommand {
 		count = DEFAULT_COUNT;
 		timeout = DEFAULT_TIMEOUT;
 		ttl = DEFAULT_TTL;
+		interval = DEFAULT_INTERVAL;
 
 		/* Compile! */
 		s = commandArguments.compile(s);
 		
 		/* Replace default values with flag values, if any. */
 		if (commandArguments.containsFlag("n", "count")) {
-			count = commandArguments.getFlag("n", "count").getIntArgument();
+			count = commandArguments.getFlag("n", "count").getPositiveIntArgument(false);
 		}
 		
 		if (commandArguments.containsFlag("t", "timeout")) {
-			timeout = commandArguments.getFlag("t", "timeout").getIntArgument();
+			timeout = commandArguments.getFlag("t", "timeout").getPositiveIntArgument(true);
 		}
 		
 		if (commandArguments.containsFlag("T", "ttl")) {
-			ttl = commandArguments.getFlag("T", "ttl").getIntArgument();
+			ttl = commandArguments.getFlag("T", "ttl").getPositiveIntArgument(true);
+		}
+		
+		if (commandArguments.containsFlag("i", "interval")) {
+			interval = commandArguments.getFlag("i", "interval").getPositiveLongArgument(true);
 		}
 
 		return super.compileFlags(env, s);
@@ -127,8 +137,8 @@ public class PingCommand extends AbstractCommand {
 		int sent = 0;
 		int received = 0;
 
-		long min = Integer.MAX_VALUE;
-		long max = Integer.MIN_VALUE;
+		long min = Long.MAX_VALUE;
+		long max = Long.MIN_VALUE;
 		long totalTime = 0;
 
 		for (int i = 1; i <= count; i++) {
@@ -148,8 +158,8 @@ public class PingCommand extends AbstractCommand {
 			}
 			
 			try {
-				if (i < DEFAULT_COUNT)
-					Thread.sleep(1000);
+				if (i < count)
+					Thread.sleep(interval);
 			} catch (InterruptedException ignorable) {}
 		}
 		
@@ -158,8 +168,10 @@ public class PingCommand extends AbstractCommand {
 		formatln(env, "Ping statistics for %s:", inet.getHostAddress());
 		formatln(env, "  Packets: Sent = %d, Received = %d, Lost = %d (%d%% loss)",
 			sent, received, lost, 100*lost/sent);
-		formatln(env, "  Round trip times: Min = %dms, Max = %dms, Avg = %dms",
-			min/1_000_000, max/1_000_000, (totalTime / received)/1_000_000);
+		if (received > 0) {
+			formatln(env, "  Round trip times: Min = %dms, Max = %dms, Avg = %dms",
+				min/1_000_000, max/1_000_000, (totalTime / received)/1_000_000);
+		}
 
 		return CommandStatus.CONTINUE;
 	}

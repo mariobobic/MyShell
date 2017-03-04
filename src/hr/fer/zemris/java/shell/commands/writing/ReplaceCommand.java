@@ -63,10 +63,7 @@ public class ReplaceCommand extends AbstractCommand {
 		}
 		
 		Path path = Helper.resolveAbsolutePath(env, args[0]);
-		if (!Files.exists(path)) {
-			writeln(env, "The system cannot find the path specified.");
-			return CommandStatus.CONTINUE;
-		}
+		Helper.requireExists(path);
 		
 		String target = args[1];
 		String replacement = args[2];

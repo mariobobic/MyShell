@@ -97,18 +97,10 @@ public class ExtractCommand extends VisitorCommand {
 		}
 		
 		Path path = Helper.resolveAbsolutePath(env, s);
-		
-		if (!Files.exists(path)) {
-			writeln(env, "The system cannot find the path specified.");
-			return CommandStatus.CONTINUE;
-		}
-		if (!Files.isDirectory(path)) {
-			writeln(env, "The specified path must be a directory.");
-			return CommandStatus.CONTINUE;
-		}
+		Helper.requireDirectory(path);
 		
 		ExtractFileVisitor extractVisitor = new ExtractFileVisitor(env, path);
-		Files.walkFileTree(path, extractVisitor);
+		walkFileTree(path, extractVisitor);
 
 		return CommandStatus.CONTINUE;
 	}
@@ -137,22 +129,9 @@ public class ExtractCommand extends VisitorCommand {
 			this.environment = environment;
 			this.root = root;
 		}
-		
-		@Override
-		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-			if (isExcluded(dir)) {
-				return FileVisitResult.SKIP_SUBTREE;
-			}
-
-			return FileVisitResult.CONTINUE;
-		}
 
 		@Override
 		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-			if (isExcluded(file)) {
-				return FileVisitResult.SKIP_SUBTREE;
-			}
-			
 			if (file.getParent().equals(root)) {
 				return FileVisitResult.CONTINUE;
 			}

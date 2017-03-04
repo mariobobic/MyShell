@@ -61,10 +61,7 @@ public class ByteShuffleCommand extends AbstractCommand {
 		String[] args = Helper.extractArguments(s);
 		
 		Path file = Helper.resolveAbsolutePath(env, args[0]);
-		if (!Files.isRegularFile(file)) {
-			writeln(env, "The system cannot find the file specified.");
-			return CommandStatus.CONTINUE;
-		}
+		Helper.requireFile(file);
 		
 		// TODO Flag this up!
 		int offset;

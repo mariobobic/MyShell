@@ -52,7 +52,6 @@ public class RmdirCommand extends AbstractCommand {
 		}
 		
 		Path dir = Helper.resolveAbsolutePath(env, s);
-		
 		if (!Files.isDirectory(dir)){
 			writeln(env, dir.getFileName() + " is not a directory.");
 		} else {

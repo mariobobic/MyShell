@@ -55,32 +55,19 @@ public class RmCommand extends VisitorCommand {
 		}
 		
 		Path path = Helper.resolveAbsolutePath(env, s);
-
-		if (!Files.exists(path)) {
-			writeln(env, "The system cannot find the file specified.");
-			return CommandStatus.CONTINUE;
-		}
+		Helper.requireExists(path);
 		
-		// Remove directory
+		// Require confirmation for directories
 		if (Files.isDirectory(path)) {
 			boolean confirmed = promptConfirm(env, "Remove directory " + path + "?");
 			if (!confirmed) {
 				writeln(env, "Cancelled.");
 				return CommandStatus.CONTINUE;
 			}
-			
-			RmFileVisitor rmVisitor = new RmFileVisitor(env, path);
-			Files.walkFileTree(path, rmVisitor);
-			
-		// Remove file
-		} else {
-			try {
-				Files.delete(path);
-				writeln(env, "Deleted file " + path.getFileName());
-			} catch (IOException e) {
-				writeln(env, "Failed to delete file " + path.getFileName());
-			}
 		}
+		
+		RmFileVisitor rmVisitor = new RmFileVisitor(env, path);
+		walkFileTree(path, rmVisitor);
 			
 		return CommandStatus.CONTINUE;
 	}
@@ -99,32 +86,18 @@ public class RmCommand extends VisitorCommand {
 		private Path root;
 
 		/**
-		 * Initializes a new instance of this class setting only an environment used
-		 * only for writing out messages.
+		 * Constructs an instance of {@code RmFileVisitor} with the specified arguments.
 		 * 
 		 * @param environment an environment
 		 * @param root starting directory of the tree walker
 		 */
 		public RmFileVisitor(Environment environment, Path root) {
 			this.environment = environment;
-			this.root = root;
+			this.root = root.getParent();
 		}
 		
 		@Override
-		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-			if (isExcluded(dir)) {
-				return FileVisitResult.SKIP_SUBTREE;
-			}
-
-			return FileVisitResult.CONTINUE;
-		}
-
-		@Override
 		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-			if (isExcluded(file)) {
-				return FileVisitResult.SKIP_SUBTREE;
-			}
-			
 			Path relative = root.relativize(file);
 			try {
 				Files.delete(file);

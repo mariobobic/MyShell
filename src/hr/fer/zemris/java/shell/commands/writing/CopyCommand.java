@@ -3,13 +3,17 @@ package hr.fer.zemris.java.shell.commands.writing;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 
 import hr.fer.zemris.java.shell.CommandStatus;
-import hr.fer.zemris.java.shell.commands.AbstractCommand;
+import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
 import hr.fer.zemris.java.shell.utility.SyntaxException;
@@ -26,7 +30,7 @@ import hr.fer.zemris.java.shell.utility.SyntaxException;
  *
  * @author Mario Bobic
  */
-public class CopyCommand extends AbstractCommand {
+public class CopyCommand extends VisitorCommand {
 
 	/**
 	 * Constructs a new command object of type {@code CopyCommand}.
@@ -37,7 +41,7 @@ public class CopyCommand extends AbstractCommand {
 	
 	@Override
 	protected String getCommandSyntax() {
-		return "<filename1> <filename2>";
+		return "<source_file> <target_path>";
 	}
 	
 	/**
@@ -60,7 +64,7 @@ public class CopyCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) {
+	protected CommandStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			throw new SyntaxException();
 		}
@@ -71,75 +75,124 @@ public class CopyCommand extends AbstractCommand {
 		}
 		
 		Path source = Helper.resolveAbsolutePath(env, args[0]);
-		Path dest = Helper.resolveAbsolutePath(env, args[1]);
+		Path target = Helper.resolveAbsolutePath(env, args[1]);
+		Helper.requireExists(source);
 		
-		copyFile(source, dest, env);
+		/* Both paths must be of same type. */
+		if (Files.isDirectory(source) && Files.isRegularFile(target)) {
+			writeln(env, "Can not copy directory onto a file.");
+			return CommandStatus.CONTINUE;
+		}
+		
+		/* Passed all checks, start working. */
+		CopyFileVisitor copyVisitor = new CopyFileVisitor(env, source, target);
+		walkFileTree(source, copyVisitor);
 		
 		return CommandStatus.CONTINUE;
 	}
 
 	/**
-	 * Validates both paths and copies {@code src} to {@code dst}.
+	 * Validates both paths and copies <tt>source</tt> to <tt>target</tt>. This
+	 * method also writes out the full path to the newly created file upon
+	 * succeeding.
 	 * 
-	 * @param src the path to file to be copied
-	 * @param dst the path to destination file or directory
+	 * @param source the path to file to be copied
+	 * @param target the path to destination file or directory
 	 * @param env an environment
 	 */
-	private static void copyFile(Path src, Path dst, Environment env) {
-		if (!Files.exists(src)) {
-			writeln(env, "The system cannot find the file specified.");
+	private static void copyFile(Path source, Path target, Environment env) {
+		if (source.equals(target)) {
+			writeln(env, "File cannot be copied onto itself: " + source);
 			return;
 		}
-		if (Files.isDirectory(src)) {
-			writeln(env, "Cannot copy directories using this command.");
-			return;
+		
+		if (Files.isDirectory(target)) {
+			target = target.resolve(source.getFileName());
 		}
-		if (src.equals(dst)) {
-			writeln(env, "The file cannot be copied onto itself.");
-			return;
+		
+		if (Files.exists(target)) {
+			if (!promptConfirm(env, "File " + target + " already exists. Overwrite?")) {
+				writeln(env, "Cancelled.");
+				return;
+			}
 		}
-		if (Files.isDirectory(dst)) {
-			createNewFile(src, dst.resolve(src.getFileName()), env);
-		} else {
-			createNewFile(src, dst, env);
+		
+		try {
+			Files.createDirectories(target.getParent());
+			createNewFile(source, target);
+			writeln(env, "Copied: " + target);
+		} catch (IOException e) {
+			writeln(env, "Could not copy " + source + " to " + target);
 		}
 	}
 	
 	/**
 	 * A file creator method. It copies the exact same contents from the
-	 * <tt>src</tt> to the <tt>dst</tt>, creating a new file. This method also
-	 * writes out the full path to the newly created file upon succeeding.
+	 * <tt>source</tt> to the <tt>target</tt>, creating a new file. 
 	 * <p>
 	 * Implementation note: creates files using binary streams.
 	 * 
-	 * @param src an original file to be copied
-	 * @param dst the destination directory
-	 * @param env an environment
+	 * @param source an original file to be copied
+	 * @param target the destination directory
+	 * @throws IOException if an I/O error occurs
 	 */
-	private static void createNewFile(Path src, Path dst, Environment env) {
-		if (Files.exists(dst)) {
-			if (!promptConfirm(env, "File " + dst + " already exists. Overwrite?")) {
-				writeln(env, "Cancelled.");
-				return;
-			}
-		}
-		dst.getParent().toFile().mkdirs();
-		
+	private static void createNewFile(Path source, Path target) throws IOException {
 		try (
-				BufferedInputStream in = new BufferedInputStream(Files.newInputStream(src));
-				BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(dst));
+				BufferedInputStream in = new BufferedInputStream(Files.newInputStream(source));
+				BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(target));
 		) {
-			
 			int len;
 			byte[] buff = new byte[1024];
 			while ((len = in.read(buff)) > 0) {
 				out.write(buff, 0, len);
 			}
-			writeln(env, "Copied: " + dst);
+		}
+	}
+	
+	/**
+	 * A {@linkplain FileVisitor} implementation that is used to serve the
+	 * {@linkplain CopyCommand}.
+	 *
+	 * @author Mario Bobic
+	 */
+	private class CopyFileVisitor extends SimpleFileVisitor<Path> {
+		
+		/** An environment. */
+		private Environment environment;
+		
+		/** This path's root directory. */
+		private Path root;
+		/** Other path's root directory. */
+		private Path otherRoot;
+		
+		/**
+		 * Constructs an instance of {@code CopyFileVisitor} with the specified
+		 * arguments.
+		 * 
+		 * @param environment an environment
+		 * @param root root directory of this file visitor
+		 * @param otherRoot other path's root directory
+		 */
+		public CopyFileVisitor(Environment environment, Path root, Path otherRoot) {
+			this.environment = environment;
+			this.root = Files.isRegularFile(root) ? root.getParent() : root;
+			this.otherRoot = Files.isRegularFile(otherRoot) ? otherRoot.getParent() : otherRoot;
+		}
+
+		@Override
+		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+			Path relative = root.relativize(file);
+			Path target = otherRoot.resolve(relative);
 			
-		} catch (IOException e) {
-			writeln(env, "An error occured during the copying of file " + src);
-			writeln(env, e.getMessage());
+			copyFile(file, target, environment);
+			
+			return FileVisitResult.CONTINUE;
+		}
+
+		@Override
+		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+			writeln(environment, "Failed to access " + file);
+			return FileVisitResult.CONTINUE;
 		}
 	}
 

@@ -52,18 +52,18 @@ public class CountCommand extends VisitorCommand {
 
 	@Override
 	protected CommandStatus execute0(Environment env, String s) throws IOException {
-		Path path = s == null ? env.getCurrentPath() : Helper.resolveAbsolutePath(env, s);
-		if (!Files.isDirectory(path)) {
-			writeln(env, "The system cannot find the directory specified.");
-			return CommandStatus.CONTINUE;
-		}
+		Path path = s == null ?
+			env.getCurrentPath() : Helper.resolveAbsolutePath(env, s);
+		
+		Helper.requireDirectory(path);
 		
 		CountFileVisitor countVisitor = new CountFileVisitor();
+		walkFileTree(path, countVisitor);
 		
-		Files.walkFileTree(path, countVisitor);
 		int files = countVisitor.getFileCount();
 		int folders = countVisitor.getFolderCount();
 		int fails = countVisitor.getFails();
+		
 		writeln(env, "Files: " + files);
 		writeln(env, "Folders: " + folders);
 		if (fails != 0) {
@@ -91,20 +91,12 @@ public class CountCommand extends VisitorCommand {
 		
 		@Override
 		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-			if (isExcluded(dir)) {
-				return FileVisitResult.SKIP_SUBTREE;
-			}
-			
 			folderCount++;
 			return FileVisitResult.CONTINUE;
 		}
 
 		@Override
 		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-			if (isExcluded(file)) {
-				return FileVisitResult.CONTINUE;
-			}
-			
 			fileCount++;
 			return FileVisitResult.CONTINUE;
 		}

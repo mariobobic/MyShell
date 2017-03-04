@@ -1,7 +1,6 @@
 package hr.fer.zemris.java.shell.commands.system;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +13,7 @@ import hr.fer.zemris.java.shell.utility.Helper;
 /**
  * A command that is used for changing the current working directory. The given
  * path may be absolute or relative to the current working directory. It can
- * also be inputed with quotation marks, which is widely used to interpret files
+ * also be entered with quotation marks, which is widely used to interpret files
  * and directories containing whitespaces.
  *
  * @author Mario Bobic
@@ -57,15 +56,10 @@ public class CdCommand extends AbstractCommand {
 		}
 
 		Path newPath = Helper.resolveAbsolutePath(env, s);
+		Helper.requireDirectory(newPath);
 		
-		if (!Files.exists(newPath)) {
-			writeln(env, "The system cannot find the path specified.");
-		} else if (!Files.isDirectory(newPath)) {
-			writeln(env, "The specified path must be a directory.");
-		} else {
-			env.setCurrentPath(newPath.toRealPath());
-		}
-
+		env.setCurrentPath(newPath.toRealPath());
+		
 		return CommandStatus.CONTINUE;
 	}
 

@@ -2,7 +2,6 @@ package hr.fer.zemris.java.shell.commands.system;
 
 import java.awt.Desktop;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,10 +55,7 @@ public class OpenCommand extends AbstractCommand {
 		}
 		
 		Path path = Helper.resolveAbsolutePath(env, s);
-		if (!Files.exists(path)) {
-			writeln(env, "The system cannot find the file specified.");
-			return CommandStatus.CONTINUE;
-		}
+		Helper.requireExists(path);
 		
 		Desktop.getDesktop().open(path.toFile());
 		
