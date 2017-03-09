@@ -12,7 +12,7 @@ import hr.fer.zemris.java.shell.CommandStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.SyntaxException;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
  * A command that is used for filtering and writing out the absolute path of

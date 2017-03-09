@@ -20,7 +20,7 @@ import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Crypto;
 import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.SyntaxException;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
  * This command is paired with {@link HostCommand} and {@link ConnectCommand}
@@ -79,55 +79,65 @@ public class DownloadCommand extends VisitorCommand {
 		} catch (SocketException e) {
 			// Connection has ended
 			return CommandStatus.TERMINATE;
+		} catch (IOException e) {
+			System.out.println(e.getMessage());
 		}
 		
 		return CommandStatus.CONTINUE;
 	}
 	
 	/**
-	 * Uploads the specified <tt>path</tt> to the client whose input and output
+	 * Uploads the specified <tt>file</tt> to the client whose input and output
 	 * streams are fetched through the environment <tt>env</tt>. Path
-	 * <tt>root</tt> is used to create a relative file name of the path, which
-	 * is then sent to the client to create an appropriate directory structure
-	 * before downloading.
+	 * <tt>root</tt> is used to create a relative file name of the file that is
+	 * being uploaded, which is then sent to the client to create an appropriate
+	 * directory structure before downloading.
+	 * <p>
+	 * An {@code IOException} may be thrown if the client connection is not
+	 * ready to receive the file.
 	 * 
 	 * @param env an environment
 	 * @param root root path from which files are being uploaded
-	 * @param path path to be uploaded
+	 * @param file path to be uploaded
+	 * @throws IOException if an I/O error occurs
 	 * @throws SocketException if a connection error occurs between host and
 	 *         client (typically the client ends the connection)
 	 */
-	private void upload(Environment env, Path root, Path path) throws SocketException {
+	private void upload(Environment env, Path root, Path file) throws IOException, SocketException {
 		OutputStream outToClient = env.getConnection().getOutToClient();
 		InputStream inFromClient = env.getConnection().getInFromClient();
 		
 		try {
+			//////////////////////////////////////////////////
+			///////////////// File parameters ////////////////
+			//////////////////////////////////////////////////
+			
 			// Send a hint that download has started
 			byte[] start = new String(Helper.DOWNLOAD_KEYWORD).getBytes();
 			outToClient.write(start);
 			inFromClient.read(); // wait for signal: accepted download
 			
 			// Send file name
-			byte[] filename = root.relativize(path).toString().replace('\\', '/').getBytes();
+			byte[] filename = root.relativize(file).toString().replace('\\', '/').getBytes();
 			outToClient.write(filename);
 			inFromClient.read(); // wait for signal: received file name
 			
-			// Send file type
-			int filetype = Files.isDirectory(path) ? 1 : 0;
-			outToClient.write(filetype);
-			inFromClient.read(); // wait for signal: received file type
-			
-			if (Files.isDirectory(path)) {
-				return;
-			}
-			
 			// Send file size
-			byte[] filesize = Long.toString(Crypto.postSize(path)).getBytes();
+			byte[] filesize = Long.toString(Crypto.postSize(file)).getBytes();
 			outToClient.write(filesize);
 			inFromClient.read(); // wait for signal: received file size
 			
+			int ready = inFromClient.read(); // wait for signal: ready
+			if (ready == 0) {
+				throw new IOException("Client not ready. Aborting upload: " + file);
+			}
+			
+			//////////////////////////////////////////////////
+			//////////////////// Uploading ///////////////////
+			//////////////////////////////////////////////////
+			
 			// Start streaming file
-			BufferedInputStream fileStream = new BufferedInputStream(Files.newInputStream(path));
+			BufferedInputStream fileStream = new BufferedInputStream(Files.newInputStream(file));
 			Crypto crypto = env.getConnection().getCrypto();
 			byte[] bytes = new byte[1024];
 			int len;
@@ -136,11 +146,6 @@ public class DownloadCommand extends VisitorCommand {
 				outToClient.write(encrypted);
 			}
 			outToClient.write(crypto.doFinal());
-		} catch (SocketException e) {
-			throw e; // client has ended connection
-		} catch (IOException e) {
-			writeln(env, "An error occured while downloading " + path);
-			writeln(env, e.getMessage());
 		} catch (BadPaddingException ignorable) {
 			// ignored, since crypto is in encryption mode
 		} finally {
@@ -173,13 +178,7 @@ public class DownloadCommand extends VisitorCommand {
 		 */
 		public DownloadFileVisitor(Environment environment, Path start) {
 			this.environment = environment;
-			this.root = start.getParent();
-		}
-
-		@Override
-		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-			process(dir);
-			return FileVisitResult.CONTINUE;
+			this.root = Helper.getParent(start);
 		}
 
 		@Override

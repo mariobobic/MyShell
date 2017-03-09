@@ -11,6 +11,7 @@ import java.util.List;
 import org.junit.Test;
 
 import hr.fer.zemris.java.shell.utility.CommandArguments.Flag;
+import hr.fer.zemris.java.shell.utility.exceptions.InvalidFlagException;
 
 /**
  * Tests the functionality of {@link CommandArguments} utility class.

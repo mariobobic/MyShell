@@ -22,6 +22,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import hr.fer.zemris.java.shell.MyShell.EnvironmentImpl;
+import hr.fer.zemris.java.shell.utility.exceptions.IllegalPathException;
 
 /**
  * Tests the functionality of {@link Helper} utility class.
@@ -429,7 +430,7 @@ public class HelperTests {
 
 		list.add(1);
 		list.add(2);
-//		assertEquals(1, Helper.firstElement(list)); // TODO The method assertEquals(Object, Object) is ambiguous for the type HelperTests
+		assertEquals(Integer.valueOf(1), Helper.firstElement(list));
 	}
 	
 	@Test
@@ -439,7 +440,7 @@ public class HelperTests {
 
 		list.add(1);
 		list.add(2);
-//		assertEquals(2, Helper.lastElement(list)); // TODO The method assertEquals(Object, Object) is ambiguous for the type HelperTests
+		assertEquals(Integer.valueOf(2), Helper.lastElement(list));
 	}
 	
 	@Test

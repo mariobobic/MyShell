@@ -19,7 +19,7 @@ import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.SyntaxException;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
  * Walks the directory tree from the given path, or current path if no path is
@@ -41,7 +41,7 @@ public class ShowCommand extends VisitorCommand {
 	private static final DateTimeFormatter FORMATTER =
 			DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss").withZone(ZoneId.systemDefault());
 
-	/** A comparator that compares files by their size, smallest first */
+	/** A comparator that compares files by their size, smallest first. */
 	private static final Comparator<Path> COMP_SMALLEST = (f1, f2) -> {
 		return Long.compare(size(f1), size(f2));
 	};
@@ -162,13 +162,13 @@ public class ShowCommand extends VisitorCommand {
 	private static Comparator<Path> getComparator(String attr) {
 		Comparator<Path> comparator = null;
 		
-		if ("largest".equals(attr)) {
+		if ("largest".equalsIgnoreCase(attr)) {
 			comparator = COMP_SMALLEST.reversed();
-		} else if ("smallest".equals(attr)) {
+		} else if ("smallest".equalsIgnoreCase(attr)) {
 			comparator = COMP_SMALLEST;
-		} else if ("newest".equals(attr)) {
+		} else if ("newest".equalsIgnoreCase(attr)) {
 			comparator = COMP_OLDEST.reversed();
-		} else if ("oldest".equals(attr)) {
+		} else if ("oldest".equalsIgnoreCase(attr)) {
 			comparator = COMP_OLDEST;
 		}
 		
@@ -223,7 +223,7 @@ public class ShowCommand extends VisitorCommand {
 		/** Comparator used to compare files. */
 		private Comparator<Path> comparator;
 		
-		/** List of largest files in the given directory tree */
+		/** List of largest files in the given directory tree. */
 		private List<Path> filteredFiles;
 		
 		/**

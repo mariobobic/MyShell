@@ -33,7 +33,7 @@ public class DirCommand extends AbstractCommand {
 	private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("###,###.##");
 	
 	/**
-	 * Constructs a new command object of type {@code LsCommand}.
+	 * Constructs a new command object of type {@code DirCommand}.
 	 */
 	public DirCommand() {
 		super("DIR", createCommandDescription());

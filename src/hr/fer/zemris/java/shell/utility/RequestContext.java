@@ -179,7 +179,7 @@ public class RequestContext {
 	
 	/**
 	 * Checks if the header has already been generated and throws
-	 * {@linkplain RuntimeException} if it has.
+	 * {@code RuntimeException} if it has.
 	 * 
 	 * @throws RuntimeException if header has already been generated
 	 */

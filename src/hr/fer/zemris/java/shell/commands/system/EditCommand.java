@@ -15,7 +15,7 @@ import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.SyntaxException;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
  * Launches the associated editor application to open the file specified as a

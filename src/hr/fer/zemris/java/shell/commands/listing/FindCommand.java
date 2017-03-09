@@ -20,7 +20,7 @@ import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.SyntaxException;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
  * A command that is used for filtering file names or contents of a file and
@@ -148,6 +148,7 @@ public class FindCommand extends VisitorCommand {
 			filter = args[0];
 		} else if (args.length == 2) {
 			path = Helper.resolveAbsolutePath(env, args[0]);
+			Helper.requireExists(path);
 			filter = args[1];
 		} else {
 			throw new SyntaxException();

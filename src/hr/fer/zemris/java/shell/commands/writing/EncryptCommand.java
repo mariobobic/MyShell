@@ -14,7 +14,7 @@ import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Crypto;
 import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.SyntaxException;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
  * A command that is used for encrypting files with AES cryptoalgorithm. The
@@ -77,7 +77,7 @@ public class EncryptCommand extends AbstractCommand {
 		Crypto crypto = new Crypto(hash, Crypto.ENCRYPT);
 		
 		try {
-			crypto.execute(sourcefile, destfile);
+			crypto.execute(sourcefile, destfile, env);
 		} catch (BadPaddingException ignorable) {
 			// ignored, since crypto is in encryption mode
 		}

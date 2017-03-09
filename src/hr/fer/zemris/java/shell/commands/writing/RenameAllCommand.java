@@ -14,7 +14,7 @@ import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.SyntaxException;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
  * A command that is used for renaming all files and directories with the path
@@ -28,7 +28,7 @@ import hr.fer.zemris.java.shell.utility.SyntaxException;
  *    ...
  *    example099
  *    example100
- * </blockquote></pre>
+ * </pre></blockquote>
  * A start index can also be specified for this command, as well as the position
  * of file index in its file name.
  *
@@ -111,7 +111,7 @@ public class RenameAllCommand extends AbstractCommand {
 			throw new SyntaxException();
 		}
 		
-		String[] args = Helper.extractArguments(s);
+		String[] args = Helper.extractArguments(s, 2);
 		if (args.length < 2) {
 			throw new SyntaxException();
 		}

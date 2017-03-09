@@ -1,4 +1,4 @@
-package hr.fer.zemris.java.shell.utility;
+package hr.fer.zemris.java.shell.utility.exceptions;
 
 /**
  * Exception that is thrown when an illegal path is used. For example, if a

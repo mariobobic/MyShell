@@ -75,7 +75,7 @@ import hr.fer.zemris.java.shell.utility.Helper;
  *
  * @author Mario Bobic
  * @author Marko Čupić
- * @version PC
+ * @version ZaBa
  */
 public class MyShell {
 	
@@ -317,10 +317,12 @@ public class MyShell {
 		/** Writer of this environment. May be connected to a remote machine. */
 		private BufferedWriter writer = stdOut;
 		
-		/** Path where the program was ran */
+		/** Path where the program was ran. */
 		private Path homePath = Paths.get(".").normalize().toAbsolutePath();
-		/** Current path of the user positioning */
+		/** Current path of the user positioning. */
 		private Path currentPath = homePath;
+		/** Last path that was requested. */
+		private Path lastPath = currentPath;
 		
 		/** Prompt symbol to indicate the environment is ready. */
 		private Character promptSymbol = '>';
@@ -386,9 +388,16 @@ public class MyShell {
 		@Override
 		public void setCurrentPath(Path path) {
 			currentPath = path;
-			try {
-				writeln("Current directory is now set to " + currentPath);
-			} catch (IOException e) {}
+		}
+
+		@Override
+		public Path getLastPath() {
+			return lastPath;
+		}
+
+		@Override
+		public void setLastPath(Path path) {
+			lastPath = path;
 		}
 		
 		@Override

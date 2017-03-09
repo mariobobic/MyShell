@@ -12,7 +12,7 @@ import hr.fer.zemris.java.shell.CommandStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.SyntaxException;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
  * A command that is used for shuffling file names. Argument must be an existing
@@ -22,7 +22,7 @@ import hr.fer.zemris.java.shell.utility.SyntaxException;
  */
 public class NameShuffleCommand extends AbstractCommand {
 	
-	/** Prefix used for temporarily renaming files */
+	/** Prefix used for temporarily renaming files. */
 	private static final String RENAMING_PREFIX = "__temp-";
 
 	/**

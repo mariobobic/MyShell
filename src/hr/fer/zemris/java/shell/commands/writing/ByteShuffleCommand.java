@@ -8,12 +8,15 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 
 import hr.fer.zemris.java.shell.CommandStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.SyntaxException;
+import hr.fer.zemris.java.shell.utility.Progress;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
  * A command that is used for shuffling bytes of a file. The user can specify
@@ -83,16 +86,17 @@ public class ByteShuffleCommand extends AbstractCommand {
 		}
 
 		Path tempFile = Files.createTempFile(file.getParent(), null, null);
+		Progress progress = new Progress(env, Files.size(file)+length, true);
 		try (
-				FileInputStream in = new FileInputStream(file.toFile());
-				FileOutputStream out = new FileOutputStream(tempFile.toFile());
+			FileInputStream in = new FileInputStream(file.toFile());
+			FileOutputStream out = new FileOutputStream(tempFile.toFile());
 		) {
-
 			/* First copy entire file. */
 			int len;
 			byte[] bytes = new byte[1024];
 			while ((len = in.read(bytes)) > 0) {
 				out.write(bytes, 0, len);
+				progress.add(len);
 			}
 
 			/* Rewind both streams. */
@@ -105,9 +109,9 @@ public class ByteShuffleCommand extends AbstractCommand {
 			in.read(bytes, 0, len);
 
 			/* Shuffle the bytes and write to a new file with offset. */
-			byte[] shuffledBytes = shuffleBytes(bytes);
+			byte[] shuffledBytes = shuffle(bytes);
 			out.write(shuffledBytes, 0, len);
-
+			progress.add(shuffledBytes.length);
 		}
 
 		/* Rename the temp file. */
@@ -118,13 +122,37 @@ public class ByteShuffleCommand extends AbstractCommand {
 	}
 	
 	/**
+	 * Shuffles the given byte array randomly. Does not create new objects.
+	 * 
+	 * @param bytes array of bytes to be shuffled
+	 * @return the specified byte array, shuffled
+	 */
+	private static byte[] shuffle(byte[] bytes) {
+		Random rnd = ThreadLocalRandom.current();
+		
+		for (int i = bytes.length - 1; i > 0; i--) {
+			int index = rnd.nextInt(i + 1);
+			
+			byte b = bytes[index];
+			bytes[index] = bytes[i];
+			bytes[i] = b;
+		}
+		
+		return bytes;
+	}
+	
+	/**
 	 * Shuffles the given byte array using the Java&trade; utility methods. The
 	 * byte array is loaded into a List, shuffled and returned as a new byte
 	 * array.
 	 * 
 	 * @param bytes array of bytes to be shuffled
 	 * @return shuffled array of bytes
+	 * @deprecated Uses a lot of heap space. Use {@link #shuffle(byte[])}
+	 *             instead.
 	 */
+	@Deprecated
+	@SuppressWarnings("unused")
 	private static byte[] shuffleBytes(byte[] bytes) {
 		List<Byte> list = new ArrayList<>();
 		for (Byte b : bytes) {

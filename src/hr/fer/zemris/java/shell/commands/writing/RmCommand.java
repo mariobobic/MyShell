@@ -13,7 +13,7 @@ import hr.fer.zemris.java.shell.CommandStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.SyntaxException;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
  * A command that is used for removing files and non-empty directories.
@@ -89,11 +89,11 @@ public class RmCommand extends VisitorCommand {
 		 * Constructs an instance of {@code RmFileVisitor} with the specified arguments.
 		 * 
 		 * @param environment an environment
-		 * @param root starting directory of the tree walker
+		 * @param start starting file of the tree walker
 		 */
-		public RmFileVisitor(Environment environment, Path root) {
+		public RmFileVisitor(Environment environment, Path start) {
 			this.environment = environment;
-			this.root = root.getParent();
+			this.root = Helper.getParent(start);
 		}
 		
 		@Override

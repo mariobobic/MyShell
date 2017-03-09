@@ -17,7 +17,8 @@ import hr.fer.zemris.java.shell.CommandStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.SyntaxException;
+import hr.fer.zemris.java.shell.utility.Progress;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
  * Many sources of information contain redundant data or data that adds little
@@ -72,7 +73,7 @@ public class ZipCommand extends VisitorCommand {
 		}
 		
 		Path source = Helper.resolveAbsolutePath(env, args[0]);
-		Path target = source.resolveSibling(source.getFileName() + ".zip");
+		Path target = source.resolveSibling(Helper.getFileName(source) + ".zip");
 		try {
 			target = Helper.resolveAbsolutePath(env, args[1]);
 		} catch (ArrayIndexOutOfBoundsException e) {}
@@ -103,6 +104,33 @@ public class ZipCommand extends VisitorCommand {
 
 		return CommandStatus.CONTINUE;
 	}
+
+	/**
+	 * Writes all bytes of the specified <tt>file</tt> to the given output
+	 * stream. The bytes are read little by little to avoid large memory
+	 * consumption by a buffered input stream to reduce the number of I/O
+	 * accesses.
+	 * 
+	 * @param env an environment
+	 * @param stream stream where the file will be written
+	 * @param file file to be written to the output stream
+	 * @throws IOException if an I/O error occurs
+	 */
+	private static void write(Environment env, OutputStream stream, Path file) throws IOException {
+		Progress progress = new Progress(env, Files.size(file), true);
+		try (
+			BufferedInputStream in = new BufferedInputStream(Files.newInputStream(file));
+		) {
+			int len;
+			byte[] buff = new byte[1024];
+			while ((len = in.read(buff)) > 0) {
+				stream.write(buff, 0, len);
+				progress.add(len);
+			}
+		} finally {
+			progress.stop();
+		}
+	}
 	
 	/**
 	 * A {@linkplain SimpleFileVisitor} extended and used to serve the
@@ -129,7 +157,7 @@ public class ZipCommand extends VisitorCommand {
 		 */
 		public ZipFileVisitor(Environment environment, Path start, ZipOutputStream zs) {
 			this.environment = environment;
-			this.start = start.getParent();
+			this.start = Helper.getParent(start);
 			this.zs = zs;
 		}
 
@@ -139,7 +167,7 @@ public class ZipCommand extends VisitorCommand {
 			ZipEntry zipEntry = new ZipEntry(relative.toString());
 			
 			zs.putNextEntry(zipEntry);
-			write(zs, file);
+			write(environment, zs, file);
 			zs.closeEntry();
 
 			return FileVisitResult.CONTINUE;
@@ -149,28 +177,6 @@ public class ZipCommand extends VisitorCommand {
 		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
 			writeln(environment, "Failed to access " + file);
 			return FileVisitResult.CONTINUE;
-		}
-
-		/**
-		 * Writes all bytes of the specified <tt>file</tt> to the given output
-		 * stream. The bytes are read little by little to avoid large memory
-		 * consumption by a buffered input stream to reduce the number of I/O
-		 * accesses.
-		 * 
-		 * @param stream stream where the file will be written
-		 * @param file file to be written to the output stream
-		 * @throws IOException if an I/O error occurs
-		 */
-		private void write(OutputStream stream, Path file) throws IOException {
-			try (
-				BufferedInputStream in = new BufferedInputStream(Files.newInputStream(file));
-			) {
-				int len;
-				byte[] buff = new byte[1024];
-				while ((len = in.read(buff)) > 0) {
-					stream.write(buff, 0, len);
-				}
-			}
 		}
 	}
 

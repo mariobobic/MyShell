@@ -12,8 +12,9 @@ import java.util.stream.Collectors;
 import hr.fer.zemris.java.shell.CommandStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.SyntaxException;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
  * Replaces a target character sequence with a replacement character sequence in
@@ -24,16 +25,21 @@ import hr.fer.zemris.java.shell.utility.SyntaxException;
  */
 public class ReplaceCommand extends AbstractCommand {
 	
+	/* Flags */
+	/** Charset for decoding files. */
+	private boolean useRegex;
+	
 	/**
 	 * Constructs a new command object of type {@code ReplaceCommand}.
 	 */
 	public ReplaceCommand() {
-		super("REPLACE", createCommandDescription());
+		super("REPLACE", createCommandDescription(), createFlagDescriptions());
+		commandArguments.addFlagDefinition("r", false);
 	}
 
 	@Override
 	protected String getCommandSyntax() {
-		return "<path> <target_sequence> <replacement_sequence>";
+		return "(<path>) <target_sequence> <replacement_sequence>";
 	}
 	
 	/**
@@ -51,6 +57,35 @@ public class ReplaceCommand extends AbstractCommand {
 		return desc;
 	}
 	
+	/**
+	 * Creates a list of {@code FlagDescription} objects where each entry
+	 * describes the available flags of this command. This method is generates
+	 * description exclusively for the command that this class represents.
+	 * 
+	 * @return a list of strings that represents description
+	 */
+	private static List<FlagDescription> createFlagDescriptions() {
+		List<FlagDescription> desc = new ArrayList<>();
+		desc.add(new FlagDescription("r", null, null, "Use regex pattern matching."));
+		return desc;
+	}
+	
+	@Override
+	protected String compileFlags(Environment env, String s) {
+		/* Initialize default values. */
+		useRegex = false;
+
+		/* Compile! */
+		s = commandArguments.compile(s);
+
+		/* Replace default values with flag values, if any. */
+		if (commandArguments.containsFlag("r")) {
+			useRegex = true;
+		}
+		
+		return super.compileFlags(env, s);
+	}
+	
 	@Override
 	protected CommandStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
@@ -58,15 +93,25 @@ public class ReplaceCommand extends AbstractCommand {
 		}
 		
 		String[] args = Helper.extractArguments(s);
-		if (args.length < 3) {
+		if (args.length < 2 || args.length > 3) {
 			throw new SyntaxException();
 		}
 		
-		Path path = Helper.resolveAbsolutePath(env, args[0]);
+		Path path;
+		String target;
+		String replacement;
+		if (args.length == 3) {
+			path = Helper.resolveAbsolutePath(env, args[0]);
+			target = args[1];
+			replacement = args[2];
+		} else {
+			path = env.getCurrentPath();
+			target = args[0];
+			replacement = args[1];
+		}
 		Helper.requireExists(path);
 		
-		String target = args[1];
-		String replacement = args[2];
+		/* If sequences are equal, you are done. */
 		if (target.equals(replacement)) {
 			return CommandStatus.CONTINUE;
 		}
@@ -86,7 +131,9 @@ public class ReplaceCommand extends AbstractCommand {
 		
 		for (Path file : files) {
 			String name = file.getFileName().toString();
-			String newName = name.replace(target, replacement);
+			String newName = useRegex ?
+				name.replaceAll(target, replacement) :
+				name.replace(target, replacement);
 			
 			Path dest = file.resolveSibling(newName);
 			if (!name.equalsIgnoreCase(newName)) {

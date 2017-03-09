@@ -14,9 +14,9 @@ import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.interfaces.ShellCommand;
 import hr.fer.zemris.java.shell.utility.CommandArguments;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
-import hr.fer.zemris.java.shell.utility.IllegalPathException;
-import hr.fer.zemris.java.shell.utility.InvalidFlagException;
-import hr.fer.zemris.java.shell.utility.SyntaxException;
+import hr.fer.zemris.java.shell.utility.exceptions.IllegalPathException;
+import hr.fer.zemris.java.shell.utility.exceptions.InvalidFlagException;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
  * Used as a superclass for other, usable Shell commands.
@@ -62,7 +62,7 @@ public abstract class AbstractCommand implements ShellCommand {
 		this.commandDescription = mergeDescriptions(commandDescription, flagDescriptions);
 		
 		// Add the help flag support
-		this.commandArguments.addFlagDefinition("help", false);
+		this.commandArguments.addFlagDefinition("help", "?", false);
 	}
 	
 	/**
@@ -199,7 +199,7 @@ public abstract class AbstractCommand implements ShellCommand {
 	 * @throws RuntimeException if an I/O exception occurs
 	 * @see #format(Environment, String, Object...)
 	 */
-	protected static final void formatln(Environment env, String format, Object... args) {
+	public static final void formatln(Environment env, String format, Object... args) {
 		format(env, format+"%n", args);
 	}
 
@@ -302,9 +302,10 @@ public abstract class AbstractCommand implements ShellCommand {
 		try {
 			s = compileFlags(env, s);
 			
-			if (commandArguments.containsFlag("help")) {
+			if (commandArguments.containsFlag("help", "?")) {
 				// TODO Don't access HelpCommand from AbstractCommand!
 				HelpCommand.printFullDescription(env, this);
+//				new HelpCommand().execute(env, commandName);
 			} else {
 				status = execute0(env, s);
 			}

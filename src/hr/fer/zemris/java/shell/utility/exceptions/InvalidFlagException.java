@@ -1,4 +1,4 @@
-package hr.fer.zemris.java.shell.utility;
+package hr.fer.zemris.java.shell.utility.exceptions;
 
 import java.util.ArrayList;
 import java.util.Collection;

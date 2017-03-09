@@ -11,7 +11,7 @@ import hr.fer.zemris.java.shell.CommandStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.SyntaxException;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
  * A command that is used to update the access date and modification date of a
@@ -35,7 +35,7 @@ import hr.fer.zemris.java.shell.utility.SyntaxException;
 public class TouchCommand extends AbstractCommand {
 	
 	/**
-	 * Constructs a new command object of type {@code ByteShuffleCommand}.
+	 * Constructs a new command object of type {@code TouchCommand}.
 	 */
 	public TouchCommand() {
 		super("TOUCH", createCommandDescription());
@@ -69,7 +69,7 @@ public class TouchCommand extends AbstractCommand {
 		
 		Path path = Helper.resolveAbsolutePath(env, s);
 		if (!Files.exists(path)) {
-			Files.createDirectories(path.getParent());
+			Files.createDirectories(Helper.getParent(path));
 			Files.createFile(path);
 		} else {
 			FileTime now = FileTime.fromMillis(System.currentTimeMillis());

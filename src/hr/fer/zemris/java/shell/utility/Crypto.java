@@ -17,6 +17,8 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import javax.xml.bind.DatatypeConverter;
 
+import hr.fer.zemris.java.shell.interfaces.Environment;
+
 /**
  * This class provides the functionality of a cryptographic cipher for
  * encryption and decryption.
@@ -56,7 +58,7 @@ public class Crypto {
 	 */
 	public Crypto(String hash, boolean mode) {
 		if (hash.length() < HASH_LEN) {
-			throw new IllegalArgumentException("Hash length must be greater than " + HASH_LEN);
+			throw new IllegalArgumentException("Hash length must not be smaller than " + HASH_LEN);
 		}
 		
 		this.hash = hash.substring(0, HASH_LEN); // must be 16 bytes for SecretKeySpec
@@ -113,14 +115,11 @@ public class Crypto {
 	/**
 	 * <b>Encrypts</b> or <b>decrypts</b> the file specified by the
 	 * <tt>sourcefile</tt> and generates a file specified by the
-	 * <tt>destfile</tt>. The specified <tt>hash</tt> is used as a password. The
-	 * encryption or decryption is specified by the fourth parameter in this
-	 * method, an <tt>encrypt</tt> boolean. This method uses the AES
-	 * cryptographic algorithm. This method blocks until the execution is over.
+	 * <tt>destfile</tt>. The <tt>hash</tt> that was given to the constructor is
+	 * used as a password. This method blocks until the execution is over.
 	 * 
 	 * @param sourcefile file to be encrypted or decrypted
 	 * @param destfile file to be created
-	 * @throws IllegalArgumentException if the <tt>hash</tt> is invalid
 	 * @throws FileNotFoundException if the file does not exist, is a directory
 	 *         rather than a regular file, or for some other reason cannot be
 	 *         opened for reading
@@ -129,9 +128,34 @@ public class Crypto {
 	 *         wrong key is given or the bytes were not properly padded
 	 */
 	public void execute(Path sourcefile, Path destfile) throws IOException, BadPaddingException {
+		execute(sourcefile, destfile, null);
+	}
+	
+	/**
+	 * <b>Encrypts</b> or <b>decrypts</b> the file specified by the
+	 * <tt>sourcefile</tt> and generates a file specified by the
+	 * <tt>destfile</tt>. The <tt>hash</tt> that was given to the constructor is
+	 * used as a password. This method blocks until the execution is over.
+	 * <p>
+	 * This exclusive method accepts an environment where it writes the progress
+	 * of execution. If the specified environment is <tt>null</tt>, progress
+	 * tracker is not used.
+	 * 
+	 * @param sourcefile file to be encrypted or decrypted
+	 * @param destfile file to be created
+	 * @param env an environment for writing out progress, may be <tt>null</tt>
+	 * @throws FileNotFoundException if the file does not exist, is a directory
+	 *         rather than a regular file, or for some other reason cannot be
+	 *         opened for reading
+	 * @throws IOException if any other I/O error occurs
+	 * @throws BadPaddingException if this crypto is in decryption mode, but a
+	 *         wrong key is given or the bytes were not properly padded
+	 */
+	public void execute(Path sourcefile, Path destfile, Environment env) throws IOException, BadPaddingException {
+		Progress progress = env == null ? null : new Progress(env, Files.size(sourcefile), true);
 		try (
-				InputStream in = new BufferedInputStream(Files.newInputStream(sourcefile));
-				OutputStream out = new BufferedOutputStream(Files.newOutputStream(destfile));
+			InputStream in = new BufferedInputStream(Files.newInputStream(sourcefile));
+			OutputStream out = new BufferedOutputStream(Files.newOutputStream(destfile));
 		) {
 			int len;
 			byte[] bytes = new byte[STD_LOADER_SIZE];
@@ -139,10 +163,13 @@ public class Crypto {
 				// Update until the very end
 				byte[] processedBytes = update(bytes, 0, len);
 				out.write(processedBytes);
+				if (progress != null) progress.add(len);
 			}
 			// Do the final touch
 			byte[] processedBytes = doFinal();
 			out.write(processedBytes);
+		} finally {
+			if (progress != null) progress.stop();
 		}
 	}
 	

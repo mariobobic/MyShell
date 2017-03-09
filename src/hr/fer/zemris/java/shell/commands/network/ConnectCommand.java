@@ -17,9 +17,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import javax.crypto.BadPaddingException;
 
@@ -29,7 +26,8 @@ import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Crypto;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.SyntaxException;
+import hr.fer.zemris.java.shell.utility.Progress;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
  * A command that is used for connecting to another computer running MyShell.
@@ -121,6 +119,7 @@ public class ConnectCommand extends AbstractCommand {
 		Crypto crypto = new Crypto(hash, Crypto.DECRYPT);
 		
 		/* Do connect. */
+		Thread readingThread = null;
 		try (
 				Socket clientSocket = new Socket(host, port);
 				OutputStream outToServer = clientSocket.getOutputStream();
@@ -133,14 +132,15 @@ public class ConnectCommand extends AbstractCommand {
 			
 			String serverAddress = clientSocket.getRemoteSocketAddress().toString();
 			env.writeln("Connected to " + serverAddress);
-			
-			Thread readingThread = new Thread(() -> {
+
+			/* Start a thread that reads from server. */
+			readingThread = new Thread(() -> {
 				while (!Thread.interrupted()) {
 					try {
 						char[] cbuf = new char[1024];
 						int len;
 						while ((len = serverReader.read(cbuf)) != -1) {
-							if (isDownloadHint(cbuf)) {
+							if (isAHint(cbuf, Helper.DOWNLOAD_KEYWORD)) {
 								startDownload(env, inFromServer, outToServer, crypto);
 							} else {
 								env.write(cbuf, 0, len);
@@ -156,37 +156,38 @@ public class ConnectCommand extends AbstractCommand {
 			}, "Reading thread");
 			readingThread.start();
 			
-			/* Upon quitting, "stop" the reading thread and close the socket. */
+			/* Accept input and write to server. */
 			while (true) {
-				String userLine = inFromUser.readLine() + "\n";
-				serverWriter.write(userLine);
+				String userLine = inFromUser.readLine();
+				serverWriter.write(userLine+"\n");
 				serverWriter.flush();
-				if ("exit\n".equalsIgnoreCase(userLine)) {
-					readingThread.interrupt();
-					clientSocket.close();
+				if ("exit".equalsIgnoreCase(userLine)) {
 					env.writeln("Disconnected from " + serverAddress);
 					break;
 				}
 			}
 		} catch (Exception e) {
 			writeln(env, e.getMessage());
+		} finally {
+			if (readingThread != null) readingThread.interrupt();
 		}
 
 		return CommandStatus.CONTINUE;
 	}
 
 	/**
-	 * Returns true if contents of the specified char array <tt>cbuf</tt> match
-	 * a download hint specified by the {@link Helper#DOWNLOAD_KEYWORD}.
+	 * Returns true if contents of the specified char array <tt>buffer</tt>
+	 * match a hint specified by the <tt>keyword</tt>.
 	 * <p>
-	 * The <tt>cbuf</tt> array is trimmed to the size of the keyword.
+	 * The <tt>buffer</tt> array is trimmed to the size of the keyword.
 	 * 
-	 * @param cbuf a char array buffer
-	 * @return true if <tt>cbuf</tt> contains a download hint
+	 * @param buffer a char array buffer
+	 * @param keyword keyword to match
+	 * @return true if buffer contains the keyword
 	 */
-	private static boolean isDownloadHint(char[] cbuf) {
-		char[] cbuf2 = Arrays.copyOf(cbuf, Helper.DOWNLOAD_KEYWORD.length);
-		return Arrays.equals(cbuf2, Helper.DOWNLOAD_KEYWORD);
+	private static boolean isAHint(char[] buffer, char[] keyword) {
+		char[] cbuf2 = Arrays.copyOf(buffer, keyword.length);
+		return Arrays.equals(cbuf2, keyword);
 	}
 
 	/**
@@ -201,6 +202,10 @@ public class ConnectCommand extends AbstractCommand {
 	 * @throws IOException if an I/O error occurs
 	 */
 	private static void startDownload(Environment env, InputStream inFromServer, OutputStream outToServer, Crypto crypto) throws IOException {
+		//////////////////////////////////////////////////
+		///////////////// File parameters ////////////////
+		//////////////////////////////////////////////////
+		
 		// Accept download
 		byte[] bytes = new byte[1024];
 		outToServer.write(1); // send a signal: accepted download
@@ -212,47 +217,47 @@ public class ConnectCommand extends AbstractCommand {
 		String filename = new String(bytes).trim();
 		bytes = new byte[1024]; // reset array
 		
-		Path path = Paths.get(System.getProperty("user.home"), "Downloads", filename);
-		Files.createDirectories(path.getParent());
-
-		// Read file type
-		boolean isDirectory = inFromServer.read() == 1;
-		outToServer.write(1); // send a signal: received file type
-		
-		if (isDirectory) {
-			if (Files.isRegularFile(path)) {
-				formatln(env, "Could not create directory %s because a file with that name already exists.", path);
-				outToServer.write(0); // send a signal: download failed
-				return;
-			}
-			
-			Files.createDirectories(path);
-			outToServer.write(1); // send a signal: download done
-			return;
-		}
-		
 		// Read file size
 		inFromServer.read(bytes);
-		outToServer.write(0); // send a signal: received file size
+		outToServer.write(1); // send a signal: received file size
 		
 		String filesize = new String(bytes).trim();
 		long size = Long.parseLong(filesize);
-		bytes = new byte[1024];  // reset array
+		bytes = new byte[1024]; // reset array
 		
-		String filenameAndSize = filename + " (" + Helper.humanReadableByteCount(size) + ")";
-		writeln(env, "Downloading " + filenameAndSize);
+		//////////////////////////////////////////////////
+		////////////////////// Paths /////////////////////
+		//////////////////////////////////////////////////
 		
-		// Start downloading file
+		// Create an appropriate directory structure
+		Path path = Paths.get(System.getProperty("user.home"), "Downloads", filename);
+		try {
+			Files.createDirectories(path.getParent());
+			outToServer.write(1); // send a signal: ready
+		} catch (IOException e) {
+			writeln(env, "Unable to create directory structure "+path+" because a file exists with the same name as one of the directories.");
+			outToServer.write(0); // send a signal: not ready
+			return;
+		}
+		
+		// Do not overwrite, find first available file name
+		path = Helper.firstAvailable(path);
+		
+		Path relativeName = Paths.get(filename).resolveSibling(path.getFileName());
+		String nameAndSize = relativeName + " (" + Helper.humanReadableByteCount(size) + ")";
+		writeln(env, "Downloading " + nameAndSize);
+		
+		//////////////////////////////////////////////////
+		/////////////////// Downloading //////////////////
+		//////////////////////////////////////////////////
+		
+		// Prepare download
 		BufferedInputStream fileInput = new BufferedInputStream(inFromServer);
 		bytes = new byte[1024];
 		long totalLen = 0;
 		
-		path = Helper.firstAvailable(path);
-		
-		Progress progress = new Progress(env, size);
-		ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
-		scheduledExecutor.scheduleWithFixedDelay(progress, 1, 5, TimeUnit.SECONDS);
-		
+		// Start download
+		Progress progress = new Progress(env, size, true);
 		try (BufferedOutputStream fileOutput = new BufferedOutputStream(Files.newOutputStream(path))) {
 			while (totalLen < size) {
 				int len = fileInput.read(bytes);
@@ -270,110 +275,20 @@ public class ConnectCommand extends AbstractCommand {
 		} catch (BadPaddingException e) {
 			writeln(env, "An error occured while downloading " + path);
 			writeln(env, "This is probably due to incorrect password.");
+			// send a signal: download failed
+			try { outToServer.write(0); } catch (Exception ex) {}
 			throw new IOException(e);
 		} catch (IOException e) {
 			writeln(env, "An unexpected error occurred while downloading " + path);
+			// send a signal: download failed
+			try { outToServer.write(0); } catch (Exception ex) {}
 			throw e;
 		} finally {
-			scheduledExecutor.shutdown();
+			progress.stop();
 		}
 		
 		outToServer.write(1); // send a signal: download done
-		writeln(env, "Finished downloading " + filenameAndSize);
+		writeln(env, "Finished downloading " + nameAndSize);
 	}
 	
-	/**
-	 * A runnable job that tells the current downloaded percentage, download
-	 * speed, elapsed time and estimated time until completion.
-	 *
-	 * @author Mario Bobic
-	 */
-	private static class Progress implements Runnable {
-		
-		/** Time this job was constructed. */
-		private final long startTime = System.nanoTime();
-		
-		/** An environment. */
-		private Environment environment;
-		/** Total size to be downloaded. */
-		private final long size;
-		/** Currently downloaded length. */
-		private long downloadedLength;
-
-		/** Recently elapsed time. */
-		private long recentStartTime = startTime;
-		/** Recently downloaded length. */
-		private long recentDownloadedLength;
-		
-		/** Total size to be downloaded converted to a human readable string. */
-		private final String sizeStr;
-		
-		/**
-		 * Constructs an instance of {@code DownloadStatisticsTeller} with the
-		 * specified arguments.
-		 *
-		 * @param environment an environment
-		 * @param size total size to be downloaded
-		 */
-		public Progress(Environment environment, long size) {
-			this.environment = environment;
-			this.size = size;
-			this.downloadedLength = 0;
-			
-			sizeStr = Helper.humanReadableByteCount(size);
-		}
-		
-		/**
-		 * Adds the specified <tt>length</tt> to the total downloaded length for
-		 * calculating percentage.
-		 * 
-		 * @param length length to be added to the total downloaded length
-		 */
-		public void add(long length) {
-			downloadedLength += length;
-			recentDownloadedLength += length;
-		}
-
-		@Override
-		@SuppressWarnings("unused")
-		public void run() {
-			try {
-				/* Percentage */
-				int percent = (int) (100 * downloadedLength / size);
-				String downloaded = Helper.humanReadableByteCount(downloadedLength);
-
-				/* Time */
-				long elapsedTime = System.nanoTime() - startTime;
-				long recentElapsedTime = System.nanoTime() - recentStartTime;
-				String elapsedTimeStr = Helper.humanReadableTimeUnit(elapsedTime);
-
-				/* Speed */
-				long averageSpeed = downloadedLength / (elapsedTime/1_000_000_000L);
-				long downloadSpeed = recentDownloadedLength / (recentElapsedTime/1_000_000_000L);
-				String downloadSpeedStr = Helper.humanReadableByteCount(downloadSpeed) + "/s";
-
-				/* Estimation */
-				String estimatedTime = downloadSpeed > 0 ?
-					Helper.humanReadableTimeUnit(1_000_000_000L * (size - downloadedLength) / downloadSpeed) : "∞";
-				
-				formatln(environment,
-					"%d%% downloaded (%s/%s), Elapsed time: %s, Download speed: %s, Estimated time: %s",
-					percent, downloaded, sizeStr, elapsedTimeStr, downloadSpeedStr, estimatedTime
-				);
-				
-				// Reset 'recent' calculations
-				recentDownloadedLength = 0;
-				recentStartTime = System.nanoTime();
-				
-//				writeln(environment, String.format("%d%% downloaded (%s/%s)", percent, downloaded, sizeStr));
-//				writeln(environment, "   Elapsed time: " + elapsedTimeStr);
-//				writeln(environment, "   Download speed: " + downloadSpeedStr);
-//				writeln(environment, "   Estimated completion time: " + estimatedTime);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-		
-	}
-
 }

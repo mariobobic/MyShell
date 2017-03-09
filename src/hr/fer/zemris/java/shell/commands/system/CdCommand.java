@@ -50,15 +50,15 @@ public class CdCommand extends AbstractCommand {
 
 	@Override
 	protected CommandStatus execute0(Environment env, String s) throws IOException {
-		if (s == null) {
-			env.setCurrentPath(env.getHomePath());
-			return CommandStatus.CONTINUE;
-		}
-
-		Path newPath = Helper.resolveAbsolutePath(env, s);
-		Helper.requireDirectory(newPath);
+		Path path = (s == null) ?
+			env.getHomePath() :
+			Helper.resolveAbsolutePath(env, s);
 		
-		env.setCurrentPath(newPath.toRealPath());
+		Helper.requireDirectory(path);
+		
+		path = path.toRealPath();
+		env.setCurrentPath(path);
+		writeln(env, "Current directory is now set to " + path);
 		
 		return CommandStatus.CONTINUE;
 	}

@@ -12,6 +12,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 
+import hr.fer.zemris.java.shell.utility.exceptions.InvalidFlagException;
+
 /**
  * This class acts as a bridge between a single input string and arguments by
  * which some commands operate on.
@@ -161,7 +163,7 @@ public class CommandArguments {
 	 * Adds a flag definition which is used upon compiling an input string with
 	 * the {@link #compile(String)} method. Flags that were not defined but were
 	 * found in the input string of the compile method throw an
-	 * {@link InvalidFlagException} with an appropriate detail message.
+	 * {@code InvalidFlagException} with an appropriate detail message.
 	 * <p>
 	 * The <tt>hasArgument</tt> attribute indicates if the flag should be
 	 * followed by an argument or not. Flags that require an argument are
@@ -184,7 +186,7 @@ public class CommandArguments {
 	 * Adds a flag definition which is used upon compiling an input string with
 	 * the {@link #compile(String)} method. Flags that were not defined but were
 	 * found in the input string of the compile method throw an
-	 * {@link InvalidFlagException} with an appropriate detail message.
+	 * {@code InvalidFlagException} with an appropriate detail message.
 	 * <p>
 	 * The <tt>hasArgument</tt> attribute indicates if the flag should be
 	 * followed by an argument or not. Flags that require an argument are
@@ -260,7 +262,7 @@ public class CommandArguments {
 				}
 				
 				// If argument includes space, wrap it in double quotes again
-				if (Helper.indexOfWhitespace(arg) >= 0) {
+				if (Helper.indexOfWhitespace(arg) >= 0 || arg.isEmpty()) {
 					arg = '"'+arg+'"';
 				}
 				

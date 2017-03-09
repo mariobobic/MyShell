@@ -11,7 +11,8 @@ import hr.fer.zemris.java.shell.CommandStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.SyntaxException;
+import hr.fer.zemris.java.shell.utility.Progress;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
  * Dumps empty bytes (zeroes) to the given file name. Number of dumped bytes is
@@ -27,7 +28,7 @@ import hr.fer.zemris.java.shell.utility.SyntaxException;
  */
 public class DumpCommand extends AbstractCommand {
 	
-	/** Standard size for the loading byte buffer array */
+	/** Standard size for the loading byte buffer array. */
 	public static final int STD_LOADER_SIZE = 16*1024;
 
 	/**
@@ -92,7 +93,7 @@ public class DumpCommand extends AbstractCommand {
 			}
 		}
 		
-		dumpBytes(path, size);
+		dumpBytes(env, path, size);
 		writeln(env, "Dumped " + Helper.humanReadableByteCount(size) + " in file " + path.getFileName());
 		
 		return CommandStatus.CONTINUE;
@@ -102,23 +103,28 @@ public class DumpCommand extends AbstractCommand {
 	 * Dumps binary zeros into the given <tt>file</tt> with the given
 	 * <tt>size</tt>.
 	 * 
+	 * @param env a environment
 	 * @param file file to be created
 	 * @param size number of bytes to be generated
 	 * @throws IOException if an I/O error occurs
 	 */
-	private static void dumpBytes(Path file, long size) throws IOException {
+	private static void dumpBytes(Environment env, Path file, long size) throws IOException {
+		Progress progress = new Progress(env, size, true);
 		try (BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(file))) {
 			int len = STD_LOADER_SIZE;
 			byte[] bytes = new byte[STD_LOADER_SIZE];
-			long writtenBytes = 0;
 
+			long writtenBytes = 0;
 			while (writtenBytes < size) {
 				if (size - writtenBytes < len) {
 					len = (int) (size - writtenBytes);
 				}
 				out.write(bytes, 0, len);
 				writtenBytes += len;
+				progress.add(len);
 			}
+		} finally {
+			progress.stop();
 		}
 	}
 

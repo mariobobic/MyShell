@@ -16,7 +16,8 @@ import hr.fer.zemris.java.shell.CommandStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.SyntaxException;
+import hr.fer.zemris.java.shell.utility.Progress;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
  * A command that is used for copying one file and only one file, to another
@@ -85,8 +86,12 @@ public class CopyCommand extends VisitorCommand {
 		}
 		
 		/* Passed all checks, start working. */
-		CopyFileVisitor copyVisitor = new CopyFileVisitor(env, source, target);
-		walkFileTree(source, copyVisitor);
+		if (Files.isRegularFile(source)) {
+			copyFile(env, source, target);
+		} else {
+			CopyFileVisitor copyVisitor = new CopyFileVisitor(env, source, target);
+			walkFileTree(source, copyVisitor);	
+		}
 		
 		return CommandStatus.CONTINUE;
 	}
@@ -96,11 +101,11 @@ public class CopyCommand extends VisitorCommand {
 	 * method also writes out the full path to the newly created file upon
 	 * succeeding.
 	 * 
+	 * @param env an environment
 	 * @param source the path to file to be copied
 	 * @param target the path to destination file or directory
-	 * @param env an environment
 	 */
-	private static void copyFile(Path source, Path target, Environment env) {
+	private static void copyFile(Environment env, Path source, Path target) {
 		if (source.equals(target)) {
 			writeln(env, "File cannot be copied onto itself: " + source);
 			return;
@@ -119,7 +124,7 @@ public class CopyCommand extends VisitorCommand {
 		
 		try {
 			Files.createDirectories(target.getParent());
-			createNewFile(source, target);
+			createNewFile(env, source, target);
 			writeln(env, "Copied: " + target);
 		} catch (IOException e) {
 			writeln(env, "Could not copy " + source + " to " + target);
@@ -132,20 +137,25 @@ public class CopyCommand extends VisitorCommand {
 	 * <p>
 	 * Implementation note: creates files using binary streams.
 	 * 
+	 * @param env an environment
 	 * @param source an original file to be copied
 	 * @param target the destination directory
 	 * @throws IOException if an I/O error occurs
 	 */
-	private static void createNewFile(Path source, Path target) throws IOException {
+	private static void createNewFile(Environment env, Path source, Path target) throws IOException {
+		Progress progress = new Progress(env, Files.size(source), true);
 		try (
-				BufferedInputStream in = new BufferedInputStream(Files.newInputStream(source));
-				BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(target));
+			BufferedInputStream in = new BufferedInputStream(Files.newInputStream(source));
+			BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(target));
 		) {
 			int len;
 			byte[] buff = new byte[1024];
 			while ((len = in.read(buff)) > 0) {
 				out.write(buff, 0, len);
+				progress.add(len);
 			}
+		} finally {
+			progress.stop();
 		}
 	}
 	
@@ -175,8 +185,8 @@ public class CopyCommand extends VisitorCommand {
 		 */
 		public CopyFileVisitor(Environment environment, Path root, Path otherRoot) {
 			this.environment = environment;
-			this.root = Files.isRegularFile(root) ? root.getParent() : root;
-			this.otherRoot = Files.isRegularFile(otherRoot) ? otherRoot.getParent() : otherRoot;
+			this.root = root;
+			this.otherRoot = otherRoot;
 		}
 
 		@Override
@@ -184,7 +194,7 @@ public class CopyCommand extends VisitorCommand {
 			Path relative = root.relativize(file);
 			Path target = otherRoot.resolve(relative);
 			
-			copyFile(file, target, environment);
+			copyFile(environment, file, target);
 			
 			return FileVisitResult.CONTINUE;
 		}

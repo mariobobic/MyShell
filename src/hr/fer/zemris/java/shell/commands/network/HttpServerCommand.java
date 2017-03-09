@@ -328,7 +328,7 @@ public class HttpServerCommand extends VisitorCommand {
 		 * Accepts the client connection.
 		 * <p>
 		 * This method <strong>blocks</strong> the thread while waiting for a
-		 * client socket, or throws a {@linkplain SocketTimeoutException} if the
+		 * client socket, or throws a {@code SocketTimeoutException} if the
 		 * specified <tt>serverSocket</tt> has set a timeout.
 		 * 
 		 * @param serverSocket server socket that accepts clients
@@ -473,7 +473,7 @@ public class HttpServerCommand extends VisitorCommand {
 				
 				// If requestedPath is a directory, write its contents
 				if (Files.isDirectory(requestedPath)) {
-					String ls = lsHtml(requestedPath, true);
+					String ls = lsHtml(requestedPath);
 					
 					rc.setMimeType("text/html");
 					rc.setContentLength(ls.length());
@@ -599,16 +599,15 @@ public class HttpServerCommand extends VisitorCommand {
 		 * Returns a HTML representation of the specified directory <tt>dir</tt>
 		 * the specified environment <tt>env</tt>.
 		 * <p>
-		 * Each path inside the directory is written according to the rules of the
-		 * {@link LsCommand#getFileString(Path, boolean)} method.
+		 * Each path inside the directory is written according to the rules of
+		 * the {@link LsCommand#getFileString(Path, boolean, boolean)} method.
 		 * 
 		 * @param dir directory whose string representation is to be returned
-		 * @param humanReadable if file sizes should be in human readable byte count
 		 * @return a HTML representation of the specified directory <tt>dir</tt>
 		 * @throws IllegalArgumentException if <tt>dir</tt> is not a directory
 		 * @throws IOException if an I/O error occurs when reading the path
 		 */
-		public String lsHtml(Path dir, boolean humanReadable) throws IOException {
+		public String lsHtml(Path dir) throws IOException {
 			if (!Files.isDirectory(dir)) {
 				throw new IllegalArgumentException("Path must be a directory: " + dir);
 			}
@@ -626,7 +625,7 @@ public class HttpServerCommand extends VisitorCommand {
 				if (Helper.isHidden(child) || isExcluded(child)) continue;
 				
 				String url = encodePath(documentRoot.relativize(child).normalize());
-				String str = LsCommand.getFileString(child, humanReadable);
+				String str = LsCommand.getFileString(child, true, false);
 				sb	.append("<a href='/").append(url).append("'>")
 					.append(str).append("</a>").append("\r\n");
 			}

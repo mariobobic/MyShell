@@ -14,7 +14,7 @@ import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Crypto;
 import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.SyntaxException;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
  * A command that is used for decrypting files with AES cryptoalgorithm. The
@@ -77,9 +77,9 @@ public class DecryptCommand extends AbstractCommand {
 		Crypto crypto = new Crypto(hash, Crypto.DECRYPT);
 		
 		try {
-			crypto.execute(sourcefile, destfile);
-		} catch (BadPaddingException e) {
-			writeln(env, "Bad padding. This is probably due to an incorrect password.");
+			crypto.execute(sourcefile, destfile, env);
+		} catch (BadPaddingException ignorable) {
+			writeln(env, "Decryption failed. This is probably due to an incorrect password.");
 		}
 
 		return CommandStatus.CONTINUE;

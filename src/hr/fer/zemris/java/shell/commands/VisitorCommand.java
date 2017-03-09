@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.InvalidFlagException;
+import hr.fer.zemris.java.shell.utility.exceptions.InvalidFlagException;
 
 /**
  * Used as a superclass for Shell commands that implement the Visitor pattern.

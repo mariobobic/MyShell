@@ -76,6 +76,20 @@ public interface Environment {
 	Path getHomePath();
 	
 	/**
+	 * Returns the last path that was requested.
+	 * 
+	 * @return the last path that was requested
+	 */
+	Path getLastPath();
+	
+	/**
+	 * Sets the last path that was requested.
+	 * 
+	 * @param path path to be set
+	 */
+	void setLastPath(Path path);
+	
+	/**
 	 * Returns the prompt symbol that is used by MyShell.
 	 * 
 	 * @return the prompt symbol that is used by MyShell

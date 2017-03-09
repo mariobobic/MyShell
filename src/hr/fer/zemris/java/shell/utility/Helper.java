@@ -28,16 +28,18 @@ import java.util.stream.Collectors;
 import javax.xml.bind.DatatypeConverter;
 
 import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.exceptions.IllegalPathException;
 
 /**
- * A helper class. Used for defining and providing helper methods.
+ * A helper class. Provides helper methods with various functionalities for the
+ * whole application.
  *
  * @author Mario Bobic
  */
 public abstract class Helper {
-	
-	/** Keyword used for sending and detecting a download start. */
+
 	// used by ConnectCommand and DownloadCommand
+	/** Keyword used for sending and detecting a download start. */
 	public static final char[] DOWNLOAD_KEYWORD = "__DOWNLOAD_START".toCharArray();
 	
 	/** Extension used for encrypted files. */
@@ -45,6 +47,9 @@ public abstract class Helper {
 	
 	/** Shorthand abbreviation for home directory. */
 	private static final String HOME_DIR = "~";
+	
+	/** Shorthand abbreviation for last requested path. */
+	private static final String LAST_PATH = "!!";
 	
 	/**
 	 * Disable instantiation or inheritance.
@@ -78,18 +83,30 @@ public abstract class Helper {
 		}
 		
 		/* Paths.get() may throw an exception. */
-		Path path = Paths.get(str.replace("\"", ""));
+		str = str.replace("\"", "");
+		Path path = Paths.get(str);
 		
 		/* If it starts with a tilde, recurse back to this method with user.home. */
 		if (path.startsWith(HOME_DIR)) {
-			return resolveAbsolutePath(env, System.getProperty("user.home").concat(str.substring(1)));
+			String home = System.getProperty("user.home");
+			String rest = str.substring(HOME_DIR.length());
+			return resolveAbsolutePath(env, home+rest);
 		}
 		
-		if (path.isAbsolute()) {
-			return path;
-		} else {
-			return env.getCurrentPath().resolve(path).normalize();
+		/* If it starts with two exclamations, recurse back to this method with last path. */
+		if (path.startsWith(LAST_PATH)) {
+			Path last = env.getLastPath();
+			String rest = str.substring(LAST_PATH.length());
+			return resolveAbsolutePath(env, last+rest);
 		}
+		
+		if (!path.isAbsolute()) {
+			path = env.getCurrentPath().resolve(path);
+		}
+		path = path.normalize();
+		
+		env.setLastPath(path);
+		return path;
 	}
 	
 	/**
@@ -97,7 +114,8 @@ public abstract class Helper {
 	 * {@code Path} object. The file name is the <em>farthest</em> element from
 	 * the root in the directory hierarchy.
 	 * <p>
-	 * If <tt>path</tt> is a root directory, it's name is returned.
+	 * This method is convenient when <tt>path</tt> is a root directory, because
+	 * it trivially returns the given path instead of {@code null}.
 	 *
 	 * @param path path whose file name is to be returned
 	 * @return a path representing the name of the file or directory, or
@@ -105,6 +123,24 @@ public abstract class Helper {
 	 */
 	public static Path getFileName(Path path) {
 		return path.equals(path.getRoot()) ? path : path.getFileName();
+	}
+	
+	/**
+	 * Returns the <em>parent path</em> of the specified <tt>path</tt>.
+	 * <p>
+	 * The parent of this path object consists of this path's root component, if
+	 * any, and each element in the path except for the <em>farthest</em> from
+	 * the root in the directory hierarchy. This method does not access the file
+	 * system; the path or its parent may not exist.
+	 * <p>
+	 * This method is convenient when <tt>path</tt> is a root directory, because
+	 * it trivially returns the given path instead of {@code null}.
+	 *
+	 * @param path path whose parent is to be returned
+	 * @return a path representing the path's parent
+	 */
+	public static Path getParent(Path path) {
+		return path.equals(path.getRoot()) ? path : path.getParent();
 	}
 
 	/**
@@ -137,6 +173,11 @@ public abstract class Helper {
 	 * <p>
 	 * If a file with the specified <tt>path</tt> does not exist, this method
 	 * trivially returns <tt>path</tt>.
+	 * <p>
+	 * For an example, if the parent directory of the specified path already
+	 * contains <tt>file.txt</tt>, <tt>file-0.txt</tt> and <tt>file-1.txt</tt>,
+	 * and the file name of this path is <tt>file.txt</tt>, then a path with
+	 * file name <tt>file-2.txt</tt> is returned.
 	 * 
 	 * @param path path from which the first available is returned
 	 * @return a path with a unique file name
@@ -360,13 +401,13 @@ public abstract class Helper {
 	 * <tr><td>parseSize("2.5 kiB")</td><td>2560 bytes</td></tr>
 	 * <tr><td>parseSize("1kiB")</td><td>1024 bytes</td></tr>
 	 * <tr><td>parseSize("1MIB")</td><td>1048576 bytes</td></tr>
-	 * <tr><td><br/></td><td></td></tr>
+	 * <tr><td><br></td><td></td></tr>
 	 * <tr><td>parseSize("1 kB")</td><td>1000 bytes</td></tr>
 	 * <tr><td>parseSize("1 MB")</td><td>1000000 bytes</td></tr>
 	 * <tr><td>parseSize("1 gb")</td><td>1000000000 bytes</td></tr>
 	 * <tr><td>parseSize("1gB")</td><td>1000000000 bytes</td></tr>
 	 * <tr><td>parseSize("1.23456789 GB")</td><td>1234567890 bytes</td></tr>
-	 * <tr><td><br/></td><td></td></tr>
+	 * <tr><td><br></td><td></td></tr>
 	 * <tr><td>parseSize("")</td><td>IllegalArgumentException</td></tr>
 	 * <tr><td>parseSize("-2 kB")</td><td>IllegalArgumentException</td></tr>
 	 * <tr><td>parseSize("2..5 kB")</td><td>IllegalArgumentException</td></tr>
@@ -581,7 +622,7 @@ public abstract class Helper {
 	
 	/**
 	 * Returns a charset object for the named charset, or <tt>null</tt> if a
-	 * charset with the specified <tt>name<tt> can not be resolved.
+	 * charset with the specified <tt>name</tt> can not be resolved.
 	 * 
 	 * @param name name of the requested charset; may be either a canonical name
 	 *        or an alias

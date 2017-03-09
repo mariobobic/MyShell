@@ -47,6 +47,8 @@ public class LsCommand extends AbstractCommand {
 	/* Flags */
 	/** Indicates if file sizes should be printed in human readable byte count. */
 	private boolean humanReadable;
+	/** Indicates if directory sizes should be calculated. */
+	private boolean directorySize;
 	
 	/**
 	 * Constructs a new command object of type {@code LsCommand}.
@@ -54,6 +56,7 @@ public class LsCommand extends AbstractCommand {
 	public LsCommand() {
 		super("LS", createCommandDescription(), createFlagDescriptions());
 		commandArguments.addFlagDefinition("h", false);
+		commandArguments.addFlagDefinition("d", false);
 	}
 	
 	@Override
@@ -88,6 +91,7 @@ public class LsCommand extends AbstractCommand {
 	private static List<FlagDescription> createFlagDescriptions() {
 		List<FlagDescription> desc = new ArrayList<>();
 		desc.add(new FlagDescription("h", null, null, "Print human readable sizes (e.g. 1kiB, 256MiB)."));
+		desc.add(new FlagDescription("d", null, null, "Calculate size of directories (sum all file sizes)."));
 		return desc;
 	}
 	
@@ -95,6 +99,7 @@ public class LsCommand extends AbstractCommand {
 	protected String compileFlags(Environment env, String s) {
 		/* Initialize default values. */
 		humanReadable = false;
+		directorySize = false;
 
 		/* Compile! */
 		s = commandArguments.compile(s);
@@ -102,6 +107,10 @@ public class LsCommand extends AbstractCommand {
 		/* Replace default values with flag values, if any. */
 		if (commandArguments.containsFlag("h")) {
 			humanReadable = true;
+		}
+		
+		if (commandArguments.containsFlag("d")) {
+			directorySize = true;
 		}
 
 		return super.compileFlags(env, s);
@@ -120,7 +129,7 @@ public class LsCommand extends AbstractCommand {
 		/* Passed all checks, start working. */
 		try (Stream<Path> pathStream = Files.list(dir)) {
 			pathStream.forEachOrdered(file -> {
-				printFile(env, file, humanReadable);
+				printFile(env, file);
 			});
 		}
 		
@@ -143,11 +152,10 @@ public class LsCommand extends AbstractCommand {
 	 * 
 	 * @param env environment to where the path attributes are printed
 	 * @param path path to be printed
-	 * @param humanReadable if file size should be in human readable byte count
 	 */
-	private static void printFile(Environment env, Path path, boolean humanReadable) {
+	private void printFile(Environment env, Path path) {
 		try {
-			write(env, getFileString(path, humanReadable));
+			write(env, getFileString(path, humanReadable, directorySize));
 			markAndPrintNumber(env, path);
 		} catch (IOException e) {
 			writeln(env, "An I/O error has occured.");
@@ -170,10 +178,11 @@ public class LsCommand extends AbstractCommand {
 	 * 
 	 * @param path path to be written
 	 * @param humanReadable if file size should be in human readable byte count
+	 * @param directorySize if directory size should be calculated
 	 * @return a string representation of a single file or directory
 	 * @throws IOException if an I/O error occurs when reading the path
 	 */
-	public static String getFileString(Path path, boolean humanReadable) throws IOException {
+	public static String getFileString(Path path, boolean humanReadable, boolean directorySize) throws IOException {
 		StringBuilder sb = new StringBuilder();
 		
 		/* First column */
@@ -185,10 +194,10 @@ public class LsCommand extends AbstractCommand {
 		));
 		
 		/* Second column */
-		long size = Files.size(path);
+		long size = directorySize ? calculateSize(path) : Files.size(path);
 		sb.append(!humanReadable ?
-			String.format(" %10d" , size) :
-			String.format(" %10s", Helper.humanReadableByteCount(size))
+			String.format(" %11d" , size) :
+			String.format(" %11s", Helper.humanReadableByteCount(size))
 		);
 		
 		/* Third column */
@@ -206,6 +215,30 @@ public class LsCommand extends AbstractCommand {
 		sb.append(" " + path.getFileName());
 		
 		return sb.toString();
+	}
+	
+	/**
+	 * Returns the size, in bytes, of the specified <tt>path</tt>. If the given
+	 * path is a regular file, trivially its size is returned. Else the path is
+	 * a directory and its contents are recursively explored, returning the
+	 * total sum of all files within the directory.
+	 * <p>
+	 * If an I/O exception occurs, it is suppressed within this method and
+	 * <tt>0</tt> is returned as the size of the specified <tt>path</tt>.
+	 * 
+	 * @param path path whose size is to be returned
+	 * @return size of the specified path
+	 */
+	public static long calculateSize(Path path) {
+		try {
+			if (Files.isRegularFile(path)) {
+				return Files.size(path);
+			}
+			
+			return Files.list(path).mapToLong(LsCommand::calculateSize).sum();
+		} catch (IOException e) {
+			return 0L;
+		}
 	}
 
 }

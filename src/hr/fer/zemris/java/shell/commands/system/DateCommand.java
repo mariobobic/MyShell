@@ -21,7 +21,7 @@ public class DateCommand extends AbstractCommand {
 	private static final DateFormat DATE_FORMAT = new SimpleDateFormat("dd.MM.yyyy. HH:mm:ss");
 
 	/**
-	 * Constructs a new command object of type {@code HelpCommand}.
+	 * Constructs a new command object of type {@code DateCommand}.
 	 */
 	public DateCommand() {
 		super("DATE", createCommandDescription());
