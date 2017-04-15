@@ -160,6 +160,20 @@ public class CommandArguments {
 	}
 	
 	/**
+	 * Puts an escape symbol in front of dashes that are preceded by a
+	 * whitespace symbol, in the specified string <tt>s</tt>.
+	 * <p>
+	 * This method is convenient since the {@link #compile(String)} method does
+	 * not remove the escape symbol from escaped dashes.
+	 * 
+	 * @param s string whose flags are to be escaped
+	 * @return the string with escaped flags
+	 */
+	public static String escapeFlags(String s) {
+		return s == null ? null : s.replaceAll("(\\s|^)-", "$1\\\\-");
+	}
+	
+	/**
 	 * Adds a flag definition which is used upon compiling an input string with
 	 * the {@link #compile(String)} method. Flags that were not defined but were
 	 * found in the input string of the compile method throw an
@@ -240,6 +254,7 @@ public class CommandArguments {
 	 *         receives an argument or there is no argument provided for a flag
 	 *         that is defined to require an argument
 	 */
+	// TODO compiling flags breaks newlines and tabs and replaces them with spaces
 	public String compile(String s) {
 		cleanArgument = null;
 		if (s == null) {
@@ -253,11 +268,11 @@ public class CommandArguments {
 		for (int i = 0; i < args.length; i++) {
 			String arg = args[i];
 			
-			if (arg.startsWith("--")) {
+			if (arg.startsWith("--") && arg.length() > 2) {
 				/* Long flags */
 				String name = arg.substring(2);
 				i = processFlag(name, undefinedFlags, args, 1, i);
-			} else if (arg.startsWith("-")) {
+			} else if (arg.startsWith("-") && arg.length() > 1) {
 				/* Short flags */
 				arg = arg.substring(1);
 				for (int j = 0, n = arg.length(); j < n; j++) {

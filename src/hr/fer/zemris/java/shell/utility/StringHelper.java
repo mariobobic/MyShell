@@ -2,6 +2,7 @@ package hr.fer.zemris.java.shell.utility;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -217,7 +218,7 @@ public abstract class StringHelper {
 		}
 		
 		// charsAtEquals -> if character at current index is \ and the next one is also \
-		if (isEscaped(source, index) || charsAtEquals(source, index, index+1, '\\')) {
+		if (isEscaped(source, index) || charsAtEqual(source, index, index+1, '\\')) {
 			return replaceUnescaped(source, target, replacement, index+1);
 		}
 		
@@ -332,12 +333,7 @@ public abstract class StringHelper {
 	 * @return the index of the first occurrence of a whitespace character
 	 */
 	public static int indexOfWhitespace(String str, int fromIndex) {
-		for (int i = fromIndex, n = str.length(); i < n; i++) {
-			if (Character.isWhitespace(str.charAt(i))) {
-				return i;
-			}
-		}
-		return -1;
+		return indexOf(str, fromIndex, Character::isWhitespace);
 	}
 	
 	/**
@@ -351,43 +347,66 @@ public abstract class StringHelper {
 	 * @return the index of the first occurrence of a whitespace character
 	 */
 	public static int indexOfNonIdentifier(String str, int fromIndex) {
+		// TODO Negate predicate in one-liner?
+		Predicate<Character> predicate = Character::isUnicodeIdentifierPart;
+		return indexOf(str, fromIndex, predicate.negate());
+	}
+	
+	/**
+	 * Returns the index within the specified string <tt>str</tt> of the first
+	 * occurrence of a character that satisfies the specified
+	 * <tt>predicate</tt>, starting at the specified index.
+	 * 
+	 * @param str string whose index of the first character that satisfies the
+	 *        predicate is to be returned
+	 * @param fromIndex the index from which to start the search
+	 * @param predicate predicate to be satisfied
+	 * @return the index of the first occurrence of a character that satisfies
+	 *         the given predicate
+	 */
+	private static int indexOf(String str, int fromIndex, Predicate<Character> predicate) {
+		if (fromIndex < 0) {
+			fromIndex = 0;
+		}
+		
 		for (int i = fromIndex, n = str.length(); i < n; i++) {
-			if (!Character.isUnicodeIdentifierPart(str.charAt(i))) {
+			if (predicate.test(str.charAt(i))) {
 				return i;
 			}
 		}
+		
 		return -1;
 	}
 	
 	/**
 	 * Returns true if the character at the specified <tt>index</tt> is equal to
-	 * the specified character <tt>c</tt>. If the specified index is greater or
-	 * equal to the length of the string, this method returns false.
+	 * the specified character <tt>c</tt>.
+	 * <p>
+	 * If the specified index is greater or equal to the length of the string,
+	 * this method returns false.
 	 * <p>
 	 * This method is convenient as it does not throw an
-	 * {@code IndexOutOfBoundsException} if index is larger than the string
-	 * itself.
+	 * {@code IndexOutOfBoundsException} if index is out of bounds.
 	 * 
 	 * @param str string to be tested
 	 * @param index index in the string
 	 * @param c character to be tested
-	 * @return true if chars at indices index0 through index1 all equal the
-	 *         specified character
+	 * @return true if char at <tt>index</tt> is equal to the specified
+	 *         character
 	 */
 	public static boolean charAtEquals(String str, int index, char c) {
-		return charsAtEquals(str, index, index, c);
+		return charsAtEqual(str, index, index, c);
 	}
 	
 	/**
 	 * Returns true if characters from <tt>index0</tt> to <tt>index1</tt>, both
-	 * inclusive, are equal to the specified character <tt>c</tt>. If
-	 * <tt>index1</tt> is greater or equal to the length of the string, the
-	 * indices after <tt>str.length()</tt> are not processed and this method
-	 * returns false.
+	 * inclusive, are equal to the specified character <tt>c</tt>.
+	 * <p>
+	 * If <tt>index0</tt> is negative or <tt>index1</tt> is greater or equal to
+	 * the length of the string, this method returns false.
 	 * <p>
 	 * This method is convenient as it does not throw an
-	 * {@code IndexOutOfBoundsException} if indices are larger than the string
-	 * itself.
+	 * {@code IndexOutOfBoundsException} if indices are out of bounds.
 	 * 
 	 * @param str string to be tested
 	 * @param index0 start index, <strong>inclusive</strong>
@@ -396,14 +415,64 @@ public abstract class StringHelper {
 	 * @return true if chars at indices index0 through index1 all equal the
 	 *         specified character
 	 */
-	public static boolean charsAtEquals(String str, int index0, int index1, char c) {
-		int length = str.length();
+	public static boolean charsAtEqual(String str, int index0, int index1, char c) {
+		return charsAtSatisfy(str, index0, index1, Predicate.isEqual(c));
+	}
+	
+	/**
+	 * Returns true if the character at the specified <tt>index</tt> satisfies
+	 * the specified <tt>predicate</tt>.
+	 * <p>
+	 * If the specified index is negative or greater or equal to the length of
+	 * the string, this method returns false.
+	 * <p>
+	 * This method is convenient as it does not throw an
+	 * {@code IndexOutOfBoundsException} if index is out of bounds.
+	 * 
+	 * @param str string to be tested
+	 * @param index index in the string
+	 * @param predicate predicate to test
+	 * @return true if char at <tt>index</tt> satisfies the predicate
+	 */
+	public static boolean charAtSatisfies(String str, int index, Predicate<Character> predicate) {
+		return charsAtSatisfy(str, index, index, predicate);
+	}
+	
+	/**
+	 * Returns true if characters from <tt>index0</tt> to <tt>index1</tt>, both
+	 * inclusive, satisfy the specified <tt>predicate</tt>.
+	 * <p>
+	 * If <tt>index0</tt> is negative or <tt>index1</tt> is greater or equal to
+	 * the length of the string, this method returns false.
+	 * <p>
+	 * This method is convenient as it does not throw an
+	 * {@code IndexOutOfBoundsException} if indices are out of bounds.
+	 * 
+	 * @param str string to be tested
+	 * @param index0 start index, <strong>inclusive</strong>
+	 * @param index1 end index, <strong>inclusive</strong>
+	 * @param predicate predicate to test all characters from index0 to index1
+	 * @return true if char at <tt>index</tt> satisfies the predicate
+	 */
+	public static boolean charsAtSatisfy(String str, int index0, int index1, Predicate<Character> predicate) {
 		for (int i = index0; i <= index1; i++) {
-			if (i >= length)		return false;
-			if (str.charAt(i) != c) return false;
+			if (isIndexOutOfBounds(str, i))		return false;
+			if (!predicate.test(str.charAt(i)))	return false;
 		}
 		
 		return true;
+	}
+	
+	/**
+	 * Returns <tt>true</tt> if the specified <tt>index</tt> is out of the
+	 * string's bounds. False otherwise
+	 * 
+	 * @param str a string
+	 * @param index index of the string
+	 * @return true if index is out of bounds
+	 */
+	public static boolean isIndexOutOfBounds(String str, int index) {
+		return index < 0 || index >= str.length();
 	}
 	
 	/**

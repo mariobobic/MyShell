@@ -76,8 +76,7 @@ public abstract class Expander {
 			return line	.replace("\\$", "$")
 						.replace("\\{", "{")
 						.replace("\\"+LAST_INPUT, LAST_INPUT)
-						.replace("\\\\", "\\")
-						.replaceAll("(\\s|^)-", "$1\\\\-");
+						.replace("\\\\", "\\");
 		});
 		
 		return lines;
@@ -425,6 +424,9 @@ l:		while (true) {
 	 * 
 	 * Shell performs the expansion by executing COMMAND and replacing the
 	 * command substitution with the standard output of the command.
+	 * <p>
+	 * This method escapes dashes preceded by a blank that are produced in the
+	 * command output.
 	 * 
 	 * @param env an environment
 	 * @param input input to be expanded
@@ -464,6 +466,9 @@ l:		while (true) {
 	/**
 	 * Runs the command and returns its output. If the command specified in the
 	 * beginning of <tt>line</tt> does not exist, <tt>null</tt> is returned.
+	 * <p>
+	 * This method escapes dashes preceded by a blank that are produced in the
+	 * command output.
 	 * 
 	 * @param env an environment
 	 * @param line line containing the command name and arguments
@@ -504,7 +509,7 @@ l:		while (true) {
 		}
 		
 		// Escape flag symbols
-		return sw.toString();
+		return CommandArguments.escapeFlags(sw.toString());
 	}
 	
 	/**
@@ -534,6 +539,9 @@ l:		while (true) {
 	 * <li>modulus (%)
 	 * <li>power (^)
 	 * </ul>
+	 * <p>
+	 * This method escapes dashes preceded by a blank that are produced as
+	 * expression result (escapes minus symbols).
 	 * 
 	 * @param env an environment
 	 * @param input input to be expanded
@@ -563,12 +571,17 @@ l:		while (true) {
 			
 			String result;
 			try {
+				inside = StringHelper.replaceUnescaped(inside, "\\-", "-");
 				double res = new DoubleEvaluator().evaluate(inside);
 				result = nf.format(res);
 			} catch (IllegalArgumentException e) {
 				continue;
 			}
-
+			
+			// Escape minuses of expressions preceded by a whitespace
+			if (start == 0 || StringHelper.charAtSatisfies(input, start-1, Character::isWhitespace)) {
+				result = CommandArguments.escapeFlags(result);
+			}
 			input = StringHelper.replaceFirst(input, match, result, start);
 		}
 		
