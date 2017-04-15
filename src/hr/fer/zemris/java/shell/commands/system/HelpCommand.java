@@ -1,9 +1,11 @@
 package hr.fer.zemris.java.shell.commands.system;
 
+import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.interfaces.ShellCommand;
@@ -27,7 +29,7 @@ public class HelpCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "(<command>)";
 	}
 	
@@ -46,7 +48,7 @@ public class HelpCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) {
+	protected ShellStatus execute0(Environment env, String s) {
 		Iterable<ShellCommand> commands = env.commands();
 
 		if (s == null) {
@@ -56,7 +58,7 @@ public class HelpCommand extends AbstractCommand {
 			printSpecifiedCommand(env, commands, s);
 		}
 
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 
 	/**
@@ -93,7 +95,7 @@ public class HelpCommand extends AbstractCommand {
 				return;
 			}
 		}
-		writeln(env, "Cannot provide help for command: " + s);
+		env.writeln("Cannot provide help for command: " + s);
 	}
 	
 	/**
@@ -103,9 +105,9 @@ public class HelpCommand extends AbstractCommand {
 	 * @param env environment to where write lines
 	 * @param command command of which the description is to be printed
 	 */
-	public static void printFullDescription(Environment env, ShellCommand command) {
+	private static void printFullDescription(Environment env, ShellCommand command) {
 		for (String line : command.getCommandDescription()) {
-			writeln(env, line);
+			env.writeln(line);
 		}
 	}
 

@@ -10,7 +10,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
@@ -35,11 +35,10 @@ public class EditCommand extends VisitorCommand {
 	 */
 	public EditCommand() {
 		super("EDIT", createCommandDescription(), createFlagDescriptions());
-		commandArguments.addFlagDefinition("subl", false);
 	}
 	
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "<path>";
 	}
 	
@@ -88,7 +87,7 @@ public class EditCommand extends VisitorCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			throw new SyntaxException();
 		}
@@ -100,7 +99,7 @@ public class EditCommand extends VisitorCommand {
 		EditFileVisitor editVisitor = new EditFileVisitor(env);
 		walkFileTree(path, editVisitor);
 		
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 	
 	/**
@@ -125,11 +124,11 @@ public class EditCommand extends VisitorCommand {
 			// Does not work on Windows 2003 and XP
 			Desktop.getDesktop().edit(file.toFile());
 		} catch (IOException e) {
-			write(env, e.getMessage());
-			writeln(env, "Try opening the file using the open command.");
+			env.write(e.getMessage());
+			env.writeln("Try opening the file using the OPEN command.");
 		}
 	}
-	
+
 	/**
 	 * A {@linkplain FileVisitor} implementation that is used to serve the
 	 * {@linkplain EditCommand}.
@@ -159,7 +158,7 @@ public class EditCommand extends VisitorCommand {
 
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-			writeln(environment, "Failed to access " + file);
+			environment.writeln("Failed to access " + file);
 			return FileVisitResult.CONTINUE;
 		}
 		

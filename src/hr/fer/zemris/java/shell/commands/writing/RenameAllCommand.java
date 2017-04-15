@@ -9,11 +9,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.StringHelper;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -48,11 +49,10 @@ public class RenameAllCommand extends AbstractCommand {
 	 */
 	public RenameAllCommand() {
 		super("RENAMEALL", createCommandDescription(), createFlagDescriptions());
-		commandArguments.addFlagDefinition("i", "start", true);
 	}
 
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "<path> <newname>";
 	}
 	
@@ -106,12 +106,12 @@ public class RenameAllCommand extends AbstractCommand {
 	}
 	
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			throw new SyntaxException();
 		}
 		
-		String[] args = Helper.extractArguments(s, 2);
+		String[] args = StringHelper.extractArguments(s, 2);
 		if (args.length < 2) {
 			throw new SyntaxException();
 		}
@@ -120,8 +120,8 @@ public class RenameAllCommand extends AbstractCommand {
 		Helper.requireDirectory(path);
 		
 		if (startIndex < 0) {
-			writeln(env, "The start index must be positive: " + startIndex);
-			return CommandStatus.CONTINUE;
+			env.writeln("The start index must be positive: " + startIndex);
+			return ShellStatus.CONTINUE;
 		}
 		
 		/* Create a sorted list of files in the specified directory. */
@@ -131,8 +131,8 @@ public class RenameAllCommand extends AbstractCommand {
 		/* Check if the directory was empty. */
 		int n = listOfFiles.size();
 		if (n == 0) {
-			writeln(env, "There are no files in the specified directory.");
-			return CommandStatus.CONTINUE;
+			env.writeln("There are no files in the specified directory.");
+			return ShellStatus.CONTINUE;
 		}
 		
 		/* Substitute values. */
@@ -153,13 +153,13 @@ public class RenameAllCommand extends AbstractCommand {
 			
 			try {
 				Files.move(originalFile, renamingFile, StandardCopyOption.ATOMIC_MOVE);
-				writeln(env, originalFile.getFileName() + " renamed to " + renamingFile.getFileName());
+				env.writeln(originalFile.getFileName() + " renamed to " + renamingFile.getFileName());
 			} catch (Exception e) {
-				writeln(env, originalFile.getFileName() + " cannot be renamed to " + newName);
+				env.writeln(originalFile.getFileName() + " cannot be renamed to " + newName);
 			}
 		}
 		
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 	
 	/**

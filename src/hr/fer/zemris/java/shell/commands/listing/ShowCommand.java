@@ -1,5 +1,7 @@
 package hr.fer.zemris.java.shell.commands.listing;
 
+import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
+
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -14,11 +16,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.StringHelper;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -60,11 +63,10 @@ public class ShowCommand extends VisitorCommand {
 	 */
 	public ShowCommand() {
 		super("SHOW", createCommandDescription(), createFlagDescriptions());
-		commandArguments.addFlagDefinition("n", "count", true);
 	}
 	
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "<largest|smallest|newest|oldest> (<path>)";
 	}
 	
@@ -112,12 +114,12 @@ public class ShowCommand extends VisitorCommand {
 	}
 	
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			throw new SyntaxException();
 		}
 		
-		String[] args = Helper.extractArguments(s, 2);
+		String[] args = StringHelper.extractArguments(s, 2);
 		
 		/* Resolve path from the second argument, if present. */
 		Path dir;
@@ -129,8 +131,8 @@ public class ShowCommand extends VisitorCommand {
 
 		Comparator<Path> comparator = getComparator(args[0]);
 		if (comparator == null) {
-			writeln(env, "Unknown argument: " + args[0]);
-			return CommandStatus.CONTINUE;
+			env.writeln("Unknown argument: " + args[0]);
+			return ShellStatus.CONTINUE;
 		}
 		
 		/* Make necessary checks. */
@@ -146,11 +148,11 @@ public class ShowCommand extends VisitorCommand {
 		for (Path f : largestFiles) {
 			String bytes = " (" + Helper.humanReadableByteCount(size(f)) + ")";
 			String modTime = " (" + FORMATTER.format(lastModified(f).toInstant()) + ")";
-			write(env, f.normalize() + bytes + modTime);
+			env.write(f.normalize() + bytes + modTime);
 			markAndPrintNumber(env, f);
 		}
 		
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 	
 	/**
@@ -251,7 +253,7 @@ public class ShowCommand extends VisitorCommand {
 		 */
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-//			writeln(environment, "Failed to access " + file);
+//			environment.writeln("Failed to access " + file);
 			return FileVisitResult.CONTINUE;
 		}
 		

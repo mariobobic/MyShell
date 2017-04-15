@@ -1,5 +1,7 @@
 package hr.fer.zemris.java.shell.commands.listing;
 
+import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
+
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -15,11 +17,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.StringHelper;
 import hr.fer.zemris.java.shell.utility.exceptions.InvalidFlagException;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
@@ -56,13 +59,10 @@ public class DiffCommand extends VisitorCommand {
 	 */
 	public DiffCommand() {
 		super("DIFF", createCommandDescription(), createFlagDescriptions());
-		commandArguments.addFlagDefinition("x", false);
-		commandArguments.addFlagDefinition("a", "all", false);
-		commandArguments.addFlagDefinition("c", "charset", true);
 	}
 	
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "<path1> <path2>";
 	}
 	
@@ -130,9 +130,9 @@ public class DiffCommand extends VisitorCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		/* Extract arguments and check the array length. */
-		String[] args = Helper.extractArguments(s);
+		String[] args = StringHelper.extractArguments(s);
 		if (args.length != 2) {
 			throw new SyntaxException();
 		}
@@ -147,8 +147,8 @@ public class DiffCommand extends VisitorCommand {
 		boolean path1IsFile = Files.isRegularFile(path1);
 		boolean path2IsFile = Files.isRegularFile(path2);
 		if (path1IsFile != path2IsFile) {
-			writeln(env, "Can not match file with directory.");
-			return CommandStatus.CONTINUE;
+			env.writeln("Can not match file with directory.");
+			return ShellStatus.CONTINUE;
 		}
 
 		/* Passed all checks, start working. */
@@ -169,13 +169,13 @@ public class DiffCommand extends VisitorCommand {
 
 		/* Print errors if not silent. */
 		if (!isSilent() && fails.size() != 0) {
-			writeln(env, "Files that failed to be decoded:");
+			env.writeln("Files that failed to be decoded:");
 			fails.forEach((file1, file2) -> {
-				writeln(env, file1 + " against " + file2);
+				env.writeln(file1 + " against " + file2);
 			});
 		}
 		
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 	
 	/**
@@ -220,9 +220,9 @@ public class DiffCommand extends VisitorCommand {
 				
 				numDifferences++;
 				if (numDifferences == 1) {
-					writeln(env, "Analyzing files " + file1 + " and " + file2);
+					env.writeln("Analyzing files " + file1 + " and " + file2);
 				}
-				writeln(env, differences);
+				env.writeln(differences);
 			}
 			
 			return true;
@@ -314,7 +314,7 @@ public class DiffCommand extends VisitorCommand {
 		
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-			writeln(environment, "Failed to access " + file);
+			environment.writeln("Failed to access " + file);
 			return FileVisitResult.CONTINUE;
 		}
 

@@ -10,7 +10,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
@@ -37,11 +37,10 @@ public class ExtractCommand extends VisitorCommand {
 	 */
 	public ExtractCommand() {
 		super("EXTRACT", createCommandDescription(), createFlagDescriptions());
-		commandArguments.addFlagDefinition("r", false);
 	}
 
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "<path>";
 	}
 	
@@ -91,7 +90,7 @@ public class ExtractCommand extends VisitorCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			throw new SyntaxException();
 		}
@@ -102,7 +101,7 @@ public class ExtractCommand extends VisitorCommand {
 		ExtractFileVisitor extractVisitor = new ExtractFileVisitor(env, path);
 		walkFileTree(path, extractVisitor);
 
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 	
 	/**
@@ -145,14 +144,14 @@ public class ExtractCommand extends VisitorCommand {
 			}
 
 			Files.move(file, target);
-			writeln(environment, "Extracted " + file);
+			environment.writeln("Extracted " + file);
 			
 			return FileVisitResult.CONTINUE;
 		}
 		
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-			writeln(environment, "Unable to move " + file);
+			environment.writeln("Unable to move " + file);
 			return FileVisitResult.CONTINUE;
 		}
 		
@@ -162,7 +161,7 @@ public class ExtractCommand extends VisitorCommand {
 				try {
 					Files.delete(dir);
 				} catch (IOException e) {
-					writeln(environment, "Unable to remove " + dir);
+					environment.writeln("Unable to remove " + dir);
 				}
 			}
 			

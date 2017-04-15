@@ -22,7 +22,7 @@ import hr.fer.zemris.java.shell.utility.exceptions.InvalidFlagException;
  * Upon creation, flag definitions must be given in order to appropriately
  * compile the input string. When all desired flag definitions are given, an
  * instance of this class is ready to compile an input string storing all its
- * flags to a flag of maps, leaving out the given string without flags. In other
+ * flags to a map of flags, leaving out the given string without flags. In other
  * words, the given argument is <em>clean</em> of flags.
  * <p>
  * There are various constructors and static methods of this class that attempt
@@ -168,6 +168,9 @@ public class CommandArguments {
 	 * The <tt>hasArgument</tt> attribute indicates if the flag should be
 	 * followed by an argument or not. Flags that require an argument are
 	 * whitespace-separated from the argument.
+	 * <p>
+	 * If the given <tt>name</tt> is a <tt>null</tt> reference, this method
+	 * returns without mapping any value.
 	 * 
 	 * @param name name of the flag
 	 * @param hasArgument defines if the flag receives an argument
@@ -175,6 +178,8 @@ public class CommandArguments {
 	 *         already been defined
 	 */
 	public void addFlagDefinition(String name, boolean hasArgument) {
+		if (name == null) return;
+		
 		if (flagDefinitions.containsKey(name)) {
 			throw new IllegalArgumentException("Flag " + name + " is already defined.");
 		}
@@ -192,6 +197,8 @@ public class CommandArguments {
 	 * followed by an argument or not. Flags that require an argument are
 	 * whitespace-separated from the argument.
 	 * <p>
+	 * Names that are <tt>null</tt> will not be mapped and will be ignored.
+	 * <p>
 	 * This method is useful for defining flags that have the same
 	 * functionality, but different names - a long and short flag name.
 	 * 
@@ -207,8 +214,8 @@ public class CommandArguments {
 	}
 	
 	/**
-	 * Compiles the specified string <tt>s</tt>, storing all its flags to a flag
-	 * of maps, leaving out the given string without flags. In other words, the
+	 * Compiles the specified string <tt>s</tt>, storing all its flags to a map
+	 * of flags, leaving out the given string without flags. In other words, the
 	 * argument is <em>clean</em> of flags.
 	 * <p>
 	 * In order for this method to successfully process flags, they must be
@@ -221,7 +228,10 @@ public class CommandArguments {
 	 * require an argument, the same exception is thrown.
 	 * <p>
 	 * If the given input string <tt>s</tt> is <tt>null</tt>, it means no flags
-	 * are defined and the returning clean string is empty.
+	 * are defined and the returning clean string is also <tt>null</tt>.
+	 * <p>
+	 * String arguments with an escape symbol in front of a dash <strong>will
+	 * not be</strong> unescaped in this method.
 	 * 
 	 * @param s string to be compiled
 	 * @return a string <em>clean</em> of flags, or null if s was null
@@ -231,14 +241,14 @@ public class CommandArguments {
 	 *         that is defined to require an argument
 	 */
 	public String compile(String s) {
+		cleanArgument = null;
 		if (s == null) {
 			return null;
 		}
 		
-		String[] args = Helper.extractArguments(s);
+		String[] args = StringHelper.extractArguments(s, 0, true);
 		Set<String> undefinedFlags = new LinkedHashSet<>();
 		StringJoiner cleanArgumentBuilder = new StringJoiner(" ");
-		cleanArgument = null;
 		
 		for (int i = 0; i < args.length; i++) {
 			String arg = args[i];
@@ -250,22 +260,11 @@ public class CommandArguments {
 			} else if (arg.startsWith("-")) {
 				/* Short flags */
 				arg = arg.substring(1);
-				
 				for (int j = 0, n = arg.length(); j < n; j++) {
 					String name = arg.substring(j, j+1);
 					i = processFlag(name, undefinedFlags, args, n, i);
 				}
 			} else {
-				// Dash escape sequence
-				if (arg.startsWith("\\-")) {
-					arg = arg.substring(1);
-				}
-				
-				// If argument includes space, wrap it in double quotes again
-				if (Helper.indexOfWhitespace(arg) >= 0 || arg.isEmpty()) {
-					arg = '"'+arg+'"';
-				}
-				
 				cleanArgumentBuilder.add(arg);
 			}
 		}
@@ -276,7 +275,8 @@ public class CommandArguments {
 			throw new InvalidFlagException("Argument contains undefined flags: " + sj, undefinedFlags);
 		}
 		
-		cleanArgument = cleanArgumentBuilder.toString();
+		cleanArgument = cleanArgumentBuilder.length() == 0 ?
+			null : cleanArgumentBuilder.toString();
 		return cleanArgument;
 	}
 	

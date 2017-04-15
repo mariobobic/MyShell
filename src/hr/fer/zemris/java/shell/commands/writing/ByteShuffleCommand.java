@@ -11,11 +11,12 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
 import hr.fer.zemris.java.shell.utility.Progress;
+import hr.fer.zemris.java.shell.utility.StringHelper;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -36,7 +37,7 @@ public class ByteShuffleCommand extends AbstractCommand {
 	}
 	
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "<filename> (optional: <offset> <length>)";
 	}
 	
@@ -56,12 +57,12 @@ public class ByteShuffleCommand extends AbstractCommand {
 	}
 	
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			throw new SyntaxException();
 		}
 		
-		String[] args = Helper.extractArguments(s);
+		String[] args = StringHelper.extractArguments(s);
 		
 		Path file = Helper.resolveAbsolutePath(env, args[0]);
 		Helper.requireFile(file);
@@ -75,17 +76,19 @@ public class ByteShuffleCommand extends AbstractCommand {
 		} catch (Exception e) {
 			offset = 0;
 			length = Files.size(file);
-			writeln(env, "Offset: " + offset + ", length: " + length); 
 		}
+		env.writeln("Offset: " + offset + ", length: " + length); 
 		
 		long fileEndPoint = offset + length;
 		if (fileEndPoint > Files.size(file)) {
-			writeln(env, "The given offset and length are too big for file " + file.getFileName());
-			writeln(env, "The given file has the length of " + Files.size(file) + " bytes.");
-			return CommandStatus.CONTINUE;
+			env.writeln("The given offset and length are too big for file " + file.getFileName());
+			env.writeln("The given file has the length of " + Files.size(file) + " bytes.");
+			return ShellStatus.CONTINUE;
 		}
 
 		Path tempFile = Files.createTempFile(file.getParent(), null, null);
+		Helper.requireDiskSpace(Files.size(file), tempFile);
+		
 		Progress progress = new Progress(env, Files.size(file)+length, true);
 		try (
 			FileInputStream in = new FileInputStream(file.toFile());
@@ -118,7 +121,7 @@ public class ByteShuffleCommand extends AbstractCommand {
 		Path newFile = Helper.firstAvailable(file);
 		Files.move(tempFile, newFile);
 		
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 	
 	/**

@@ -9,11 +9,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.StringHelper;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -34,11 +35,10 @@ public class ReplaceCommand extends AbstractCommand {
 	 */
 	public ReplaceCommand() {
 		super("REPLACE", createCommandDescription(), createFlagDescriptions());
-		commandArguments.addFlagDefinition("r", false);
 	}
 
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "(<path>) <target_sequence> <replacement_sequence>";
 	}
 	
@@ -87,12 +87,12 @@ public class ReplaceCommand extends AbstractCommand {
 	}
 	
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			throw new SyntaxException();
 		}
 		
-		String[] args = Helper.extractArguments(s);
+		String[] args = StringHelper.extractArguments(s);
 		if (args.length < 2 || args.length > 3) {
 			throw new SyntaxException();
 		}
@@ -113,7 +113,7 @@ public class ReplaceCommand extends AbstractCommand {
 		
 		/* If sequences are equal, you are done. */
 		if (target.equals(replacement)) {
-			return CommandStatus.CONTINUE;
+			return ShellStatus.CONTINUE;
 		}
 		
 		List<Path> files;
@@ -125,8 +125,8 @@ public class ReplaceCommand extends AbstractCommand {
 		
 		/* Check if the directory was empty. */
 		if (files.size() == 0) {
-			writeln(env, "There are no files in the specified directory.");
-			return CommandStatus.CONTINUE;
+			env.writeln("There are no files in the specified directory.");
+			return ShellStatus.CONTINUE;
 		}
 		
 		for (Path file : files) {
@@ -144,7 +144,7 @@ public class ReplaceCommand extends AbstractCommand {
 			Files.move(file, dest, StandardCopyOption.ATOMIC_MOVE);
 		};
 		
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 
 }

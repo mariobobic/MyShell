@@ -1,5 +1,7 @@
 package hr.fer.zemris.java.shell.commands.writing;
 
+import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
+
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -13,11 +15,12 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
 import hr.fer.zemris.java.shell.utility.Progress;
+import hr.fer.zemris.java.shell.utility.StringHelper;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -40,7 +43,7 @@ public class ZipCommand extends VisitorCommand {
 	}
 	
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "<source_path> (<target_path>)";
 	}
 	
@@ -62,54 +65,56 @@ public class ZipCommand extends VisitorCommand {
 	}
 	
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			throw new SyntaxException();
 		}
 		
-		String[] args = Helper.extractArguments(s);
+		String[] args = StringHelper.extractArguments(s);
 		if (args.length > 2) {
 			throw new SyntaxException();
 		}
 		
 		Path source = Helper.resolveAbsolutePath(env, args[0]);
-		Path target = source.resolveSibling(Helper.getFileName(source) + ".zip");
+		Path target;
 		try {
 			target = Helper.resolveAbsolutePath(env, args[1]);
-		} catch (ArrayIndexOutOfBoundsException e) {}
+		} catch (ArrayIndexOutOfBoundsException e) {
+			target = source.resolveSibling(Helper.getFileName(source) + Helper.ZIP_FILE_EXT);
+		}
 		
 		Helper.requireExists(source);
 		
 		if (source.equals(target)) {
-			writeln(env, "Zip file name must be different from original file name.");
-			return CommandStatus.CONTINUE;
+			env.writeln("Zip file name must be different from original file name.");
+			return ShellStatus.CONTINUE;
 		}
 		
 		if (Files.isDirectory(target)) {
-			target = target.resolve(source.getFileName() + ".zip");
+			target = target.resolve(source.getFileName() + Helper.ZIP_FILE_EXT);
 		}
 		
 		if (Files.exists(target)) {
 			if (!promptConfirm(env, "File " + target + " already exists. Overwrite?")) {
-				writeln(env, "Cancelled.");
-				return CommandStatus.CONTINUE;
+				env.writeln("Cancelled.");
+				return ShellStatus.CONTINUE;
 			}
 		}
 		
 		/* Passed all checks, start working. */
-		try (ZipOutputStream zs = new ZipOutputStream(Files.newOutputStream(target))) {
-			ZipFileVisitor zipVisitor = new ZipFileVisitor(env, source, zs);
+		try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(target))) {
+			ZipFileVisitor zipVisitor = new ZipFileVisitor(env, source, zos);
 			walkFileTree(source, zipVisitor);
 		}
 
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 
 	/**
 	 * Writes all bytes of the specified <tt>file</tt> to the given output
 	 * stream. The bytes are read little by little to avoid large memory
-	 * consumption by a buffered input stream to reduce the number of I/O
-	 * accesses.
+	 * consumption and are read by a buffered input stream to reduce the number
+	 * of I/O accesses.
 	 * 
 	 * @param env an environment
 	 * @param stream stream where the file will be written
@@ -145,7 +150,7 @@ public class ZipCommand extends VisitorCommand {
 		/** Starting path. */
 		private Path start;
 		/** Zip output stream. */
-		private ZipOutputStream zs;
+		private ZipOutputStream zos;
 
 		/**
 		 * Constructs an instance of {@code ZipFileVisitor} with the specified
@@ -153,12 +158,12 @@ public class ZipCommand extends VisitorCommand {
 		 * 
 		 * @param environment an environment
 		 * @param start starting file of the tree walker
-		 * @param zs zip output stream
+		 * @param zos zip output stream
 		 */
-		public ZipFileVisitor(Environment environment, Path start, ZipOutputStream zs) {
+		public ZipFileVisitor(Environment environment, Path start, ZipOutputStream zos) {
 			this.environment = environment;
 			this.start = Helper.getParent(start);
-			this.zs = zs;
+			this.zos = zos;
 		}
 
 		@Override
@@ -166,16 +171,16 @@ public class ZipCommand extends VisitorCommand {
 			Path relative = start.relativize(file);
 			ZipEntry zipEntry = new ZipEntry(relative.toString());
 			
-			zs.putNextEntry(zipEntry);
-			write(environment, zs, file);
-			zs.closeEntry();
+			zos.putNextEntry(zipEntry);
+			write(environment, zos, file);
+			zos.closeEntry();
 
 			return FileVisitResult.CONTINUE;
 		}
 
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-			writeln(environment, "Failed to access " + file);
+			environment.writeln("Failed to access " + file);
 			return FileVisitResult.CONTINUE;
 		}
 	}

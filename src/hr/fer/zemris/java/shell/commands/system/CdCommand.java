@@ -5,7 +5,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
@@ -28,7 +28,7 @@ public class CdCommand extends AbstractCommand {
 	}
 	
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "(<path>)";
 	}
 	
@@ -49,7 +49,7 @@ public class CdCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		Path path = (s == null) ?
 			env.getHomePath() :
 			Helper.resolveAbsolutePath(env, s);
@@ -58,9 +58,9 @@ public class CdCommand extends AbstractCommand {
 		
 		path = path.toRealPath();
 		env.setCurrentPath(path);
-		writeln(env, "Current directory is now set to " + path);
+		env.writeln("Current directory is now set to " + path);
 		
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 
 }

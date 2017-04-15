@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 
@@ -26,7 +26,7 @@ public class CharsetsCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "";
 	}
 
@@ -45,14 +45,14 @@ public class CharsetsCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) {
+	protected ShellStatus execute0(Environment env, String s) {
 		Set<String> charsetNames = Charset.availableCharsets().keySet();
 		
 		for (String name : charsetNames) {
-			writeln(env, name);
+			env.writeln(name);
 		}
 		
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 
 }

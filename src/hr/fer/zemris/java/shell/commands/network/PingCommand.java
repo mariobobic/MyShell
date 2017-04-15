@@ -1,5 +1,7 @@
 package hr.fer.zemris.java.shell.commands.network;
 
+import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
@@ -7,7 +9,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
@@ -45,14 +47,10 @@ public class PingCommand extends AbstractCommand {
 	 */
 	public PingCommand() {
 		super("PING", createCommandDescription(), createFlagDescriptions());
-		commandArguments.addFlagDefinition("n", "count", true);
-		commandArguments.addFlagDefinition("t", "timeout", true);
-		commandArguments.addFlagDefinition("T", "ttl", true);
-		commandArguments.addFlagDefinition("i", "interval", true);
 	}
 	
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "<address>";
 	}
 	
@@ -119,7 +117,7 @@ public class PingCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			throw new SyntaxException();
 		}
@@ -129,7 +127,7 @@ public class PingCommand extends AbstractCommand {
 			inet = InetAddress.getByName(s);
 		} catch (UnknownHostException e) {
 			formatln(env, "Ping request could not find host %s. Please check the name and try again.", s);
-			return CommandStatus.CONTINUE;
+			return ShellStatus.CONTINUE;
 		}
 
 		formatln(env, "Pinging %s with ?? bytes of data:", inet.getHostAddress());
@@ -164,7 +162,7 @@ public class PingCommand extends AbstractCommand {
 		}
 		
 		int lost = sent - received;
-		writeln(env, "");
+		env.writeln("");
 		formatln(env, "Ping statistics for %s:", inet.getHostAddress());
 		formatln(env, "  Packets: Sent = %d, Received = %d, Lost = %d (%d%% loss)",
 			sent, received, lost, 100*lost/sent);
@@ -173,7 +171,7 @@ public class PingCommand extends AbstractCommand {
 				min/1_000_000, max/1_000_000, (totalTime / received)/1_000_000);
 		}
 
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 	
 	/**

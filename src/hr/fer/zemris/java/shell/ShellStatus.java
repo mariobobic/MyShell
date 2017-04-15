@@ -2,14 +2,13 @@ package hr.fer.zemris.java.shell;
 
 /**
  * An enumeration that names the procedure that should be followed after a
- * certain command is executed. Although most commands should return
- * {@linkplain #CONTINUE} on successful executing, an {@linkplain #TERMINATE}
- * command status should be considered upon encountering a critical error in
- * executing.
+ * certain command is executed. Although most commands return {@link #CONTINUE}
+ * on successful executing, the {@link #TERMINATE} command status should be
+ * considered upon encountering a critical error in executing.
  * 
  * @author Mario Bobic
  */
-public enum CommandStatus {
+public enum ShellStatus {
 
 	/**
 	 * Continue running the Shell and accepting new commands.

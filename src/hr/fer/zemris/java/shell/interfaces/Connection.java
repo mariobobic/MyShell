@@ -24,12 +24,16 @@ public interface Connection {
 	 * 
 	 * @param in input stream from the client
 	 * @param out output stream to the client
+	 * @param encrypto cryptographic cipher in encryption mode to be set
+	 * @param decrypto cryptographic cipher in decryption mode to be set
 	 */
-	void connectStreams(InputStream in, OutputStream out);
+	void connectStreams(InputStream in, OutputStream out, Crypto encrypto, Crypto decrypto);
 	
 	/**
-	 * Redirects the input and output stream to standard input and output.
-	 * This method does not close the previously opened reader and writer.
+	 * Redirects the input and output stream to the last input stream and output
+	 * stream before streams are connected. If there were no previous stacked
+	 * connections, redirects the streams to the standard input and standard
+	 * output.
 	 */
 	void disconnectStreams();
 
@@ -59,18 +63,19 @@ public interface Connection {
 	OutputStream getOutToClient();
 
 	/**
-	 * Returns the cryptographic cipher for encrypted connection.
+	 * Returns the cryptographic cipher for this connection that is in
+	 * encryption mode.
 	 * 
-	 * @return the cryptographic cipher for encrypted connection
+	 * @return the cryptographic cipher in encryption mode
 	 */
-	Crypto getCrypto();
-
-	/**
-	 * Sets the cryptographic cipher for encrypted connection to the specified
-	 * <tt>crypto</tt>.
-	 * 
-	 * @param crypto cryptographic cipher to be set
-	 */
-	void setCrypto(Crypto crypto);
+	Crypto getEncrypto();
 	
+	/**
+	 * Returns the cryptographic cipher for this connection that is in
+	 * decryption mode.
+	 * 
+	 * @return the cryptographic cipher in decryption mode
+	 */
+	Crypto getDecrypto();
+
 }

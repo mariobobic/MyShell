@@ -7,15 +7,19 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 import java.util.stream.Collectors;
 
-import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.commands.listing.CountCommand;
 import hr.fer.zemris.java.shell.commands.listing.DiffCommand;
 import hr.fer.zemris.java.shell.commands.listing.FilterCommand;
@@ -27,55 +31,36 @@ import hr.fer.zemris.java.shell.commands.network.DownloadCommand;
 import hr.fer.zemris.java.shell.commands.network.HostCommand;
 import hr.fer.zemris.java.shell.commands.network.HttpServerCommand;
 import hr.fer.zemris.java.shell.commands.network.PingCommand;
+import hr.fer.zemris.java.shell.commands.network.UploadCommand;
 import hr.fer.zemris.java.shell.commands.reading.CatCommand;
 import hr.fer.zemris.java.shell.commands.reading.HexdumpCommand;
-import hr.fer.zemris.java.shell.commands.system.CdCommand;
-import hr.fer.zemris.java.shell.commands.system.CharsetsCommand;
-import hr.fer.zemris.java.shell.commands.system.ClearCommand;
-import hr.fer.zemris.java.shell.commands.system.DateCommand;
-import hr.fer.zemris.java.shell.commands.system.DirCommand;
-import hr.fer.zemris.java.shell.commands.system.EditCommand;
-import hr.fer.zemris.java.shell.commands.system.ExitCommand;
-import hr.fer.zemris.java.shell.commands.system.HelpCommand;
-import hr.fer.zemris.java.shell.commands.system.LsCommand;
-import hr.fer.zemris.java.shell.commands.system.OpenCommand;
-import hr.fer.zemris.java.shell.commands.system.PwdCommand;
-import hr.fer.zemris.java.shell.commands.system.SymbolCommand;
-import hr.fer.zemris.java.shell.commands.writing.ByteShuffleCommand;
-import hr.fer.zemris.java.shell.commands.writing.CopyCommand;
-import hr.fer.zemris.java.shell.commands.writing.DecryptCommand;
-import hr.fer.zemris.java.shell.commands.writing.DumpCommand;
-import hr.fer.zemris.java.shell.commands.writing.EncryptCommand;
-import hr.fer.zemris.java.shell.commands.writing.ExtractCommand;
-import hr.fer.zemris.java.shell.commands.writing.MkdirCommand;
-import hr.fer.zemris.java.shell.commands.writing.MoveCommand;
-import hr.fer.zemris.java.shell.commands.writing.NameShuffleCommand;
-import hr.fer.zemris.java.shell.commands.writing.RenameAllCommand;
-import hr.fer.zemris.java.shell.commands.writing.ReplaceCommand;
-import hr.fer.zemris.java.shell.commands.writing.RmCommand;
-import hr.fer.zemris.java.shell.commands.writing.RmdirCommand;
-import hr.fer.zemris.java.shell.commands.writing.TouchCommand;
-import hr.fer.zemris.java.shell.commands.writing.ZipCommand;
+import hr.fer.zemris.java.shell.commands.system.*;
+import hr.fer.zemris.java.shell.commands.writing.*;
 import hr.fer.zemris.java.shell.interfaces.Connection;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.interfaces.ShellCommand;
+import hr.fer.zemris.java.shell.utility.CommandUtility;
 import hr.fer.zemris.java.shell.utility.Crypto;
+import hr.fer.zemris.java.shell.utility.Expander;
 import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.StringHelper;
+import hr.fer.zemris.java.shell.utility.exceptions.ShellIOException;
 
 /**
  * MyShell, this is where the magic happens. Scans the user's input and searches
  * for a matching command. Some commands require arguments, so the user must
- * input them as well. If the input command is found, the command is executed,
- * otherwise an error message is displayed. The program stops and prints out a
- * goodbye message if the input command is {@linkplain ExitCommand}. The program
- * also prompts an input symbol while waiting for a command to be inputed. If a
- * critical error occurs, an error message is printed out onto the <b>standard
- * error</b> with a detail message specifying what went wrong and the program
- * terminates.
+ * enter them as well. If the input command is found, the command is executed,
+ * otherwise the program checks if it is a variable assignment. If the given
+ * input is neither a valid command name nor a variable assignment, an error
+ * message is displayed. The program stops and prints out a goodbye message if
+ * the input command is {@link ExitCommand}. The program also prompts an input
+ * symbol while waiting for a command to be inputed. If a critical error occurs,
+ * an error message is printed out onto the <b>standard error</b> with a detail
+ * message specifying what went wrong before the program terminates.
  *
  * @author Mario Bobic
  * @author Marko Čupić
- * @version ZaBa
+ * @version Laptop
  */
 public class MyShell {
 	
@@ -99,6 +84,7 @@ public class MyShell {
 				new HostCommand(),
 				new HttpServerCommand(),
 				new PingCommand(),
+				new UploadCommand(),
 				
 				/* Reading */
 				new CatCommand(),
@@ -108,11 +94,14 @@ public class MyShell {
 				new CdCommand(),
 				new CharsetsCommand(),
 				new ClearCommand(),
+				new EchoCommand(),
 				new DateCommand(),
 				new DirCommand(),
+				new DrivesCommand(),
 				new EditCommand(),
 				new ExitCommand(),
 				new HelpCommand(),
+				new HistoryCommand(),
 				new LsCommand(),
 				new OpenCommand(),
 				new PwdCommand(),
@@ -133,6 +122,7 @@ public class MyShell {
 				new RmCommand(),
 				new RmdirCommand(),
 				new TouchCommand(),
+				new UnzipCommand(),
 				new ZipCommand(),
 		};
 		
@@ -143,74 +133,87 @@ public class MyShell {
 	
 	/** An environment used by MyShell. */
 	private static EnvironmentImpl environment = new EnvironmentImpl();
-
-	/** Writer saved before redirecting output to a file. */
-	private static BufferedWriter lastWriter;
+	/** Indicates if the output stream has been redirected to a file. */
+	private static boolean redirected = false;
 	
 	/**
 	 * Program entry point.
 	 * 
 	 * @param args not used in this program
-	 * @throws IOException
-	 *             if an IO exception occurs while writing or reading the input.
-	 *             This is a critical exception which terminates the program
-	 *             violently.
 	 */
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) {
 		environment.writeln("Welcome to MyShell! You may enter commands.");
 		
-		while (true) {
+l:		while (true) {
 			Path path = environment.getCurrentPath();
 			Path pathName = Helper.getFileName(path);
 			environment.write("$" + pathName + environment.promptSymbol + " ");
 			
-			String line = readInput();
+			String input = readInput();
+			List<String> lines = Expander.expand(environment, input);
+			environment.addToHistory(input);
 			
-			String cmd;
-			String arg;
-			int splitter = Helper.indexOfWhitespace(line);
-			if (splitter != -1) {
-				cmd = line.substring(0, splitter).toUpperCase();
-				arg = line.substring(splitter+1).trim();
-			} else {
-				cmd = line.toUpperCase();
-				arg = null;
-			}
-			
-			ShellCommand shellCommand = commands.get(cmd);
-			if (shellCommand == null) {
-				environment.writeln("Unknown command!");
-				continue;
-			}
-			
-			// If this machine is a host, write the command to its standard output
-			if (environment.isConnected()) {
-				System.out.println(""+path + environment.promptSymbol + " " + line);
-			}
-			
-			try {
-				arg = checkEnvironment(arg);
-				CommandStatus executionStatus = shellCommand.execute(environment, arg);
-				restoreEnvironment();
-				if (executionStatus == CommandStatus.TERMINATE) {
-					break;
+			for (String line : lines) {
+				line = line.trim();
+				if (line.isEmpty()) continue l;
+				
+				String cmd;
+				String arg;
+				int splitter = StringHelper.indexOfWhitespace(line);
+				if (splitter != -1) {
+					cmd = line.substring(0, splitter).toUpperCase();
+					arg = line.substring(splitter+1).trim();
+				} else {
+					cmd = line.toUpperCase();
+					arg = null;
 				}
-			} catch (RuntimeException critical) {
-				System.err.println("A critical error occured: " + critical.getMessage());
-				System.err.println("Stack trace:");
-				critical.printStackTrace();
-				return;
+				
+				ShellCommand shellCommand = commands.get(cmd);
+				if (shellCommand == null) {
+					boolean assigned = tryAssignVariable(line);
+					if (!assigned) {
+						environment.writeln("Unknown command: " + cmd);
+						continue l;
+					}
+					continue;
+				}
+				
+				// If this machine is a host, write the command to its standard output
+				if (environment.isConnected()) {
+					System.out.println(""+path + environment.promptSymbol + " " + line);
+				}
+				
+				try {
+					arg = checkRedirect(arg);
+					ShellStatus executionStatus = shellCommand.execute(environment, arg);
+					restoreRedirect();
+					if (executionStatus == ShellStatus.TERMINATE) {
+						break l;
+					}
+				} catch (RuntimeException critical) {
+					System.err.println("A critical error occured: " + critical.getMessage());
+					System.err.println("Stack trace:");
+					critical.printStackTrace();
+					return;
+				}
 			}
-
-			// Increase readability
-			environment.writeln("");
 		}
 		
 		environment.writeln("Thank you for using this shell. Goodbye!");
 	}
+	
+	/**
+	 * Returns a {@code ShellCommand} with the specified name.
+	 * 
+	 * @param name name of the shell command
+	 * @return a command with the specified name
+	 */
+	public static ShellCommand getCommand(String name) {
+		return commands.get(name);
+	}
 
 	/**
-	 * Reads the input from the current {@link EnvironmentImpl#reader reader}
+	 * Reads the input from the current {@link EnvironmentImpl#readers reader}
 	 * considering the {@link EnvironmentImpl#morelinesSymbol morelinesSymbol}
 	 * as a line breaker for commands. The user may enter some command and its
 	 * arguments followed by a space character and the <tt>morelinesSymbol</tt>,
@@ -219,9 +222,8 @@ public class MyShell {
 	 * prompt, and the whole input will be stored as a simple one-lined string.
 	 * 
 	 * @return the string input from the user
-	 * @throws IOException if an I/O error occurs
 	 */
-	private static String readInput() throws IOException {
+	private static String readInput() {
 		String line = environment.readLine();
 		if (line == null) {
 			environment.writeln("Input unavailable. Closing MyShell...");
@@ -238,6 +240,43 @@ public class MyShell {
 		
 		return line;
 	}
+
+	/**
+	 * Tries to assign a value to a variable, both parsed from the specified
+	 * <tt>input</tt>.
+	 * <p>
+	 * The input must be given according to the following rules:
+	 * <ul>
+	 * <li>Variable name must be on the left-hand side,
+	 * <li>Value must be on the right-hand side and
+	 * <li>There must be no spaces between variable name and value.
+	 * </ul>
+	 * <p>
+	 * When the input satisfies all of the above criteria, the specified
+	 * variable is assigned a value and <strong>true</strong> is returned.
+	 * <p>
+	 * If the input does not satisfy any of the following rules,
+	 * <strong>false</strong> is returned and no variable is assigned a value.
+	 * 
+	 * @param input input to be processed
+	 * @return true if variable was assigned a value, false otherwise
+	 */
+	private static boolean tryAssignVariable(String input) {
+		int index = input.indexOf("=");
+		if (index == -1) {
+			return false;
+		}
+		
+		String variable = input.substring(0, index);
+		String value = input.substring(index+1);
+		if (!StringHelper.isValidIdentifierName(variable) ||
+			(!value.isEmpty() && Character.isWhitespace(value.charAt(0)))) {
+			return false;
+		}
+		
+		environment.setVariable(variable, value);
+		return true;
+	}
 	
 	/**
 	 * Checks if the <tt>input</tt> string contains an output redirect to a
@@ -249,14 +288,13 @@ public class MyShell {
 	 * 
 	 * @param input input to be checked for file redirection
 	 * @return input without the file redirection substring
-	 * @throws IOException if an I/O error occurs
 	 */
-	private static String checkEnvironment(String input) throws IOException {
+	private static String checkRedirect(String input) {
 		if (input == null) {
 			return input;
 		}
 		
-		// TODO BUG this may occur in some pattern or string argument
+		// TODO BUG this may occur in some pattern or string argument.
 		int index = input.lastIndexOf("> ");
 		if (index == -1) {
 			return input;
@@ -265,6 +303,7 @@ public class MyShell {
 		/* Extract the output file from the given input string. */
 		String output = input.substring(0, index).trim();
 		String argument = input.substring(index+1).trim();
+		// TODO BUG this may throw an InvalidPathException.
 		Path outputFile = Helper.resolveAbsolutePath(environment, argument);
 		
 		/* Check conditions. */
@@ -273,16 +312,20 @@ public class MyShell {
 		}
 		
 		if (Files.exists(outputFile)) {
-			boolean overwrite = AbstractCommand.promptConfirm(environment, "File " + outputFile + " already exists. Overwrite?");
+			boolean overwrite = CommandUtility.promptConfirm(environment, "File " + outputFile + " already exists. Overwrite?");
 			if (!overwrite) {
 				environment.writeln("Cancelled.");
 				return output;
 			}
 		}
 		
-		/* Save the out writer and redirect the output stream. */
-		lastWriter = environment.writer;
-		environment.writer = Files.newBufferedWriter(outputFile);
+		/* Redirect the output stream. */
+		try {
+			environment.push(null, Files.newBufferedWriter(outputFile));
+			redirected = true;
+		} catch (IOException e) {
+			environment.writeln("Could not redirect stream to file: " + e.getMessage());
+		}
 		
 		return output;
 	}
@@ -291,10 +334,10 @@ public class MyShell {
 	 * Restores the environment to the state before output stream to file
 	 * redirection.
 	 */
-	private static void restoreEnvironment() {
-		if (lastWriter != null) {
-			environment.writer = lastWriter;
-			lastWriter = null;
+	private static void restoreRedirect() {
+		if (redirected) {
+			environment.pop();
+			redirected = false;
 		}
 	}
 	
@@ -306,23 +349,20 @@ public class MyShell {
 	 */
 	public static class EnvironmentImpl implements Environment {
 		
-		/** A default reader that reads from the standard input. */
-		private BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
-		/** A default writer that writes on the standard output. */
-		private BufferedWriter stdOut = new BufferedWriter(new OutputStreamWriter(System.out, StandardCharsets.UTF_8));
-		
-		
 		/** Reader of this environment. May be connected to a remote machine. */
-		private BufferedReader reader = stdIn;
+		private Stack<BufferedReader> readers = new Stack<>();
 		/** Writer of this environment. May be connected to a remote machine. */
-		private BufferedWriter writer = stdOut;
+		private Stack<BufferedWriter> writers = new Stack<>();
 		
 		/** Path where the program was ran. */
-		private Path homePath = Paths.get(".").normalize().toAbsolutePath();
+		private final Path homePath = Paths.get(".").normalize().toAbsolutePath();
 		/** Current path of the user positioning. */
 		private Path currentPath = homePath;
-		/** Last path that was requested. */
-		private Path lastPath = currentPath;
+		
+		/** Map of environment variables. */
+		private Map<String, String> variables = new HashMap<>();
+		/** History of inputs entered by the user. */
+		private List<String> history = new LinkedList<>();
 		
 		/** Prompt symbol to indicate the environment is ready. */
 		private Character promptSymbol = '>';
@@ -339,33 +379,111 @@ public class MyShell {
 		/** Connection object that manages client-host connections. */
 		private ConnectionImpl connection = new ConnectionImpl();
 		
-		@Override
-		public String readLine() throws IOException {
-			return reader.readLine();
+		/**
+		 * Constructs an instance of {@code EnvironmentImpl} with default values.
+		 */
+		public EnvironmentImpl() {
+			// Call setters to store environment variables
+			setPromptSymbol(promptSymbol);
+			setMorelinesSymbol(morelinesSymbol);
+			setMultilineSymbol(multilineSymbol);
+			history.add("");
 		}
 		
 		@Override
-		public synchronized void write(String s) throws IOException {
+		public String readLine() throws ShellIOException {
+			try {
+				return reader().readLine();
+			} catch (IOException e) {
+				throw new ShellIOException(e);
+			}
+		}
+		
+		@Override
+		public synchronized void write(String s) throws ShellIOException {
 			if (s == null) {
 				s = "null";
 			}
-			writer.write(s);
-			writer.flush();
-		}
-		
-		@Override
-		public synchronized void write(char cbuf[], int off, int len){
+			
 			try {
-				writer.write(cbuf, off, len);
-				writer.flush();
-			} catch (IOException e) {}
+				writer().write(s);
+				writer().flush();
+			} catch (IOException e) {
+				throw new ShellIOException(e);
+			}
 		}
 		
 		@Override
-		public synchronized void writeln(String s) throws IOException {
-			write(s);
-			writer.newLine();
-			writer.flush();
+		public synchronized void write(char cbuf[], int off, int len) throws ShellIOException {
+			try {
+				writer().write(cbuf, off, len);
+				writer().flush();
+			} catch (IOException e) {
+				throw new ShellIOException(e);
+			}
+		}
+		
+		@Override
+		public synchronized void writeln(String s) throws ShellIOException {
+			try {
+				write(s);
+				writer().newLine();
+				writer().flush();
+			} catch (IOException e) {
+				throw new ShellIOException(e);
+			}
+		}
+		
+		/**
+		 * Returns the environment reader.
+		 * <p>
+		 * The reader that is returned depends if there are any stacked readers;
+		 * if this environment is connected to a network or an outside member
+		 * has pushed a (temporary) reader, the last pushed reader is returned.
+		 * Else if there are no readers stacked and the standard input reader is
+		 * returned.
+		 * 
+		 * @return the environment reader
+		 */
+		private BufferedReader reader() {
+			return readers.isEmpty() ? stdIn : readers.peek();
+		}
+		
+		/**
+		 * Returns the environment writer.
+		 * <p>
+		 * The writer that is returned depends if there are any stacked writers;
+		 * if this environment is connected to a network or an outside member
+		 * has pushed a (temporary) writer, the last pushed writer is returned.
+		 * Else if there are no writers stacked and the standard output writer
+		 * is returned.
+		 * 
+		 * @return the environment writer
+		 */
+		private BufferedWriter writer() {
+			return writers.isEmpty() ? stdOut : writers.peek();
+		}
+		
+		@Override
+		public void push(Reader in, Writer out) {
+			if (in == null && out == null) {
+				throw new IllegalArgumentException("Reader and writer cannot both be null.");
+			}
+			
+			readers.push(in == null  ? reader() : new BufferedReader(in));
+			writers.push(out == null ? writer() : new BufferedWriter(out));
+		}
+
+		@Override
+		public void pop() {
+			if (!readers.isEmpty()) {
+				BufferedReader in = readers.pop();
+				BufferedWriter out = writers.pop();
+				try {
+					if (!in.equals(stdIn)) in.close();
+					if (!out.equals(stdOut)) out.close();
+				} catch (IOException ignorable) {}
+			}
 		}
 		
 		@Override
@@ -391,13 +509,29 @@ public class MyShell {
 		}
 
 		@Override
-		public Path getLastPath() {
-			return lastPath;
+		public String getVariable(String name) {
+			String value = variables.get(name);
+			if (value == null) {
+				value = System.getenv(name);
+			}
+			
+			return value;
 		}
 
 		@Override
-		public void setLastPath(Path path) {
-			lastPath = path;
+		public void setVariable(String name, String value) {
+			variables.put(name, value);
+		}
+
+		@Override
+		public List<String> getHistory() {
+			return history;
+		}
+
+		@Override
+		public void addToHistory(String input) {
+			input = StringHelper.replaceUnescaped(input, Expander.LAST_INPUT, Helper.lastElement(history), 0);
+			history.add(input);
 		}
 		
 		@Override
@@ -408,6 +542,7 @@ public class MyShell {
 		@Override
 		public void setPromptSymbol(Character symbol) {
 			promptSymbol = symbol;
+			variables.put("PROMPT", String.valueOf(symbol));
 		}
 		
 		@Override
@@ -418,6 +553,7 @@ public class MyShell {
 		@Override
 		public void setMorelinesSymbol(Character symbol) {
 			morelinesSymbol = symbol;
+			variables.put("MORELINES", String.valueOf(symbol));
 		}
 		
 		@Override
@@ -428,18 +564,21 @@ public class MyShell {
 		@Override
 		public void setMultilineSymbol(Character symbol) {
 			multilineSymbol = symbol;
+			variables.put("MULTILINE", String.valueOf(symbol));
 		}
 
 		@Override
 		public int mark(Path path) {
 			markedMap.put(++markNum, path);
+			setVariable(Integer.toString(markNum), path.toAbsolutePath().toString());
 			return markNum;
 		}
 
 		@Override
 		public void clearMarks() {
-			markNum = 0;
+			markedMap.keySet().forEach(variables::remove);
 			markedMap.clear();
+			markNum = 0;
 		}
 		
 		@Override
@@ -471,38 +610,53 @@ public class MyShell {
 		
 		/** Indicates if this machine has an active remote connection. */
 		private boolean connected = false;
-		/** Input stream to read from the client. */
-		private InputStream inFromClient;
-		/** Output stream to write to the client. */
-		private OutputStream outToClient;
-		/** Cryptographic cipher for encrypted connection. */
-		private Crypto crypto;
+		/** Input streams to read from the client. */
+		private Stack<InputStream> inFromClient = new Stack<>();
+		/** Output streams to write to the client. */
+		private Stack<OutputStream> outToClient = new Stack<>();
+		
+		/** Cryptographic ciphers in encryption mode. */
+		private Stack<Crypto> encryptos = new Stack<>();
+		/** Cryptographic ciphers in decryption mode. */
+		private Stack<Crypto> decryptos = new Stack<>();
 		
 		@Override
-		public void connectStreams(InputStream in, OutputStream out) {
-			inFromClient = in;
-			outToClient = out;
+		public void connectStreams(InputStream in, OutputStream out, Crypto encrypto, Crypto decrypto) {
+			inFromClient.push(in);
+			outToClient.push(out);
+			assignReaderAndWriter();
 			
-			environment.reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-			environment.writer = new BufferedWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
+			encryptos.push(requireMode(encrypto, Crypto.ENCRYPT));
+			decryptos.push(requireMode(decrypto, Crypto.DECRYPT));
 			
 			connected = true;
 		}
-		
+
 		@Override
 		public void disconnectStreams() {
-			try { inFromClient.close(); } catch (Exception e) {}
-			try { outToClient.close();  } catch (Exception e) {}
-			try { environment.reader.close(); } catch (Exception e) {}
-			try { environment.writer.close(); } catch (Exception e) {}
+			try { inFromClient.pop().close(); } catch (Exception e) {}
+			try { outToClient.pop().close();  } catch (Exception e) {}
+			try { environment.pop(); } catch (Exception e) {}
 			
-			inFromClient = null;
-			outToClient = null;
+			if (!inFromClient.isEmpty()) {
+				assignReaderAndWriter();
+				encryptos.pop();
+				decryptos.pop();
+				return;
+			}
 			
-			environment.reader = environment.stdIn;
-			environment.writer = environment.stdOut;
-
+			/* No more connections (in case of nested hosting). */
 			connected = false;
+		}
+		
+		/**
+		 * Creates reader and writer from this connection's current input and
+		 * output streams and pushes them to the environment.
+		 */
+		private void assignReaderAndWriter() {
+			BufferedReader in = new BufferedReader(new InputStreamReader(getInFromClient(), StandardCharsets.UTF_8));
+			BufferedWriter out = new BufferedWriter(new OutputStreamWriter(getOutToClient(), StandardCharsets.UTF_8));
+			environment.push(in, out);
 		}
 		
 		@Override
@@ -512,22 +666,39 @@ public class MyShell {
 		
 		@Override
 		public InputStream getInFromClient() {
-			return inFromClient;
+			return inFromClient.peek();
 		}
 		
 		@Override
 		public OutputStream getOutToClient() {
-			return outToClient;
+			return outToClient.peek();
 		}
 		
 		@Override
-		public Crypto getCrypto() {
-			return crypto;
+		public Crypto getEncrypto() {
+			return encryptos.peek();
+		}
+		
+		@Override
+		public Crypto getDecrypto() {
+			return decryptos.peek();
 		}
 
-		@Override
-		public void setCrypto(Crypto crypto) {
-			this.crypto = crypto;
+		/**
+		 * Throws an {@code IllegalArgumentException} if the specified
+		 * <tt>crypto</tt> is not in the specified <tt>mode</tt>.
+		 * 
+		 * @param crypto crypto to be tested
+		 * @param mode the required mode
+		 * @return the given crypto
+		 */
+		private static Crypto requireMode(Crypto crypto, boolean mode) {
+			if (crypto.getMode() != mode) {
+				String modeStr = (mode == Crypto.ENCRYPT ? "en" : "de") + "cryption"; 
+				throw new IllegalArgumentException("Crypto must be in " + modeStr + " mode.");
+			}
+			
+			return crypto;
 		}
 		
 	}

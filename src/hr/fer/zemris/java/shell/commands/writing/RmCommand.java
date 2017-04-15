@@ -1,5 +1,7 @@
 package hr.fer.zemris.java.shell.commands.writing;
 
+import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
+
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -9,9 +11,10 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
@@ -21,16 +24,19 @@ import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
  * @author Mario Bobic
  */
 public class RmCommand extends VisitorCommand {
+	
+	/** True if removing directories should be forced. */
+	private boolean force;
 
 	/**
 	 * Constructs a new command object of type {@code RmCommand}.
 	 */
 	public RmCommand() {
-		super("RM", createCommandDescription());
+		super("RM", createCommandDescription(), createFlagDescriptions());
 	}
 
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "<path>";
 	}
 	
@@ -47,29 +53,63 @@ public class RmCommand extends VisitorCommand {
 		desc.add("THE REMOVE OPERATION IS IRREVERSIBLE.");
 		return desc;
 	}
+	
+	/**
+	 * Creates a list of {@code FlagDescription} objects where each entry
+	 * describes the available flags of this command. This method is generates
+	 * description exclusively for the command that this class represents.
+	 * 
+	 * @return a list of strings that represents description
+	 */
+	private static List<FlagDescription> createFlagDescriptions() {
+		List<FlagDescription> desc = new ArrayList<>();
+		desc.add(new FlagDescription("f", "force", null, "Never prompt before removing."));
+		return desc;
+	}
+	
+	@Override
+	protected String compileFlags(Environment env, String s) {
+		/* Initialize default values. */
+		force = false;
+
+		/* Compile! */
+		s = commandArguments.compile(s);
+		
+		/* Replace default values with flag values, if any. */
+		if (commandArguments.containsFlag("f", "force")) {
+			force = true;
+		}
+		
+		return super.compileFlags(env, s);
+	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			throw new SyntaxException();
+		}
+		
+		if (env.isConnected() && !force) {
+			env.writeln("Access denied.");
+			return ShellStatus.CONTINUE;
 		}
 		
 		Path path = Helper.resolveAbsolutePath(env, s);
 		Helper.requireExists(path);
 		
 		// Require confirmation for directories
-		if (Files.isDirectory(path)) {
+		if (Files.isDirectory(path) && !force) {
 			boolean confirmed = promptConfirm(env, "Remove directory " + path + "?");
 			if (!confirmed) {
-				writeln(env, "Cancelled.");
-				return CommandStatus.CONTINUE;
+				env.writeln("Cancelled.");
+				return ShellStatus.CONTINUE;
 			}
 		}
 		
 		RmFileVisitor rmVisitor = new RmFileVisitor(env, path);
 		walkFileTree(path, rmVisitor);
 			
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 
 	/**
@@ -101,9 +141,9 @@ public class RmCommand extends VisitorCommand {
 			Path relative = root.relativize(file);
 			try {
 				Files.delete(file);
-				writeln(environment, "Deleted file " + relative);
+				print("Deleted file " + relative);
 			} catch (IOException e) {
-				writeln(environment, "Failed to delete file " + relative);
+				print("Failed to delete file " + relative);
 			}
 
 			return FileVisitResult.CONTINUE;
@@ -111,7 +151,7 @@ public class RmCommand extends VisitorCommand {
 		
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-			writeln(environment, "Failed to access " + file);
+			environment.writeln("Failed to access " + file);
 			return FileVisitResult.CONTINUE;
 		}
 		
@@ -121,12 +161,24 @@ public class RmCommand extends VisitorCommand {
 			
 			try {
 				Files.delete(dir);
-				writeln(environment, "Removed directory " + relative);
+				print("Removed directory " + relative);
 			} catch (IOException e) {
-				writeln(environment, "Failed to remove directory " + relative);
+				print("Failed to remove directory " + relative);
 			}
 
 			return FileVisitResult.CONTINUE;
+		}
+		
+		/**
+		 * Prints the specified <tt>message</tt> followed by a new line to the
+		 * environment if the command is not silent.
+		 * 
+		 * @param message message to be printed
+		 */
+		private void print(String message) {
+			if (!isSilent()) {
+				environment.writeln(message);
+			}
 		}
 	}
 

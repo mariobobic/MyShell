@@ -1,11 +1,9 @@
 package hr.fer.zemris.java.shell.utility;
 
-import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 
 /**
@@ -71,12 +69,12 @@ public class Progress implements Runnable {
 	 * method is called automatically upon object construction and
 	 * {@link #stop()} when the processing finishes.
 	 *
-	 * @param env an environment
+	 * @param env an environment, or {@code null} if stdout should be used
 	 * @param total total size to be processed
 	 * @param auto indicates if start and stop should be called automatically
 	 */
 	public Progress(Environment env, long total, boolean auto) {
-		this.environment = Objects.requireNonNull(env);
+		this.environment = env;
 		this.total = total;
 		this.auto = auto;
 		
@@ -96,7 +94,7 @@ public class Progress implements Runnable {
 	public void start() {
 		if (!started) {
 			started = true;
-			scheduledExecutor.scheduleWithFixedDelay(this, 1, 5, TimeUnit.SECONDS);
+			scheduledExecutor.scheduleWithFixedDelay(this, 5, 5, TimeUnit.SECONDS);
 		}
 	}
 	
@@ -179,16 +177,25 @@ public class Progress implements Runnable {
 			
 			
 			/* Print it! */
-			AbstractCommand.formatln(environment,
-				"%2d%% processed (%s/%s), Elapsed time: %s, Current speed: %s, Estimated time: %s",
+			String output = String.format(
+				"  %2d%% processed (%s/%s), Elapsed time: %s, Current speed: %s, Estimated time: %s",
 				percent, currentStr, totalStr, elapsedTimeStr, currentSpeedStr, estimatedTime
 			);
+			
+			if (environment == null) {
+				System.out.println(output);
+			} else {
+				environment.writeln(output);
+			}
 			
 			/* Reset 'recent' calculations. */
 			recent = 0;
 			recentStartTime = System.nanoTime();
 		} catch (Exception e) {
-			e.printStackTrace();
+			scheduledExecutor.shutdownNow();
+			System.err.println("Exception: " + e);
+			System.err.println("Aborted progress tracker.");
+			throw e;
 		}
 	}
 	

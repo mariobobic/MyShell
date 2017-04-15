@@ -6,7 +6,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
@@ -27,7 +27,7 @@ public class MkdirCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "<path>";
 	}
 	
@@ -45,7 +45,7 @@ public class MkdirCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) {
+	protected ShellStatus execute0(Environment env, String s) {
 		if (s == null) {
 			throw new SyntaxException();
 		}
@@ -53,17 +53,17 @@ public class MkdirCommand extends AbstractCommand {
 		Path path = Helper.resolveAbsolutePath(env, s);
 		
 		if (Files.exists(path)) {
-			writeln(env, path + " already exists!");
+			env.writeln(path + " already exists!");
 		} else {
 			try {
 				Files.createDirectories(path);
-				writeln(env, "Created " + path);
+				env.writeln("Created " + path);
 			} catch (IOException e) {
-				writeln(env, "Can not create directory " + path);
+				env.writeln("Can not create directory " + path);
 			}
 		}
 		
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 
 }

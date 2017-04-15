@@ -1,5 +1,7 @@
 package hr.fer.zemris.java.shell.commands.listing;
 
+import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
+
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
@@ -8,10 +10,10 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.StringHelper;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -31,7 +33,7 @@ public class FilterCommand extends VisitorCommand {
 	}
 
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "<pattern>";
 	}
 	
@@ -51,7 +53,7 @@ public class FilterCommand extends VisitorCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			throw new SyntaxException();
 		}
@@ -65,10 +67,10 @@ public class FilterCommand extends VisitorCommand {
 		walkFileTree(path, filterVisitor);
 		int fails = filterVisitor.getFails();
 		if (fails != 0) {
-			writeln(env, "Failed to access " + fails + " paths.");
+			env.writeln("Failed to access " + fails + " paths.");
 		}
 
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 	
 	/**
@@ -96,7 +98,7 @@ public class FilterCommand extends VisitorCommand {
 		 */
 		public FilterFileVisitor(Environment environment, String pattern) {
 			this.environment = environment;
-			this.patternParts = Helper.splitPattern(pattern.trim().toUpperCase());
+			this.patternParts = StringHelper.splitPattern(pattern.trim().toUpperCase());
 		}
 
 		/**
@@ -107,7 +109,7 @@ public class FilterCommand extends VisitorCommand {
 		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 			String fileName = file.getFileName().toString().toUpperCase();
 			
-			if (Helper.matches(fileName, patternParts)) {
+			if (StringHelper.matches(fileName, patternParts)) {
 				markAndPrintPath(environment, file);
 			}
 
@@ -120,7 +122,7 @@ public class FilterCommand extends VisitorCommand {
 		 */
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-			writeln(environment, "Failed to access " + file);
+			environment.writeln("Failed to access " + file);
 			fails++;
 			return FileVisitResult.CONTINUE;
 		}
@@ -144,7 +146,7 @@ public class FilterCommand extends VisitorCommand {
 		 * @param pattern a pattern that may contain the asterisk character
 		 * @return true if {@code name} matches the {@code pattern}. False otherwise
 		 * @deprecated this method can have only 2 parts of the pattern. Use
-		 *             {@link Helper#matches(String, String)} instead
+		 *             {@link StringHelper#matches(String, String)} instead
 		 */
 		@Deprecated
 		@SuppressWarnings("unused")

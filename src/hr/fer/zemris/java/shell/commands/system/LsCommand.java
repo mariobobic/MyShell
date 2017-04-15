@@ -1,5 +1,7 @@
 package hr.fer.zemris.java.shell.commands.system;
 
+import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -14,7 +16,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Stream;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
@@ -55,12 +57,10 @@ public class LsCommand extends AbstractCommand {
 	 */
 	public LsCommand() {
 		super("LS", createCommandDescription(), createFlagDescriptions());
-		commandArguments.addFlagDefinition("h", false);
-		commandArguments.addFlagDefinition("d", false);
 	}
 	
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "(<path>)";
 	}
 	
@@ -117,7 +117,7 @@ public class LsCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		Path dir = s == null ?
 			env.getCurrentPath() : Helper.resolveAbsolutePath(env, s);
 		
@@ -133,7 +133,7 @@ public class LsCommand extends AbstractCommand {
 			});
 		}
 		
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 	
 	/**
@@ -155,11 +155,11 @@ public class LsCommand extends AbstractCommand {
 	 */
 	private void printFile(Environment env, Path path) {
 		try {
-			write(env, getFileString(path, humanReadable, directorySize));
+			env.write(getFileString(path, humanReadable, directorySize));
 			markAndPrintNumber(env, path);
 		} catch (IOException e) {
-			writeln(env, "An I/O error has occured.");
-			writeln(env, e.getMessage());
+			env.writeln("An I/O error has occured.");
+			env.writeln(e.getMessage());
 		}
 	}
 	
@@ -224,12 +224,13 @@ public class LsCommand extends AbstractCommand {
 	 * total sum of all files within the directory.
 	 * <p>
 	 * If an I/O exception occurs, it is suppressed within this method and
-	 * <tt>0</tt> is returned as the size of the specified <tt>path</tt>.
+	 * <tt>0</tt> is returned as the size of the path it is processing (it may
+	 * or may not be the specified <tt>path</tt>).
 	 * 
 	 * @param path path whose size is to be returned
 	 * @return size of the specified path
 	 */
-	public static long calculateSize(Path path) {
+	private static long calculateSize(Path path) {
 		try {
 			if (Files.isRegularFile(path)) {
 				return Files.size(path);

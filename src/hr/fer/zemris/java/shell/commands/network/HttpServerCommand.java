@@ -27,12 +27,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.commands.system.LsCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
 import hr.fer.zemris.java.shell.utility.RequestContext;
+import hr.fer.zemris.java.shell.utility.StringHelper;
 
 /**
  * A command that is used to host a HTTP server. This command accepts a
@@ -64,9 +65,6 @@ import hr.fer.zemris.java.shell.utility.RequestContext;
  */
 public class HttpServerCommand extends VisitorCommand {
 	
-	/** Map of running server threads. */
-	private static Map<Path, ServerThread> serversMap = new LinkedHashMap<>();
-	
 	/** The date-time formatter used for tracking client sockets. */
 	private static final DateTimeFormatter FORMATTER =
 			DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
@@ -78,8 +76,9 @@ public class HttpServerCommand extends VisitorCommand {
 	
 	/** Amount of threads used by the thread pool. */
 	private static final int NUM_THREADS = 5;
-	/** Thread pool of client workers. */
-	private ExecutorService threadPool = Executors.newFixedThreadPool(NUM_THREADS);
+	
+	/** Map of running server threads. */
+	private Map<Path, ServerThread> serversMap = new LinkedHashMap<>();
 
 	/**
 	 * Constructs a new command object of type {@code HttpServerCommand}.
@@ -89,7 +88,7 @@ public class HttpServerCommand extends VisitorCommand {
 	}
 	
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "| start (<port>) | stop (<path>|all)";
 	}
 	
@@ -112,16 +111,16 @@ public class HttpServerCommand extends VisitorCommand {
 	}
 	
 	@Override
-	protected CommandStatus execute0(Environment env, String s) {
-		String[] args = Helper.extractArguments(s, 2);
+	protected ShellStatus execute0(Environment env, String s) {
+		String[] args = StringHelper.extractArguments(s, 2);
 		if (args.length == 0) {
 			if (serversMap.isEmpty()) {
-				writeln(env, "There are no HTTP servers hosted on this machine.");
+				env.writeln("There are no HTTP servers hosted on this machine.");
 			} else {
-				writeln(env, "HTTP servers running on: ");
-				serversMap.keySet().forEach(serverPath -> writeln(env, "  "+serverPath));
+				env.writeln("HTTP servers running on: ");
+				serversMap.keySet().forEach(serverPath -> env.writeln("  "+serverPath));
 			}
-			return CommandStatus.CONTINUE;
+			return ShellStatus.CONTINUE;
 		}
 		
 		if ("start".equals(args[0])) {
@@ -129,10 +128,10 @@ public class HttpServerCommand extends VisitorCommand {
 		} else if ("stop".equals(args[0])) {
 			stop(args, env);
 		} else {
-			writeln(env, "Unknown argument: " + args[0]);
+			env.writeln("Unknown argument: " + args[0]);
 		}
 
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 	
 	/**
@@ -158,7 +157,7 @@ public class HttpServerCommand extends VisitorCommand {
 		Path path = env.getCurrentPath();
 		
 		if (serversMap.containsKey(path)) {
-			writeln(env, "HTTP server for path " + path + " is already up and running!");
+			env.writeln("HTTP server for path " + path + " is already up and running!");
 			return false;
 		}
 
@@ -168,7 +167,7 @@ public class HttpServerCommand extends VisitorCommand {
 			try {
 				port = Integer.parseInt(args[1]);
 			} catch (Exception e) {
-				writeln(env, "Invalid port number: " + args[1]);
+				env.writeln("Invalid port number: " + args[1]);
 				return false;
 			}
 		}
@@ -176,14 +175,14 @@ public class HttpServerCommand extends VisitorCommand {
 		// First check if any server thread is using this port
 		for (Map.Entry<Path, ServerThread> entry : serversMap.entrySet()) {
 			if (port == entry.getValue().port) {
-				writeln(env, "Port " + port + " is already in use by " + entry.getKey());
+				env.writeln("Port " + port + " is already in use by " + entry.getKey());
 				return false;
 			}
 		}
 
 		// Then check if OS uses this port
 		if (!available(port)) {
-			writeln(env, "Port " + port + " is already in use by another application.");
+			env.writeln("Port " + port + " is already in use by another application.");
 			return false;
 		}
 
@@ -192,11 +191,11 @@ public class HttpServerCommand extends VisitorCommand {
 		serversMap.put(path, serverThread);
 		serverThread.start();
 		
-		writeln(env, "Started HTTP server in " + path + " ("+FORMATTER.format(LocalDateTime.now())+")");
+		env.writeln("Started HTTP server in " + path + " ("+FORMATTER.format(LocalDateTime.now())+")");
 		
 		/* Print out a message that the connection is ready. */
-		write(env, "Connect to " + Helper.getLocalIP() + ":" + port);
-		writeln(env, " / " + Helper.getPublicIP() + ":" + port);
+		env.write("Connect to " + Helper.getLocalIP() + ":" + port);
+		env.writeln(" / " + Helper.getPublicIP() + ":" + port);
 		return true;
 	}
 	
@@ -226,7 +225,7 @@ public class HttpServerCommand extends VisitorCommand {
 			if ("all".equals(args[1])) {
 				serversMap.forEach((serverPath, thread) -> {
 					thread.stopThread();
-					writeln(env, "Stopped HTTP server at " + serverPath);
+					env.writeln("Stopped HTTP server at " + serverPath);
 				});
 				serversMap.clear();
 				return true;
@@ -238,7 +237,7 @@ public class HttpServerCommand extends VisitorCommand {
 		
 		Helper.requireDirectory(path);
 		if (!serversMap.containsKey(path)) {
-			writeln(env, "There is no HTTP server running for path " + path);
+			env.writeln("There is no HTTP server running for path " + path);
 			return false;
 		}
 
@@ -246,7 +245,7 @@ public class HttpServerCommand extends VisitorCommand {
 		ServerThread thread = serversMap.remove(path);
 		thread.stopThread();
 		
-		writeln(env, "Stopped HTTP server at " + path);
+		env.writeln("Stopped HTTP server at " + path);
 		return true;
 	}
 	
@@ -275,9 +274,9 @@ public class HttpServerCommand extends VisitorCommand {
 	 * @author Mario Bobic
 	 */
 	private class ServerThread extends Thread {
-		
-		/** Indicates if the server should be active or not. */
-		private boolean active = true;
+
+		/** Thread pool of client workers. */
+		private ExecutorService threadPool = Executors.newFixedThreadPool(NUM_THREADS);
 		
 		/** Address which the server listens. */
 		private String address;
@@ -296,11 +295,10 @@ public class HttpServerCommand extends VisitorCommand {
 		 * @param documentRoot path to a directory to be hosted
 		 */
 		public ServerThread(String address, int port, Path documentRoot) {
+			super(documentRoot.toString());
 			this.address = address;
 			this.port = port;
 			this.documentRoot = documentRoot;
-			
-			this.setName(documentRoot.toString());
 		}
 		
 		@Override
@@ -309,8 +307,8 @@ public class HttpServerCommand extends VisitorCommand {
 				ServerSocket serverSocket = new ServerSocket();
 				serverSocket.bind(new InetSocketAddress(address, port));
 				serverSocket.setSoTimeout(5000); // timeout for server shutdown
-				
-				while (active) {
+
+				while (!threadPool.isShutdown()) {
 					try {
 						acceptClient(serverSocket);
 					} catch (SocketTimeoutException e) {
@@ -345,7 +343,7 @@ public class HttpServerCommand extends VisitorCommand {
 		 * Stops the server.
 		 */
 		public void stopThread() {
-			active = false;
+			threadPool.shutdown();
 		}
 	}
 	

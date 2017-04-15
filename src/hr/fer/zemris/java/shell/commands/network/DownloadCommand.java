@@ -1,25 +1,18 @@
 package hr.fer.zemris.java.shell.commands.network;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.SocketException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.crypto.BadPaddingException;
-
-import hr.fer.zemris.java.shell.CommandStatus;
-import hr.fer.zemris.java.shell.commands.VisitorCommand;
+import hr.fer.zemris.java.shell.ShellStatus;
+import hr.fer.zemris.java.shell.commands.AbstractCommand;
+import hr.fer.zemris.java.shell.interfaces.Connection;
 import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.Crypto;
 import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.NetworkTransfer;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -28,7 +21,8 @@ import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
  *
  * @author Mario Bobic
  */
-public class DownloadCommand extends VisitorCommand {
+// TODO inherit VisitorCommand and enable skipping files and directories
+public class DownloadCommand extends AbstractCommand {
 	
 	/**
 	 * Constructs a new command object of type {@code DownloadCommand}.
@@ -38,8 +32,8 @@ public class DownloadCommand extends VisitorCommand {
 	}
 	
 	@Override
-	protected String getCommandSyntax() {
-		return "<filename>";
+	public String getCommandSyntax() {
+		return "<path>";
 	}
 	
 	/**
@@ -51,17 +45,17 @@ public class DownloadCommand extends VisitorCommand {
 	 */
 	private static List<String> createCommandDescription() {
 		List<String> desc = new ArrayList<>();
-		desc.add("Downloads content from the host's computer.");
+		desc.add("Downloads content from the host computer.");
 		desc.add("This command can only be run when connected to a MyShell host.");
 		desc.add("Both files and directories can be downloaded.");
 		return desc;
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		if (!env.isConnected()) {
-			writeln(env, "You must be connected to a host to run this command!");
-			return CommandStatus.CONTINUE;
+			env.writeln("You must be connected to a host to run this command!");
+			return ShellStatus.CONTINUE;
 		}
 		
 		if (s == null) {
@@ -73,142 +67,20 @@ public class DownloadCommand extends VisitorCommand {
 		
 		// Passed all checks, good to go
 		try {
-			DownloadFileVisitor downloadVisitor = new DownloadFileVisitor(env, path);
-			walkFileTree(path, downloadVisitor);
-			System.out.println("Host finished uploading " + path);
+			// Upload from MyShell HOST to MyShell CLIENT
+			Connection con = env.getConnection();
+			NetworkTransfer.upload(path, con.getInFromClient(), con.getOutToClient(), con.getEncrypto());
+			if (Files.isDirectory(path)) {
+				System.out.println("Finished uploading " + path);
+			}
 		} catch (SocketException e) {
 			// Connection has ended
-			return CommandStatus.TERMINATE;
+			return ShellStatus.TERMINATE;
 		} catch (IOException e) {
 			System.out.println(e.getMessage());
 		}
 		
-		return CommandStatus.CONTINUE;
-	}
-	
-	/**
-	 * Uploads the specified <tt>file</tt> to the client whose input and output
-	 * streams are fetched through the environment <tt>env</tt>. Path
-	 * <tt>root</tt> is used to create a relative file name of the file that is
-	 * being uploaded, which is then sent to the client to create an appropriate
-	 * directory structure before downloading.
-	 * <p>
-	 * An {@code IOException} may be thrown if the client connection is not
-	 * ready to receive the file.
-	 * 
-	 * @param env an environment
-	 * @param root root path from which files are being uploaded
-	 * @param file path to be uploaded
-	 * @throws IOException if an I/O error occurs
-	 * @throws SocketException if a connection error occurs between host and
-	 *         client (typically the client ends the connection)
-	 */
-	private void upload(Environment env, Path root, Path file) throws IOException, SocketException {
-		OutputStream outToClient = env.getConnection().getOutToClient();
-		InputStream inFromClient = env.getConnection().getInFromClient();
-		
-		try {
-			//////////////////////////////////////////////////
-			///////////////// File parameters ////////////////
-			//////////////////////////////////////////////////
-			
-			// Send a hint that download has started
-			byte[] start = new String(Helper.DOWNLOAD_KEYWORD).getBytes();
-			outToClient.write(start);
-			inFromClient.read(); // wait for signal: accepted download
-			
-			// Send file name
-			byte[] filename = root.relativize(file).toString().replace('\\', '/').getBytes();
-			outToClient.write(filename);
-			inFromClient.read(); // wait for signal: received file name
-			
-			// Send file size
-			byte[] filesize = Long.toString(Crypto.postSize(file)).getBytes();
-			outToClient.write(filesize);
-			inFromClient.read(); // wait for signal: received file size
-			
-			int ready = inFromClient.read(); // wait for signal: ready
-			if (ready == 0) {
-				throw new IOException("Client not ready. Aborting upload: " + file);
-			}
-			
-			//////////////////////////////////////////////////
-			//////////////////// Uploading ///////////////////
-			//////////////////////////////////////////////////
-			
-			// Start streaming file
-			BufferedInputStream fileStream = new BufferedInputStream(Files.newInputStream(file));
-			Crypto crypto = env.getConnection().getCrypto();
-			byte[] bytes = new byte[1024];
-			int len;
-			while ((len = fileStream.read(bytes)) != -1) {
-				byte[] encrypted = crypto.update(bytes, 0, len);
-				outToClient.write(encrypted);
-			}
-			outToClient.write(crypto.doFinal());
-		} catch (BadPaddingException ignorable) {
-			// ignored, since crypto is in encryption mode
-		} finally {
-			try { outToClient.flush(); } catch (IOException e) {}
-		}
-	}
-	
-	/**
-	 * A {@linkplain SimpleFileVisitor} extended and used to serve the
-	 * {@linkplain DownloadCommand}.
-	 *
-	 * @author Mario Bobic
-	 */
-	private class DownloadFileVisitor extends SimpleFileVisitor<Path> {
-		
-		/** An environment. */
-		private Environment environment;
-		/** Starting file. */
-		private Path root;
-		
-		/**
-		 * Constructs an instance of {@code DownloadFileVisitor} with the
-		 * specified environment.
-		 * <p>
-		 * The starting file is converted to a root directory. This is
-		 * convenient for relativizing file names
-		 *
-		 * @param environment an environment
-		 * @param start starting file
-		 */
-		public DownloadFileVisitor(Environment environment, Path start) {
-			this.environment = environment;
-			this.root = Helper.getParent(start);
-		}
-
-		@Override
-		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-			process(file);
-			return FileVisitResult.CONTINUE;
-		}
-
-		@Override
-		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-			writeln(environment, "Failed to access " + file);
-			return FileVisitResult.CONTINUE;
-		}
-		
-		/**
-		 * Uploads the specified <tt>path</tt> to the client and waits for the
-		 * signal of download completion. The received signal may be <tt>1</tt>
-		 * for successful download or <tt>0</tt> for failed download.
-		 * 
-		 * @param path path to be uploaded and processed
-		 * @throws IOException if the download fails on the client side
-		 */
-		private void process(Path path) throws IOException {
-			upload(environment, root, path);
-			int state = environment.getConnection().getInFromClient().read(); // wait for signal: download done
-			
-			if (state == 0) {
-				throw new IOException("Download failed on client side: " + path);
-			}
-		}
+		return ShellStatus.CONTINUE;
 	}
 
 }

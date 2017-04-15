@@ -1,5 +1,7 @@
 package hr.fer.zemris.java.shell.commands.writing;
 
+import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -9,11 +11,12 @@ import java.util.List;
 
 import javax.crypto.BadPaddingException;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Crypto;
 import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.StringHelper;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -35,7 +38,7 @@ public class DecryptCommand extends AbstractCommand {
 	}
 	
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "<password> <filename>";
 	}
 	
@@ -56,8 +59,8 @@ public class DecryptCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
-		String[] args = Helper.extractArguments(s, 2);
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
+		String[] args = StringHelper.extractArguments(s, 2);
 		if (args.length != 2) {
 			throw new SyntaxException();
 		}
@@ -66,10 +69,12 @@ public class DecryptCommand extends AbstractCommand {
 		Helper.requireFile(sourcefile);
 		
 		Path destfile = Paths.get(sourcefile.toString().replaceFirst(Helper.CRYPT_FILE_EXT+"$", ""));
+		Helper.requireDiskSpace(Files.size(sourcefile), destfile);
+		
 		if (Files.exists(destfile)) {
 			if (!promptConfirm(env, "File " + destfile + " already exists. Overwrite?")) {
-				writeln(env, "Cancelled.");
-				return CommandStatus.CONTINUE;
+				env.writeln("Cancelled.");
+				return ShellStatus.CONTINUE;
 			}
 		}
 
@@ -79,10 +84,10 @@ public class DecryptCommand extends AbstractCommand {
 		try {
 			crypto.execute(sourcefile, destfile, env);
 		} catch (BadPaddingException ignorable) {
-			writeln(env, "Decryption failed. This is probably due to an incorrect password.");
+			env.writeln("Decryption failed. This is probably due to an incorrect password.");
 		}
 
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 
 }

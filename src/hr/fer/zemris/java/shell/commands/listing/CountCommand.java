@@ -9,7 +9,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
@@ -31,7 +31,7 @@ public class CountCommand extends VisitorCommand {
 	}
 
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "(<path>)";
 	}
 	
@@ -51,7 +51,7 @@ public class CountCommand extends VisitorCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		Path path = s == null ?
 			env.getCurrentPath() : Helper.resolveAbsolutePath(env, s);
 		
@@ -64,13 +64,13 @@ public class CountCommand extends VisitorCommand {
 		int folders = countVisitor.getFolderCount();
 		int fails = countVisitor.getFails();
 		
-		writeln(env, "Files: " + files);
-		writeln(env, "Folders: " + folders);
+		env.writeln("Files: " + files);
+		env.writeln("Folders: " + folders);
 		if (fails != 0) {
-			writeln(env, "Failed to access " + fails + " folders.");
+			env.writeln("Failed to access " + fails + " folders.");
 		}
 
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 	
 	/**

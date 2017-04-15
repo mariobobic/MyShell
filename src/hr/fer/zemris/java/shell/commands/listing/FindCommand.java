@@ -1,5 +1,7 @@
 package hr.fer.zemris.java.shell.commands.listing;
 
+import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,11 +17,12 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.StringHelper;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -51,14 +54,10 @@ public class FindCommand extends VisitorCommand {
 	 */
 	public FindCommand() {
 		super("FIND", createCommandDescription(), createFlagDescriptions());
-		commandArguments.addFlagDefinition("r", false);
-		commandArguments.addFlagDefinition("c", false);
-		commandArguments.addFlagDefinition("l", "limit", true);
-		commandArguments.addFlagDefinition("t", "trim", false);
 	}
 
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "(<path>) <pattern>";
 	}
 
@@ -130,14 +129,14 @@ public class FindCommand extends VisitorCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			throw new SyntaxException();
 		}
 
 		/* Possible 1 or 2 arguments, where the second is a pattern
 		 * that may contain spaces and quotation marks. */
-		String[] args = Helper.extractArguments(s, 2);
+		String[] args = StringHelper.extractArguments(s, 2);
 
 		/* Set path and filter pattern. */
 		Path path;
@@ -165,9 +164,9 @@ public class FindCommand extends VisitorCommand {
 				myPattern = new MyPattern(filter);
 			}
 		} catch (PatternSyntaxException e) {
-			writeln(env, "Pattern error occurred:");
-			writeln(env, e.getMessage());
-			return CommandStatus.CONTINUE;
+			env.writeln("Pattern error occurred:");
+			env.writeln(e.getMessage());
+			return ShellStatus.CONTINUE;
 		}
 
 		/* Clear previously marked paths. */
@@ -177,7 +176,7 @@ public class FindCommand extends VisitorCommand {
 		FindFileVisitor findVisitor = new FindFileVisitor(env, path, myPattern);
 		walkFileTree(path, findVisitor);
 
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 
 	/**
@@ -204,7 +203,7 @@ public class FindCommand extends VisitorCommand {
 	 */
 	private static void printMatches(Environment env, MyPattern myPattern, Path file, boolean trim) throws IOException {
 		if (!Files.isReadable(file)) {
-			writeln(env, "Failed to access " + file);
+			env.writeln("Failed to access " + file);
 			return;
 		}
 
@@ -232,7 +231,7 @@ public class FindCommand extends VisitorCommand {
 			boolean nameMatches = myPattern.matches(file.getFileName().toString());
 			if (sb.length() != 0 || nameMatches) {
 				markAndPrintPath(env, file);
-				writeln(env, sb.toString());
+				env.writeln(sb.toString());
 			}
 		}
 	}
@@ -240,8 +239,8 @@ public class FindCommand extends VisitorCommand {
 	/**
 	 * Represents a pattern that can be given either as a {@code String} or a
 	 * {@code Pattern}. If a string is given, it is decompiled to pattern parts
-	 * using the {@link Helper#splitPattern(String)} method. Else the pattern is
-	 * already a compiled representation of a regular expression.
+	 * using the {@link StringHelper#splitPattern(String)} method. Else the
+	 * pattern is already a compiled representation of a regular expression.
 	 * <p>
 	 * This class contains a {@link #matches(String)} method that matches the
 	 * specified input string to the argument given in the constructor.
@@ -263,7 +262,7 @@ public class FindCommand extends VisitorCommand {
 		 * @param pattern a string pattern possibly containing asterisks
 		 */
 		public MyPattern(String pattern) {
-			patternParts = Helper.splitPattern(pattern.toUpperCase());
+			patternParts = StringHelper.splitPattern(pattern.toUpperCase());
 		}
 
 		/**
@@ -284,7 +283,7 @@ public class FindCommand extends VisitorCommand {
 		 */
 		public boolean matches(String input) {
 			if (patternParts != null) {
-				return Helper.matches(input.toUpperCase(), patternParts);
+				return StringHelper.matches(input.toUpperCase(), patternParts);
 			} else {
 				return regexPattern.matcher(input).matches();
 			}
@@ -354,7 +353,7 @@ public class FindCommand extends VisitorCommand {
 		 */
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-			writeln(environment, "Failed to access " + file);
+			environment.writeln("Failed to access " + file);
 			return FileVisitResult.CONTINUE;
 		}
 
@@ -375,7 +374,7 @@ public class FindCommand extends VisitorCommand {
 					);
 				}
 
-				writeln(environment, "");
+				environment.writeln("");
 				bigFiles.clear();
 			}
 

@@ -9,9 +9,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.CommandUtility;
 import hr.fer.zemris.java.shell.utility.Helper;
 
 /**
@@ -30,7 +31,7 @@ public class TreeCommand extends VisitorCommand {
 	}
 
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "(<path>)";
 	}
 	
@@ -52,7 +53,7 @@ public class TreeCommand extends VisitorCommand {
 	}
 	
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		Path path = s == null ?
 			env.getCurrentPath() : Helper.resolveAbsolutePath(env, s);
 		
@@ -62,7 +63,7 @@ public class TreeCommand extends VisitorCommand {
 		TreeFileVisitor treeVisitor = new TreeFileVisitor(env);
 		walkFileTree(path, treeVisitor);
 		
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 
 	/**
@@ -92,7 +93,7 @@ public class TreeCommand extends VisitorCommand {
 		@Override
 		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
 			if (level == 0) {
-				writeln(environment, dir.normalize().toAbsolutePath());
+				environment.writeln(dir.normalize().toAbsolutePath());
 			} else {
 				print(dir);
 			}
@@ -109,7 +110,7 @@ public class TreeCommand extends VisitorCommand {
 
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-			writeln(environment, "Failed to access " + file);
+			environment.writeln("Failed to access " + file);
 			return FileVisitResult.CONTINUE;
 		}
 
@@ -126,7 +127,8 @@ public class TreeCommand extends VisitorCommand {
 		 * @param path path to be written out
 		 */
 		private void print(Path path) {
-			writeln(environment, spaces(level)+path.getFileName());
+			environment.write(spaces(level)+path.getFileName());
+			CommandUtility.markAndPrintNumber(environment, path);
 		}
 		
 		/**

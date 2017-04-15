@@ -11,11 +11,11 @@ import java.util.Objects;
  */
 public class FlagDescription implements Comparable<FlagDescription> {
 	
-	/** Flag name. */
+	/** Flag name, with dash or dashes included. */
 	public final String name;
-	/** Other flag name. */
+	/** Other flag name, with dash or dashes included. */
 	public final String otherName;
-	/** Flag argument. */
+	/** Flag argument name. */
 	public final String argument;
 	/** Flag description. */
 	public final String description;
@@ -26,7 +26,7 @@ public class FlagDescription implements Comparable<FlagDescription> {
 	 *
 	 * @param name name of the flag, not <tt>null</tt>
 	 * @param otherName flag's other name, may be <tt>null</tt>
-	 * @param argument flag's argument, may be <tt>null</tt>
+	 * @param argument flag's argument name, may be <tt>null</tt>
 	 * @param description flag description, not <tt>null</tt>
 	 * @throws NullPointerException if either name or description is null
 	 */
@@ -50,6 +50,22 @@ public class FlagDescription implements Comparable<FlagDescription> {
 	private static String processName(String name) {
 		if (name == null) return null;
 		return (name.length() == 1 ? "-" : "--") + name;
+	}
+	
+	/**
+	 * Returns the clean name of the flag, without preceding dash or dashes.
+	 * This process is convenient for obtaining only the flag name, as flags of
+	 * this class are stored with dashes in front of their name.
+	 * <p>
+	 * If the given <tt>flag</tt> is a <tt>null</tt> reference, nothing is done
+	 * and <tt>null</tt> is returned.
+	 * 
+	 * @param flag flag to be unflagged
+	 * @return the clean name of the flag, without preceding dashes
+	 */
+	public static String unflag(String flag) {
+		if (flag == null) return null;
+		return flag.replaceFirst("^--?", "");
 	}
 	
 	/**

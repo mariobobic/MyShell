@@ -25,9 +25,9 @@ import hr.fer.zemris.java.shell.utility.exceptions.InvalidFlagException;
 public abstract class VisitorCommand extends AbstractCommand {
 
 	/** Set of paths to be excluded while searching. */
-	protected Set<Path> excludes;
+	private Set<Path> excludes;
 	/** Indicates if error printing should be suppressed. */
-	protected boolean silent;
+	private boolean silent;
 
 	/**
 	 * Constructs a new command of a type extending {@code VisitorCommand}, with
@@ -42,7 +42,7 @@ public abstract class VisitorCommand extends AbstractCommand {
 	 * @param commandName name of the Shell command
 	 * @param commandDescription description of the Shell command
 	 */
-	protected VisitorCommand(String commandName, List<String> commandDescription) {
+	public VisitorCommand(String commandName, List<String> commandDescription) {
 		this(commandName, commandDescription, new ArrayList<>());
 	}
 	
@@ -60,10 +60,8 @@ public abstract class VisitorCommand extends AbstractCommand {
 	 * @param commandDescription description of this Shell command
 	 * @param flagDescriptions flag descriptions of this Shell command
 	 */
-	protected VisitorCommand(String commandName, List<String> commandDescription, List<FlagDescription> flagDescriptions) {
+	public VisitorCommand(String commandName, List<String> commandDescription, List<FlagDescription> flagDescriptions) {
 		super(commandName, commandDescription, addFlagDescriptions(flagDescriptions));
-		commandArguments.addFlagDefinition("e", "exclude", true);
-		commandArguments.addFlagDefinition("s", "silent", false);
 	}
 	
 	/**
@@ -75,7 +73,7 @@ public abstract class VisitorCommand extends AbstractCommand {
 	 */
 	private static List<FlagDescription> addFlagDescriptions(List<FlagDescription> flagDescriptions) {
 		flagDescriptions.add(new FlagDescription("e", "exclude", "path", "Exclude a file or directory from the visitor process. May be used multiple times."));
-		flagDescriptions.add(new FlagDescription("s", "silent", null, "Suppress error printing on command execution."));
+		flagDescriptions.add(new FlagDescription("s", "silent", null, "Suppress error and information printing on command execution."));
 		return flagDescriptions;
 	}
 	
@@ -156,7 +154,7 @@ public abstract class VisitorCommand extends AbstractCommand {
 			boolean success = true;
 			for (Path exclude : excludes) {
 				if (!Files.exists(exclude)) {
-					writeln(env, "Excluded path " + exclude + " does not exist.");
+					env.writeln("Excluded path " + exclude + " does not exist.");
 					success = false;
 				}
 			}

@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
@@ -33,7 +33,7 @@ public class NameShuffleCommand extends AbstractCommand {
 	}
 	
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "<path>";
 	}
 	
@@ -53,7 +53,7 @@ public class NameShuffleCommand extends AbstractCommand {
 	}
 	
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			throw new SyntaxException();
 		}
@@ -66,8 +66,8 @@ public class NameShuffleCommand extends AbstractCommand {
 		
 		/* Check if the directory was empty. */
 		if (originalListOfFiles.size() == 0) {
-			writeln(env, "There are no files in the specified directory.");
-			return CommandStatus.CONTINUE;
+			env.writeln("There are no files in the specified directory.");
+			return ShellStatus.CONTINUE;
 		}
 		
 		/* Create a list of file names and shuffle it. */
@@ -94,10 +94,10 @@ public class NameShuffleCommand extends AbstractCommand {
 			
 			Files.move(tempFile, renamingFile);
 			
-			writeln(env, originalFile.getFileName() + " renamed to " + renamingFile.getFileName());
+			env.writeln(originalFile.getFileName() + " renamed to " + renamingFile.getFileName());
 		}
 		
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 
 }

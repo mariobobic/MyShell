@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringJoiner;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
@@ -33,7 +33,7 @@ public class HexdumpCommand extends AbstractCommand {
 	}
 	
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "<filename>";
 	}
 	
@@ -54,7 +54,7 @@ public class HexdumpCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			throw new SyntaxException();
 		}
@@ -69,13 +69,13 @@ public class HexdumpCommand extends AbstractCommand {
 			long total = 0;
 			byte[] bytes = new byte[16];
 			while ((len = in.read(bytes)) != -1) {
-				writeln(env, bytesToString(bytes, len, total));
+				env.writeln(bytesToString(bytes, len, total));
 				total += len;
 			}
 			
 		}
 		
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 
 	/**

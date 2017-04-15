@@ -1,5 +1,7 @@
 package hr.fer.zemris.java.shell.commands.writing;
 
+import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -12,11 +14,13 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
 import hr.fer.zemris.java.shell.utility.Progress;
+import hr.fer.zemris.java.shell.utility.StringHelper;
+import hr.fer.zemris.java.shell.utility.exceptions.NotEnoughDiskSpaceException;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -41,7 +45,7 @@ public class CopyCommand extends VisitorCommand {
 	}
 	
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "<source_file> <target_path>";
 	}
 	
@@ -65,12 +69,12 @@ public class CopyCommand extends VisitorCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			throw new SyntaxException();
 		}
 		
-		String[] args = Helper.extractArguments(s);
+		String[] args = StringHelper.extractArguments(s);
 		if (args.length != 2) {
 			throw new SyntaxException();
 		}
@@ -81,8 +85,8 @@ public class CopyCommand extends VisitorCommand {
 		
 		/* Both paths must be of same type. */
 		if (Files.isDirectory(source) && Files.isRegularFile(target)) {
-			writeln(env, "Can not copy directory onto a file.");
-			return CommandStatus.CONTINUE;
+			env.writeln("Can not copy directory onto a file.");
+			return ShellStatus.CONTINUE;
 		}
 		
 		/* Passed all checks, start working. */
@@ -93,7 +97,7 @@ public class CopyCommand extends VisitorCommand {
 			walkFileTree(source, copyVisitor);	
 		}
 		
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 
 	/**
@@ -104,10 +108,17 @@ public class CopyCommand extends VisitorCommand {
 	 * @param env an environment
 	 * @param source the path to file to be copied
 	 * @param target the path to destination file or directory
+	 * @throws IllegalArgumentException if <tt>source</tt> is a directory
+	 * @throws NotEnoughDiskSpaceException if there is not enough disk space
+	 * @throws IOException if an I/O error occurs
 	 */
-	private static void copyFile(Environment env, Path source, Path target) {
+	private void copyFile(Environment env, Path source, Path target) throws IOException {
+		if (Files.isDirectory(source)) {
+			throw new IllegalArgumentException("Source file can not be a directory: " + source);
+		}
+		
 		if (source.equals(target)) {
-			writeln(env, "File cannot be copied onto itself: " + source);
+			env.writeln("File cannot be copied onto itself: " + source);
 			return;
 		}
 		
@@ -117,17 +128,19 @@ public class CopyCommand extends VisitorCommand {
 		
 		if (Files.exists(target)) {
 			if (!promptConfirm(env, "File " + target + " already exists. Overwrite?")) {
-				writeln(env, "Cancelled.");
+				env.writeln("Cancelled.");
 				return;
 			}
 		}
-		
+
 		try {
 			Files.createDirectories(target.getParent());
 			createNewFile(env, source, target);
-			writeln(env, "Copied: " + target);
+			if (!isSilent()) env.writeln("Copied: " + target);
+		} catch (NotEnoughDiskSpaceException e) {
+			throw e;
 		} catch (IOException e) {
-			writeln(env, "Could not copy " + source + " to " + target);
+			throw new IOException("Could not copy " + source + " to " + target + ": " + e.getMessage());
 		}
 	}
 	
@@ -143,6 +156,8 @@ public class CopyCommand extends VisitorCommand {
 	 * @throws IOException if an I/O error occurs
 	 */
 	private static void createNewFile(Environment env, Path source, Path target) throws IOException {
+		Helper.requireDiskSpace(Files.size(source), target);
+		
 		Progress progress = new Progress(env, Files.size(source), true);
 		try (
 			BufferedInputStream in = new BufferedInputStream(Files.newInputStream(source));
@@ -201,7 +216,7 @@ public class CopyCommand extends VisitorCommand {
 
 		@Override
 		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-			writeln(environment, "Failed to access " + file);
+			environment.writeln("Failed to access " + file);
 			return FileVisitResult.CONTINUE;
 		}
 	}

@@ -1,5 +1,7 @@
 package hr.fer.zemris.java.shell.commands.writing;
 
+import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
+
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -7,11 +9,12 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
 import hr.fer.zemris.java.shell.utility.Progress;
+import hr.fer.zemris.java.shell.utility.StringHelper;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -39,7 +42,7 @@ public class DumpCommand extends AbstractCommand {
 	}
 	
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "<size> <filename>";
 	}
 	
@@ -58,8 +61,8 @@ public class DumpCommand extends AbstractCommand {
 	}
 	
 	@Override
-	protected CommandStatus execute0(Environment env, String s) throws IOException {
-		String[] args = Helper.extractArguments(s);
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
+		String[] args = StringHelper.extractArguments(s);
 		
 		/* Consider size having a space. */
 		String sizeUnit;
@@ -82,21 +85,22 @@ public class DumpCommand extends AbstractCommand {
 		}
 
 		Path path = Helper.resolveAbsolutePath(env, pathname);
+		Helper.requireDiskSpace(size, path);
 		if (Files.isDirectory(path)) {
-			writeln(env, "Directory " + path.getFileName() + " already exists.");
-			return CommandStatus.CONTINUE;
+			env.writeln("A directory named " + path.getFileName() + " already exists.");
+			return ShellStatus.CONTINUE;
 		}
 		if (Files.exists(path)) {
 			if (!promptConfirm(env, "File " + path + " already exists. Overwrite?")) {
-				writeln(env, "Cancelled.");
-				return CommandStatus.CONTINUE;
+				env.writeln("Cancelled.");
+				return ShellStatus.CONTINUE;
 			}
 		}
 		
 		dumpBytes(env, path, size);
-		writeln(env, "Dumped " + Helper.humanReadableByteCount(size) + " in file " + path.getFileName());
+		env.writeln("Dumped " + Helper.humanReadableByteCount(size) + " in file " + path.getFileName());
 		
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 	
 	/**

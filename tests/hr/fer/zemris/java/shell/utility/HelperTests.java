@@ -1,28 +1,23 @@
 package hr.fer.zemris.java.shell.utility;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
 import hr.fer.zemris.java.shell.MyShell.EnvironmentImpl;
 import hr.fer.zemris.java.shell.utility.exceptions.IllegalPathException;
+import hr.fer.zemris.java.shell.utility.exceptions.NotEnoughDiskSpaceException;
 
 /**
  * Tests the functionality of {@link Helper} utility class.
@@ -59,6 +54,17 @@ public class HelperTests {
 	}
 	
 	@Test
+	public void testResolveAbsolutePathMarkedInteger() throws IOException {
+		Path home = Paths.get(System.getProperty("user.home"));
+		int id = environment.mark(home);
+		
+		Path actual = Helper.resolveAbsolutePath(environment, Integer.toString(id));
+		Path expected = home;
+		
+		assertTrue(Files.isSameFile(expected, actual));
+	}
+	
+	@Test
 	public void testGetFileName1() {
 		Path file = Paths.get("./file.txt").toAbsolutePath();
 		
@@ -77,7 +83,25 @@ public class HelperTests {
 	}
 	
 	@Test
-	public void testIsHidden() throws IOException {
+	public void testGetParent1() {
+		Path file = Paths.get("./file.txt").toAbsolutePath();
+		
+		Path expectedParent = file.getParent();
+		Path actualParent = Helper.getParent(file);
+		assertEquals(expectedParent, actualParent);
+	}
+	
+	@Test
+	public void testGetParent2() {
+		Path root = Paths.get("./file.txt").toAbsolutePath().getRoot();
+		
+		Path expectedRoot = root;
+		Path actualRoot = Helper.getParent(root);
+		assertEquals(expectedRoot, actualRoot);
+	}
+	
+	@Test
+	public void testIsHiddenFile() throws IOException {
 		// Create it and set to hidden
 		Path hiddenFile = Files.createTempFile(null, null);
 		Files.setAttribute(hiddenFile, "dos:hidden", Boolean.TRUE);
@@ -89,13 +113,47 @@ public class HelperTests {
 	}
 	
 	@Test
+	public void testIsHiddenDirectory() throws IOException {
+		// Create it and set to hidden
+		Path hiddenDirectory = Files.createTempDirectory(null);
+		Files.setAttribute(hiddenDirectory, "dos:hidden", Boolean.TRUE);
+		
+		assertTrue(Helper.isHidden(hiddenDirectory));
+		
+		// Delete it afterwards
+		Files.delete(hiddenDirectory);
+	}
+	
+	@Test
+	public void testIsNotHidden() throws IOException {
+		// Create not hidden file and directory
+		Path file = Files.createTempFile(null, null);
+		Path dir = Files.createTempDirectory(null);
+
+		assertFalse(Helper.isHidden(file));
+		assertFalse(Helper.isHidden(dir));
+		
+		// Delete them afterwards
+		Files.delete(file);
+		Files.delete(dir);
+	}
+	
+	@Test
+	public void testIsHiddenRoot() throws IOException {
+		// roots must not be hidden
+		FileSystems.getDefault().getRootDirectories().forEach(root -> {
+			assertFalse(Helper.isHidden(root));
+		});
+	}
+	
+	@Test
 	public void testFirstAvailable1() throws IOException {
 		// Create a file
 		Path file = Files.createTempFile(null, ".txt");
 		
 		// Get the first available file (should not be 'file')
 		Path firstAvailable = Helper.firstAvailable(file).toAbsolutePath();
-		assertTrue(!file.equals(firstAvailable));
+		assertNotEquals(file, firstAvailable);
 		assertTrue(firstAvailable.toString().endsWith(".txt"));
 		
 		// Delete the file afterwards
@@ -105,14 +163,23 @@ public class HelperTests {
 	@Test
 	public void testFirstAvailable2() throws IOException {
 		// Create a file
-		Path file = Files.createTempFile(null, null);
+		Path file = Files.createTempFile(null, "");
 		
 		// Get the first available file (should not be 'file')
 		Path firstAvailable = Helper.firstAvailable(file).toAbsolutePath();
-		assertTrue(!file.equals(firstAvailable));
+		assertNotEquals(file, firstAvailable);
 		
 		// Delete the file afterwards
 		Files.delete(file);
+	}
+	
+	@Test
+	public void testFirstAvailable3() throws IOException {
+		Path file = Paths.get("./file.txt").toAbsolutePath();
+		
+		// Get the first available file (should be exactly 'file')
+		Path firstAvailable = Helper.firstAvailable(file).toAbsolutePath();
+		assertEquals(file, firstAvailable);
 	}
 	
 	@Test
@@ -184,35 +251,14 @@ public class HelperTests {
 	}
 	
 	@Test
-	public void testExtractArguments1() {
-		String str = "This string should contain \"exactly 5 arguments\"";
-		
-		String[] args = Helper.extractArguments(str);
-		int expectedLength = 5;
-		int actualLength = args.length;
-		
-		assertEquals(expectedLength, actualLength);
+	public void testRequireDiskSpace1() throws IOException {
+		Helper.requireDiskSpace(0, environment.getHomePath());
 	}
 	
-	@Test
-	public void testExtractArguments2() {
-		String str = "This\t   string \nshould  contain \"exactly 3 arguments\" for sure";
-		
-		String[] args = Helper.extractArguments(str, 3);
-		int expectedLength = 3;
-		int actualLength = args.length;
-		
-		assertEquals(expectedLength, actualLength);
-	}
-	
-	@Test
-	public void testIndexOfWhitespace() {
-		String str = "There.is-only\rone_whitespace";
-		
-		int expectedIndex = str.indexOf('\r');
-		int actualIndex = Helper.indexOfWhitespace(str);
-		
-		assertEquals(expectedIndex, actualIndex);
+	@Test(expected = NotEnoughDiskSpaceException.class)
+	public void testRequireDiskSpace2() throws IOException {
+		long fiveTiB = 5L*1000*1000*1000*1000; // five terabytes
+		Helper.requireDiskSpace(fiveTiB, environment.getHomePath());
 	}
 
 	@Test
@@ -261,32 +307,37 @@ public class HelperTests {
 	}
 	
 	@Test(expected = IllegalArgumentException.class)
-	public void testParseSize3() {
+	public void testParseSizeEmpty() {
 		Helper.parseSize("");
+	}
+	
+	@Test(expected = IllegalArgumentException.class)
+	public void testParseSizeNull() {
+		Helper.parseSize(null);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testParseSize4() {
+	public void testParseSizeNegative() {
 		Helper.parseSize("-2 kB");
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testParseSize5() {
+	public void testParseSizeDoublePeriod() {
 		Helper.parseSize("2..5 kB");
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testParseSize6() {
+	public void testParseSizeWord() {
 		Helper.parseSize("Foo");
 	}
 	
 	@Test(expected = IllegalArgumentException.class)
-	public void testParseSize7() {
+	public void testParseSizeWrongUnit1() {
 		Helper.parseSize("1.21 GW");
 	}
 	
 	@Test(expected = IllegalArgumentException.class)
-	public void testParseSize8() {
+	public void testParseSizeWrongUnit2() {
 		Helper.parseSize("14 jB");
 	}
 	
@@ -317,48 +368,6 @@ public class HelperTests {
 		assertEquals("365 days",                 Helper.humanReadableTimeUnit(365*day));
 	}
 	
-	@Test
-	public void testSplitPattern() {
-		String pattern = "three*pattern*parts";
-		
-		String[] expected = {"three", "pattern", "parts"};
-		String[] actual = Helper.splitPattern(pattern);
-		
-		assertArrayEquals(expected, actual);
-	}
-	
-	@Test
-	public void testSplitPatternEscapedAsterisk() {
-		String pattern = "escaped\\*asterisk";
-		
-		String[] expected = {"escaped*asterisk"};
-		String[] actual = Helper.splitPattern(pattern);
-		
-		assertArrayEquals(expected, actual);
-	}
-	
-	@Test
-	public void testMatches() {
-		String pattern = "M*.java";
-
-		assertTrue(Helper.matches("MyShell.java", pattern));
-		assertTrue(Helper.matches("MyShellTests.java", pattern));
-
-		assertFalse(Helper.matches("Helper.java", pattern));
-		assertFalse(Helper.matches("MyShell.class", pattern));
-	}
-	
-	@Test
-	public void testMatchesPatternParts() {
-		String[] pattern = {"M", ".java"};
-
-		assertTrue(Helper.matches("MyShell.java", pattern));
-		assertTrue(Helper.matches("MyShellTests.java", pattern));
-
-		assertFalse(Helper.matches("Helper.java", pattern));
-		assertFalse(Helper.matches("MyShell.class", pattern));
-	}
-
 	@Test
 	public void testGeneratePasswordHash() {
 		String hash = Helper.generatePasswordHash("password");
@@ -444,6 +453,19 @@ public class HelperTests {
 	}
 	
 	@Test
+	public void testIfNull() {
+		String str = "custom";
+
+		String expected = str;
+		String actual = Helper.ifNull(str, "default");
+		assertEquals(expected, actual);
+
+		expected = "default";
+		actual = Helper.ifNull(null, "default");
+		assertEquals(expected, actual);
+	}
+	
+	@Test
 	public void testGetLocalIP() {
 		String ip = Helper.getLocalIP();
 		assertNotNull(ip);
@@ -454,44 +476,6 @@ public class HelperTests {
 	public void testGetPublicIP() {
 		String ip = Helper.getPublicIP();
 		assertNotNull("Please check your internet connection.", ip);
-	}
-	
-	
-	
-	/* -------------------------------- Utility --------------------------------- */
-
-	public static void measure1() {
-		System.out.println("Helper.splitPattern");
-		String measurePattern = "some asterisks * are not escaped*,*while this*is an escaped\\*asterisk";
-		measure(Helper::splitPattern, measurePattern);
-	}
-	
-	public static void measure2() {
-		System.out.println("Helper.splitPattern2");
-		String measurePattern = "some asterisks * are not escaped*,*while this*is an escaped\\*asterisk";
-		measure(Helper::splitPattern2, measurePattern);
-	}
-	
-	/**
-	 * Measures the time it takes for the <tt>consumer</tt> to consume the
-	 * <tt>argument</tt>.
-	 * 
-	 * @param <T> argument type
-	 * @param consumer consumer that consumes the argument
-	 * @param argument argument to be consumed
-	 */
-	private static <T> void measure(Consumer<T> consumer, T argument) {
-		long t1 = System.nanoTime();
-		
-		final int REPEATS = 100_000;
-		for (int i = 0; i < REPEATS; i++) {
-			consumer.accept(argument);
-		}
-		
-		long t2 = System.nanoTime();
-		long timeMs = (t2 - t1) / 1_000_000;
-		System.out.format("Measured time (%d repeats): %d ms%n", REPEATS, timeMs);
-		System.out.format("Measured time (individual): %f ms%n%n", 1.0*timeMs / REPEATS);
 	}
 
 }

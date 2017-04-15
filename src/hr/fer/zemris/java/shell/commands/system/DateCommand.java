@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 
@@ -28,7 +28,7 @@ public class DateCommand extends AbstractCommand {
 	}
 	
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "";
 	}
 	
@@ -46,10 +46,10 @@ public class DateCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) {
+	protected ShellStatus execute0(Environment env, String s) {
 		Date date = new Date();
-		writeln(env, DATE_FORMAT.format(date));
-		return CommandStatus.CONTINUE;
+		env.writeln(DATE_FORMAT.format(date));
+		return ShellStatus.CONTINUE;
 	}
 
 }

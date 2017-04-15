@@ -1,5 +1,6 @@
 package hr.fer.zemris.java.shell.commands.network;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
@@ -7,8 +8,8 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
 import hr.fer.zemris.java.shell.MyShell;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Crypto;
@@ -29,17 +30,18 @@ public class HostCommand extends AbstractCommand {
 	/* Flags */
 	/** Password hash for encrypted connection. */
 	private String hash;
+	/** Indicates if host-client connection should be reversed. */
+	private boolean reverse;
 
 	/**
 	 * Constructs a new command object of type {@code HostCommand}.
 	 */
 	public HostCommand() {
 		super("HOST", createCommandDescription(), createFlagDescriptions());
-		commandArguments.addFlagDefinition("p", "pass", true);
 	}
 	
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "<port>";
 	}
 	
@@ -68,6 +70,7 @@ public class HostCommand extends AbstractCommand {
 	private static List<FlagDescription> createFlagDescriptions() {
 		List<FlagDescription> desc = new ArrayList<>();
 		desc.add(new FlagDescription("p", "pass", "pass", "Specify a connection password."));
+		desc.add(new FlagDescription("r", "reverse", null, "Reverse host-client connection."));
 		return desc;
 	}
 	
@@ -75,6 +78,7 @@ public class HostCommand extends AbstractCommand {
 	protected String compileFlags(Environment env, String s) {
 		/* Initialize default values. */
 		hash = Helper.generatePasswordHash("");
+		reverse = false;
 
 		/* Compile! */
 		s = commandArguments.compile(s);
@@ -84,12 +88,16 @@ public class HostCommand extends AbstractCommand {
 			hash = Helper.generatePasswordHash(
 				commandArguments.getFlag("p", "pass").getArgument());
 		}
+		
+		if (commandArguments.containsFlag("r", "reverse")) {
+			reverse = true;
+		}
 
 		return super.compileFlags(env, s);
 	}
 	
 	@Override
-	protected CommandStatus execute0(Environment env, String s) {
+	protected ShellStatus execute0(Environment env, String s) {
 		if (s == null) {
 			throw new SyntaxException();
 		}
@@ -102,39 +110,54 @@ public class HostCommand extends AbstractCommand {
 			throw new SyntaxException();
 		}
 		
-		Crypto crypto = new Crypto(hash, Crypto.ENCRYPT);
-		env.getConnection().setCrypto(crypto);
-		
 		/* Print out a message that the connection is ready. */
-		write(env, "Hosting server... connect to " + Helper.getLocalIP());
-		writeln(env, " / " + Helper.getPublicIP());
+		env.write("Hosting server... connect to " + Helper.getLocalIP());
+		env.writeln(" / " + Helper.getPublicIP());
 		
 		/* Create a host access point and redirect the input and output stream. */
-		try (
-				ServerSocket serverSocket = new ServerSocket(port);
-				Socket connectionSocket = serverSocket.accept();
-				InputStream inFromClient = connectionSocket.getInputStream();
-				OutputStream outToClient = connectionSocket.getOutputStream();
-		){
-			String clientAddress = connectionSocket.getRemoteSocketAddress().toString();
-			env.writeln(clientAddress + " connected.");
-
-			/* Redirect the streams to client. */
-			env.getConnection().connectStreams(inFromClient, outToClient);
-
-			/* Go to the main program and wait for the client to disconnect. */
-			try {
-				MyShell.main(null);
-			} catch (Exception e) {}
-
-			/* Redirect the streams back. */
-			env.getConnection().disconnectStreams();
-			env.writeln(clientAddress + " disconnected.");
+		try (ServerSocket serverSocket = new ServerSocket(port);
+			 Socket connectionSocket = serverSocket.accept()) {
+			if (!reverse) {
+				host(env, connectionSocket, hash);
+			} else {
+				ConnectCommand.connect(env, connectionSocket, hash);
+			}
 		} catch (Exception e) {
-			writeln(env, e.getMessage());
+			env.writeln(e.getMessage());
 		}
 		
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
+	}
+
+	/**
+	 * Hosts this shell to a shell at the specified <tt>hostSocket</tt>. The
+	 * <tt>hash</tt> parameter is used for encryption and decryption, and must
+	 * be the same as client's in order to work.
+	 * 
+	 * @param env an environment
+	 * @param hostSocket socket of the host
+	 * @param hash encryption and decryption hash
+	 * @throws IOException if an I/O error occurs
+	 */
+	static void host(Environment env, Socket hostSocket, String hash) throws IOException {
+		String clientAddress = hostSocket.getRemoteSocketAddress().toString();
+		env.writeln(clientAddress + " connected.");
+
+		/* Redirect the streams to client. */
+		Crypto encrypto = new Crypto(hash, Crypto.ENCRYPT);
+		Crypto decrypto = new Crypto(hash, Crypto.DECRYPT);
+		InputStream inFromClient = hostSocket.getInputStream();
+		OutputStream outToClient = hostSocket.getOutputStream();
+		env.getConnection().connectStreams(inFromClient, outToClient, encrypto, decrypto);
+
+		/* Go to the main program and wait for the client to disconnect. */
+		try {
+			MyShell.main(null);
+		} catch (Exception e) {}
+
+		/* Redirect the streams back. */
+		env.getConnection().disconnectStreams();
+		env.writeln(clientAddress + " disconnected.");
 	}
 
 }

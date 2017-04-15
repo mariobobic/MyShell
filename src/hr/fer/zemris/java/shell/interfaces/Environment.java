@@ -1,72 +1,76 @@
 package hr.fer.zemris.java.shell.interfaces;
 
-import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
 import java.nio.file.Path;
+import java.util.List;
 
 /**
  * This interface represents an environment where the whole program works. It is
  * used for claiming the current user's path, working with commands and writing
  * out informational messages to the user.
+ * <p>
+ * This environment is an upgrade of the {@code BasicEnvironment} that provides
+ * basic environment functionality.
  *
  * @author Mario Bobic
- * @author Marko Cupic
  */
-public interface Environment {
-
-	/**
-	 * Reads the user's input and returns it as a string.
-	 * 
-	 * @return the user's input
-	 * @throws IOException if an I/O exception occurs
-	 */
-	String readLine() throws IOException;
-
-	/**
-	 * Writes the given string using the writer.
-	 * 
-	 * @param s string to be written
-	 * @throws IOException if an I/O exception occurs
-	 */
-	void write(String s) throws IOException;
+public interface Environment extends BasicEnvironment {
 	
 	/**
-	 * Writes the given array of characters using the writer.
+	 * Writes the given object as a string using a writer.
 	 * 
-	 * @param cbuf array of characters to be written
-	 * @param off offset
-	 * @param len length to be written
+	 * @param obj object to be written as a string
 	 */
-	void write(char cbuf[], int off, int len);
+	default void write(Object obj) {
+		write(String.valueOf(obj));
+	}
+	
+	/**
+	 * Writes the given object as a string using a writer, followed by a new
+	 * line separator.
+	 * 
+	 * @param obj object to be written as a string
+	 */
+	default void writeln(Object obj) {
+		writeln(String.valueOf(obj));
+	}
+	
+	/**
+	 * Pushes the specified buffered reader and writer to the environment stack
+	 * and uses them as current reader and writer. At all times, <strong>the
+	 * number of readers and writers on the stack will be equal</strong>.
+	 * <p>
+	 * If any of the specified arguments is <tt>null</tt>, the previous or
+	 * default reader/writer is pushed onto the stack. This is convenient if one
+	 * simply wants to push either a reader or writer to be used temporarily,
+	 * and leave the other one as is.
+	 * <p>
+	 * If both reader and writer are <tt>null</tt>, an
+	 * {@code IllegalArgumentException} is thrown.
+	 * <p>
+	 * <em><strong>Caution: DO NOT create your own reader or writer of the
+	 * standard input or output</strong>, as readers and writers are closed when
+	 * popping them. <strong>Use {@link BasicEnvironment#stdIn} and
+	 * {@link BasicEnvironment#stdOut} instead.</strong><em>
+	 * 
+	 * @param in reader
+	 * @param out writer
+	 * @throws IllegalArgumentException if both reader and writer are null
+	 */
+	void push(Reader in, Writer out);
 
 	/**
-	 * Writes the given string using the writer, inputting a new line at the
-	 * end.
-	 * 
-	 * @param s string to be written
-	 * @throws IOException if an I/O exception occurs
+	 * Removes the previously pushed {@code Reader} and {@code Writer} from the
+	 * stack.
+	 * <p>
+	 * This method should be called after reader and writer on the stack have
+	 * served their purpose.
+	 * <p>
+	 * If there are currently no reader and writer on the stack, this method
+	 * has no effect and trivially returns.
 	 */
-	void writeln(String s) throws IOException;
-
-	/**
-	 * Returns an iterable object containing this Shell's commands.
-	 * 
-	 * @return an iterable object containing this Shell's commands
-	 */
-	Iterable<ShellCommand> commands();
-
-	/**
-	 * Returns the current working directory path.
-	 * 
-	 * @return the current working directory path
-	 */
-	Path getCurrentPath();
-
-	/**
-	 * Sets the current working directory path.
-	 * 
-	 * @param path path to be set
-	 */
-	void setCurrentPath(Path path);
+	void pop();
 
 	/**
 	 * Returns the path of a directory where this program was run.
@@ -76,61 +80,37 @@ public interface Environment {
 	Path getHomePath();
 	
 	/**
-	 * Returns the last path that was requested.
+	 * Gets the value of an environment, system or shell variable with the
+	 * specified <tt>name</tt>.
 	 * 
-	 * @return the last path that was requested
+	 * @param name name of the variable
+	 * @return variable's value
 	 */
-	Path getLastPath();
+	String getVariable(String name);
 	
 	/**
-	 * Sets the last path that was requested.
+	 * Sets the value of an environment variable with the specified
+	 * <tt>name</tt> to the specified <tt>value</tt>.
 	 * 
-	 * @param path path to be set
+	 * @param name name of the variable whose value is to be set
+	 * @param value value to be set
 	 */
-	void setLastPath(Path path);
+	void setVariable(String name, String value);
 	
 	/**
-	 * Returns the prompt symbol that is used by MyShell.
+	 * Returns the history of inputs entered by the user.
 	 * 
-	 * @return the prompt symbol that is used by MyShell
+	 * @return the history of inputs entered by the user
 	 */
-	Character getPromptSymbol();
+	List<String> getHistory();
 	
 	/**
-	 * Sets the prompt symbol to be used by MyShell.
+	 * Adds the specified <tt>input</tt> to the history.
 	 * 
-	 * @param symbol the prompt symbol to be used by MyShell
+	 * @param input input to be added to history
 	 */
-	void setPromptSymbol(Character symbol);
+	void addToHistory(String input);
 	
-	/**
-	 * Returns the morelines symbol that is used by MyShell.
-	 * 
-	 * @return the morelines symbol that is used by MyShell
-	 */
-	Character getMorelinesSymbol();
-	
-	/**
-	 * Sets the morelines symbol to be used by MyShell.
-	 * 
-	 * @param symbol the morelines symbol to be used by MyShell
-	 */
-	void setMorelinesSymbol(Character symbol);
-	
-	/**
-	 * Returns the multiline symbol that is used by MyShell.
-	 * 
-	 * @return the multiline symbol that is used by MyShell
-	 */
-	Character getMultilineSymbol();
-	
-	/**
-	 * Sets the multiline symbol to be used by MyShell.
-	 * 
-	 * @param symbol the multiline symbol to be used by MyShell
-	 */
-	void setMultilineSymbol(Character symbol);
-
 	/**
 	 * Marks the specified file <tt>path</tt> by associating the path object
 	 * with its ID. This is used in association with {@link #getMarked(int)} to

@@ -3,7 +3,7 @@ package hr.fer.zemris.java.shell.commands.system;
 import java.util.ArrayList;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 
@@ -22,7 +22,7 @@ public class ExitCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "";
 	}
 	
@@ -40,8 +40,8 @@ public class ExitCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) {
-		return CommandStatus.TERMINATE;
+	protected ShellStatus execute0(Environment env, String s) {
+		return ShellStatus.TERMINATE;
 	}
 
 }

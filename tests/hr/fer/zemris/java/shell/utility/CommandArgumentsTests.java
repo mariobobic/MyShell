@@ -1,9 +1,6 @@
 package hr.fer.zemris.java.shell.utility;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.util.Arrays;
 import java.util.List;
@@ -105,10 +102,11 @@ public class CommandArgumentsTests {
 		CommandArguments cmdArgs = new CommandArguments();
 		cmdArgs.addFlagDefinition("flag", true);
 		
+		// escape symbol is not removed
 		cmdArgs.compile("cmd --flag arg \\-not-flag path");
 
 		assertEquals(1, cmdArgs.getFlags().size());
-		assertEquals("cmd -not-flag path", cmdArgs.getCleanArgument());
+		assertEquals("cmd \\-not-flag path", cmdArgs.getCleanArgument());
 	}
 	
 	@Test

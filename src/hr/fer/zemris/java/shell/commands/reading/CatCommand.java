@@ -10,7 +10,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
@@ -38,11 +38,10 @@ public class CatCommand extends AbstractCommand {
 	 */
 	public CatCommand() {
 		super("CAT", createCommandDescription(), createFlagDescriptions());
-		commandArguments.addFlagDefinition("c", "charset", true);
 	}
 
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "<filename>";
 	}
 	
@@ -95,7 +94,7 @@ public class CatCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) {
+	protected ShellStatus execute0(Environment env, String s) {
 		if (s == null) {
 			throw new SyntaxException();
 		}
@@ -110,17 +109,18 @@ public class CatCommand extends AbstractCommand {
 						Files.newInputStream(file)), charset))
 		) {
 			
-			String line;
-			while ((line = br.readLine()) != null) {
-				writeln(env, line);
+			int len;
+			char[] cbuf = new char[1024];
+			while ((len = br.read(cbuf)) > 0) {
+				env.write(cbuf, 0, len);
 			}
 			
 		} catch (IOException e) {
 			/* This could happen if the file is protected. */
-			writeln(env, "Access is denied: " + e.getMessage());
+			env.writeln("Access is denied: " + e.getMessage());
 		}
 		
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 
 }

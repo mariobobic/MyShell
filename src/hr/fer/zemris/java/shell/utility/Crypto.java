@@ -46,6 +46,9 @@ public class Crypto {
 	/** Hash to be used while encrypting or decrypting. */
 	private String hash;
 	
+	/** The operation mode of this crypto, i.e. Crypto.ENCRYPT. */
+	private boolean mode;
+	
 	/** Cipher used by this crypto. */
 	Cipher cipher;
 	
@@ -62,6 +65,7 @@ public class Crypto {
 		}
 		
 		this.hash = hash.substring(0, HASH_LEN); // must be 16 bytes for SecretKeySpec
+		this.mode = mode;
 		initialize(mode);
 	}
 	
@@ -213,6 +217,16 @@ public class Crypto {
 		} catch (GeneralSecurityException e) {
 			throw new IOException(e);
 		}
+	}
+	
+	/**
+	 * Returns the operation mode of this crypto, {@link #ENCRYPT} or
+	 * {@link #DECRYPT}.
+	 * 
+	 * @return the operation mode of this crypto
+	 */
+	public boolean getMode() {
+		return mode;
 	}
 
 }

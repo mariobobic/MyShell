@@ -1,5 +1,7 @@
 package hr.fer.zemris.java.shell.commands.system;
 
+import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.text.DateFormat;
@@ -9,7 +11,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
@@ -40,7 +42,7 @@ public class DirCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "(<path>)";
 	}
 	
@@ -59,7 +61,7 @@ public class DirCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) {
+	protected ShellStatus execute0(Environment env, String s) {
 		Path dir = s == null ?
 			env.getCurrentPath() : Helper.resolveAbsolutePath(env, s);
 		
@@ -69,8 +71,8 @@ public class DirCommand extends AbstractCommand {
 		env.clearMarks();
 		
 		/* Passed all checks, start working. */
-		writeln(env, " Directory of " + dir);
-		writeln(env, "");
+		env.writeln(" Directory of " + dir);
+		env.writeln("");
 
 		File[] files = dir.toFile().listFiles();
 		int noFiles = 0;
@@ -81,7 +83,7 @@ public class DirCommand extends AbstractCommand {
 			String name = file.getName();
 			Date date = new Date(file.lastModified());
 			
-			write(env, DATE_FORMAT.format(date) + "");
+			env.write(DATE_FORMAT.format(date) + "");
 			if (file.isFile()) {
 				noFiles++;
 				long size = file.length();
@@ -89,15 +91,15 @@ public class DirCommand extends AbstractCommand {
 				format(env, " %17s ", DECIMAL_FORMAT.format(size));
 			} else {
 				noDirs++;
-				write(env, "    <DIR>          ");
+				env.write("    <DIR>          ");
 			}
-			write(env, name);
+			env.write(name);
 			markAndPrintNumber(env, file.toPath());
 		}
 		formatln(env, "%15d File(s), %s bytes", noFiles, DECIMAL_FORMAT.format(filesLength));
 		formatln(env, "%15d Dir(s)", noDirs);
 		
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 
 }

@@ -6,7 +6,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Helper;
@@ -28,7 +28,7 @@ public class RmdirCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "<path>";
 	}
 	
@@ -46,24 +46,24 @@ public class RmdirCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) {
+	protected ShellStatus execute0(Environment env, String s) {
 		if (s == null) {
 			throw new SyntaxException();
 		}
 		
 		Path dir = Helper.resolveAbsolutePath(env, s);
 		if (!Files.isDirectory(dir)){
-			writeln(env, dir.getFileName() + " is not a directory.");
+			env.writeln(dir.getFileName() + " is not a directory.");
 		} else {
 			try {
 				Files.delete(dir);
-				writeln(env, "Removed " + dir);
+				env.writeln("Removed " + dir);
 			} catch (IOException e) {
-				writeln(env, "The directory must be empty in order to be removed. Use RM instead.");
+				env.writeln("The directory must be empty in order to be removed. Use RM instead.");
 			}
 		}
 
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 
 }

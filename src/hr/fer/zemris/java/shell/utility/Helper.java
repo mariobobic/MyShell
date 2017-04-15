@@ -16,40 +16,32 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.DosFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import javax.xml.bind.DatatypeConverter;
 
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.exceptions.IllegalPathException;
+import hr.fer.zemris.java.shell.utility.exceptions.NotEnoughDiskSpaceException;
 
 /**
- * A helper class. Provides helper methods with various functionalities for the
- * whole application.
+ * A helper class. Provides helper methods mostly for Path manipulation, but
+ * with various other functionalities.
  *
  * @author Mario Bobic
  */
 public abstract class Helper {
 
-	// used by ConnectCommand and DownloadCommand
-	/** Keyword used for sending and detecting a download start. */
-	public static final char[] DOWNLOAD_KEYWORD = "__DOWNLOAD_START".toCharArray();
-	
 	/** Extension used for encrypted files. */
 	public static final String CRYPT_FILE_EXT = ".crypt";
+
+	/** Extension used for zipped files. */
+	public static final String ZIP_FILE_EXT = ".zip";
 	
 	/** Shorthand abbreviation for home directory. */
 	private static final String HOME_DIR = "~";
-	
-	/** Shorthand abbreviation for last requested path. */
-	private static final String LAST_PATH = "!!";
 	
 	/**
 	 * Disable instantiation or inheritance.
@@ -75,7 +67,7 @@ public abstract class Helper {
 	 */
 	public static Path resolveAbsolutePath(Environment env, String str) {
 		/* If the entered argument is parsable as an integer,
-		 * see if a file is marked with that number. */
+		 * see if a path is marked with that number. */
 		if (Helper.isInteger(str)) {
 			int num = Integer.parseInt(str);
 			Path path = env.getMarked(num);
@@ -93,19 +85,11 @@ public abstract class Helper {
 			return resolveAbsolutePath(env, home+rest);
 		}
 		
-		/* If it starts with two exclamations, recurse back to this method with last path. */
-		if (path.startsWith(LAST_PATH)) {
-			Path last = env.getLastPath();
-			String rest = str.substring(LAST_PATH.length());
-			return resolveAbsolutePath(env, last+rest);
-		}
-		
 		if (!path.isAbsolute()) {
 			path = env.getCurrentPath().resolve(path);
 		}
 		path = path.normalize();
 		
-		env.setLastPath(path);
 		return path;
 	}
 	
@@ -161,6 +145,10 @@ public abstract class Helper {
 	 *         invoked to check read access to the file.
 	 */
 	public static boolean isHidden(Path path) {
+		if (path.equals(path.getRoot())) {
+			return false;
+		}
+		
 		return path.toFile().isHidden();
 	}
 	
@@ -232,7 +220,7 @@ public abstract class Helper {
 	}
 	
 	/**
-	 * Checks that the specified <tt>path</tt> exists . This method is designed
+	 * Checks if the specified <tt>path</tt> exists . This method is designed
 	 * primarily for doing parameter validation in methods and constructors, as
 	 * demonstrated below:
 	 * <blockquote><pre>
@@ -254,7 +242,7 @@ public abstract class Helper {
 	}
 	
 	/**
-	 * Checks that the specified <tt>path</tt> exists and is a directory. This
+	 * Checks if the specified <tt>path</tt> exists and is a directory. This
 	 * method is designed primarily for doing parameter validation in methods
 	 * and constructors, as demonstrated below:
 	 * <blockquote><pre>
@@ -277,7 +265,7 @@ public abstract class Helper {
 	}
 	
 	/**
-	 * Checks that the specified <tt>path</tt> exists and is a regular file.
+	 * Checks if the specified <tt>path</tt> exists and is a regular file.
 	 * This method is designed primarily for doing parameter validation in
 	 * methods and constructors, as demonstrated below:
 	 * <blockquote><pre>
@@ -300,70 +288,28 @@ public abstract class Helper {
 	}
 	
 	/**
-	 * Extracts arguments from the specified string <tt>s</tt>. This method
-	 * supports an unlimited number of arguments, and can be entered either with
-	 * quotation marks or not. Returns an array of strings containing the
-	 * extracted arguments.
+	 * Checks if there is enough space on disk to store the specified amount of
+	 * <tt>bytes</tt> to the file store where the specified <tt>path</tt> is
+	 * located.
 	 * <p>
-	 * This is the same as calling the {@link #extractArguments(String, int)
-	 * extractArguments(s, 0)} method.
+	 * It is not a guarantee that it is possible to use most or any of the
+	 * specified bytes even if this method does not throw an
+	 * {@code IOException}. The number of usable bytes is most likely to be
+	 * accurate immediately after the space attributes are obtained. It is
+	 * likely to be made inaccurate by any external I/O operations including
+	 * those made on the system outside of this Java virtual machine.
 	 * 
-	 * @param s a string containing arguments
-	 * @return an array of strings containing extracted arguments.
+	 * @param bytes amount of free disk space that is required
+	 * @param path path to where the disk space is required
+	 * @throws NotEnoughDiskSpaceException if there is not enough disk space
+	 * @throws IOException if an I/O exception occurs on file store operations
 	 */
-	public static String[] extractArguments(String s) {
-		return extractArguments(s, 0);
-	}
-	
-	/**
-	 * Extracts arguments from the specified string <tt>s</tt>. This method
-	 * splits arguments until it runs out of matches or reaches the specified
-	 * <tt>limit</tt>, which ever comes first. Arguments can be entered either
-	 * with quotation marks or not. Returns an array of strings containing the
-	 * extracted arguments.
-	 * 
-	 * @param s a string containing arguments
-	 * @param limit limit of splitting the arguments, 0 for no limit
-	 * @return an array of strings containing extracted arguments.
-	 */
-	public static String[] extractArguments(String s, int limit) {
-		if (s == null) return new String[0];
-		
-		List<String> list = new ArrayList<>();
-		
-		String regex = "\"([^\"]*)\"|(\\S+)";
-		Matcher m = Pattern.compile(regex).matcher(s);
-		while (m.find()) {
-			if (--limit == 0 && !m.hitEnd()) {
-				list.add(s.substring(m.start()).trim());
-				break;
-			}
-			
-			if (m.group(1) != null) {
-				list.add(m.group(1));
-			} else {
-				list.add(m.group(2));
-			}
+	public static void requireDiskSpace(long bytes, Path path) throws IOException {
+		long usable = Files.getFileStore(path.getRoot()).getUsableSpace();
+		if (usable < bytes) {
+			String info = "Required: " + bytes + " bytes. Available: " + usable + " bytes.";
+			throw new NotEnoughDiskSpaceException("There is not enough space on the disk. " + info);
 		}
-
-		return list.toArray(new String[list.size()]);
-	}
-	
-	/**
-	 * Returns the index within the specified string <tt>str</tt> of the first
-	 * occurrence of a whitespace character determined by the
-	 * {@linkplain Character#isWhitespace(char)} method.
-	 * 
-	 * @param str string whose index of the first whitespace is to be returned
-	 * @return the index of the first occurrence of a whitespace character
-	 */
-	public static int indexOfWhitespace(String str) {
-		for (int i = 0, n = str.length(); i < n; i++) {
-			if (Character.isWhitespace(str.charAt(i))) {
-				return i;
-			}
-		}
-		return -1;
 	}
 	
 	/**
@@ -514,86 +460,6 @@ public abstract class Helper {
 		}
 
 		return retVal + (remainder != 0L ? " "+humanReadableTimeUnit(remainder) : "");
-	}
-	
-	/**
-	 * Splits the specified <tt>pattern</tt> string around matches of asterisk
-	 * symbols.
-	 * 
-	 * @param pattern pattern to be split
-	 * @return the array of strings computed by splitting this string around
-	 *         matches of asterisk symbols
-	 */
-	public static String[] splitPattern(String pattern) {
-		// (?<!\\)    Matches if the preceding character is not a backslash
-		// (?:\\\\)*  Matches any number of occurrences of two backslashes
-		// \*         Matches an asterisk
-		String[] split = pattern.split("(?<!\\\\)(?:\\\\\\\\)*\\*");
-		for (int i = 0; i < split.length; i++) {
-			split[i] = split[i].replace("\\*", "*");
-		}
-		
-		return split;
-	}
-	
-	/**
-	 * Splits the specified <tt>pattern</tt> string around matches of asterisk
-	 * symbols.
-	 * 
-	 * @param pattern pattern to be split
-	 * @return the array of strings computed by splitting this string around
-	 *         matches of asterisk symbols
-	 */
-	// TODO should I leave this method?
-	public static String[] splitPattern2(String pattern) {
-		// (?<!\\)    Matches if the preceding character is not a backslash
-		// (?:\\\\)*  Matches any number of occurrences of two backslashes
-		// \*         Matches an asterisk
-		String[] split = pattern.split("(?<!\\\\)(?:\\\\\\\\)*\\*");
-		return Arrays.stream(split)
-			.map(str -> str.replace("\\*", "*"))
-			.collect(Collectors.toList())
-			.toArray(split);
-	}
-	
-	/**
-	 * Returns true if the given param {@code str} matches the {@code pattern}.
-	 * The {@code pattern} can contain asterisk characters ("*") that represent
-	 * 0 or more characters between the parts that are matching.
-	 * <p>
-	 * For an example, pattern &quot;*.java&quot; will list all files containing
-	 * the .java character sequence.
-	 * 
-	 * @param str a string that is being examined
-	 * @param pattern a pattern that may contain the asterisk character
-	 * @return true if {@code str} matches the {@code pattern}. False otherwise
-	 */
-	public static boolean matches(String str, String pattern) {
-		return matches(str, splitPattern(pattern));
-	}
-	
-	/**
-	 * Returns true if the given param {@code str} matches the
-	 * {@code patternParts}. The {@code patternParts} are parts of the pattern
-	 * which all must match the specified {@code str}. There may be 0 or more
-	 * characters between each part of the pattern, which will be ignored.
-	 * <p>
-	 * For an example, the pattern parts [&quot;M&quot;, &quot;.java&quot;] will
-	 * list all files containing the letter 'M' before the .java literal.
-	 * 
-	 * @param str a string that is being examined
-	 * @param patternParts parts of the pattern to be matched against
-	 * @return true if {@code str} matches the {@code patternParts}. False otherwise
-	 */
-	public static boolean matches(String str, String[] patternParts) {
-		int lastIndex = -1;
-		for (String part : patternParts) {
-			int index = str.indexOf(part);
-			if (index <= lastIndex) return false;
-			else lastIndex = index;
-		}
-		
-		return true;
 	}
 	
 	/**
@@ -757,7 +623,7 @@ public abstract class Helper {
 	// TODO Any better way of obtaining public IP address?
 	public static String getPublicIP() {
 		try {
-			URL whatismyip = new URL("http://checkip.amazonaws.com");
+			URL whatismyip = new URL("http://checkip.amazonaws.com/");
 			
 			try (BufferedReader in = new BufferedReader(
 					new InputStreamReader(whatismyip.openStream())

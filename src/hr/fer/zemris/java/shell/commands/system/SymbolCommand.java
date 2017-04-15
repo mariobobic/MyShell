@@ -1,12 +1,14 @@
 package hr.fer.zemris.java.shell.commands.system;
 
+import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.StringHelper;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -33,7 +35,7 @@ public class SymbolCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected String getCommandSyntax() {
+	public String getCommandSyntax() {
 		return "<type> (<newsymbol>)";
 	}
 	
@@ -60,12 +62,12 @@ public class SymbolCommand extends AbstractCommand {
 	}
 
 	@Override
-	protected CommandStatus execute0(Environment env, String s) {
+	protected ShellStatus execute0(Environment env, String s) {
 		if (s == null) {
 			throw new SyntaxException();
 		}
 		
-		String[] args = Helper.extractArguments(s);
+		String[] args = StringHelper.extractArguments(s);
 		if (args.length == 1) {
 			printSymbol(env, args[0]);
 		} else if (args.length == 2) {
@@ -74,7 +76,7 @@ public class SymbolCommand extends AbstractCommand {
 			throw new SyntaxException();
 		}
 
-		return CommandStatus.CONTINUE;
+		return ShellStatus.CONTINUE;
 	}
 
 	/**
@@ -89,16 +91,16 @@ public class SymbolCommand extends AbstractCommand {
 	private static void printSymbol(Environment env, String type) {
 		switch (type) {
 		case PROMPT:
-			writeln(env, "Symbol for " + PROMPT + " is '" + env.getPromptSymbol() + "'");
+			env.writeln("Symbol for " + PROMPT + " is '" + env.getPromptSymbol() + "'");
 			break;
 		case MORELINES:
-			writeln(env, "Symbol for " + MORELINES + " is '" + env.getMorelinesSymbol() + "'");
+			env.writeln("Symbol for " + MORELINES + " is '" + env.getMorelinesSymbol() + "'");
 			break;
 		case MULTILINE:
-			writeln(env, "Symbol for " + MULTILINE + " is '" + env.getMultilineSymbol() + "'");
+			env.writeln("Symbol for " + MULTILINE + " is '" + env.getMultilineSymbol() + "'");
 			break;
 		default:
-			writeln(env, type + " symbol type not supported.");
+			env.writeln(type + " symbol type not supported.");
 		}
 	}
 
@@ -117,7 +119,7 @@ public class SymbolCommand extends AbstractCommand {
 	 */
 	private static void setSymbol(Environment env, String type, String newSymbol) {
 		if (newSymbol.length() != 1) {
-			writeln(env, "The new symbol must be a character of length 1.");
+			env.writeln("The new symbol must be a character of length 1.");
 			return;
 		}
 		Character symbol = newSymbol.charAt(0);
@@ -139,7 +141,7 @@ public class SymbolCommand extends AbstractCommand {
 			env.setMultilineSymbol(symbol);
 			break;
 		default:
-			writeln(env, type + " symbol type not supported.");
+			env.writeln(type + " symbol type not supported.");
 		}
 	}
 

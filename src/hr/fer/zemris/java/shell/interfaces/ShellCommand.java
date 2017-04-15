@@ -2,7 +2,7 @@ package hr.fer.zemris.java.shell.interfaces;
 
 import java.util.List;
 
-import hr.fer.zemris.java.shell.CommandStatus;
+import hr.fer.zemris.java.shell.ShellStatus;
 
 /**
  * An interface that is used as a contract for implementing Shell commands.
@@ -28,8 +28,9 @@ public interface ShellCommand {
 	/**
 	 * Executes the given Shell command. Every shell command has its own unique
 	 * way of executing. Most Shell commands write out their steps of executing,
-	 * or they write out certain errors, so the {@code Environment} type param
-	 * is given. Arguments may or may not exist (String has a valid value or
+	 * as error and information messages onto the {@code Environment}.
+	 * <p>
+	 * Arguments may or may not exist (String has a valid value or
 	 * {@code null}). The user is advised to check the implementing class
 	 * documentation in order to see what this command does.
 	 * 
@@ -37,5 +38,5 @@ public interface ShellCommand {
 	 * @param s arguments
 	 * @return the status of this command
 	 */
-	public CommandStatus execute(Environment env, String s);
+	public ShellStatus execute(Environment env, String s);
 }
