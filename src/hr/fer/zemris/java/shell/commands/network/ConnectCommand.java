@@ -125,7 +125,7 @@ public class ConnectCommand extends AbstractCommand {
 		/* Do connect. */
 		try (Socket clientSocket = new Socket(host, port)) {
 			if (!reverse) {
-				connect(env, clientSocket, s);
+				connect(env, clientSocket, hash);
 			} else {
 				HostCommand.host(env, clientSocket, hash);
 			}
