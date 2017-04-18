@@ -1010,6 +1010,50 @@ public class ExpanderTests {
 		assertEquals(expected, actual);
 	}
 	
+	@Test
+	public void testArithmeticExpansionEscapedMinus1() {
+		String input = "$((1-2))$((2-4))";
+		
+		// minus must be escaped
+		String expected = "\\-1-2";
+		String actual = Expander.arithmeticExpansion(environment, input);
+		
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testArithmeticExpansionEscapedMinus2() {
+		String input = "$((1-2)) $((2-4))";
+
+		// minuses must be escaped
+		String expected = "\\-1 \\-2";
+		String actual = Expander.arithmeticExpansion(environment, input);
+		
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testArithmeticExpansionEscapedMinus3() {
+		String input = "$((-1-1)) $((-2-2)) $((-3-3))";
+		
+		String expected = "\\-2 \\-4 \\-6";
+		String actual = Expander.arithmeticExpansion(environment, input);
+		
+		assertEquals(expected, actual);
+	}
+	
+	@Test
+	public void testArithmeticExpansionEscapedMinusNested() {
+		// (1-2 - (-1)*(2-4)) (3-6) = (-1 - 2) (-3) = (-3) (-3)
+		String input = "$((1-2 - $((-1)) * $((2-4)))) $((3-6))";
+
+		// minuses must be escaped
+		String expected = "\\-3 \\-3";
+		String actual = Expander.arithmeticExpansion(environment, input);
+		
+		assertEquals(expected, actual);
+	}
+	
 	
 	
 	

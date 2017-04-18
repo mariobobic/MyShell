@@ -62,15 +62,17 @@ public interface Environment extends BasicEnvironment {
 
 	/**
 	 * Removes the previously pushed {@code Reader} and {@code Writer} from the
-	 * stack.
+	 * stack, and optionally closes them if the specified flag is <tt>true</tt>.
 	 * <p>
 	 * This method should be called after reader and writer on the stack have
 	 * served their purpose.
 	 * <p>
 	 * If there are currently no reader and writer on the stack, this method
 	 * has no effect and trivially returns.
+	 * 
+	 * @param close indicates if streams should be closed after popping
 	 */
-	void pop();
+	void pop(boolean close);
 
 	/**
 	 * Returns the path of a directory where this program was run.

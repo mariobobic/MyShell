@@ -336,7 +336,7 @@ l:		while (true) {
 	 */
 	private static void restoreRedirect() {
 		if (redirected) {
-			environment.pop();
+			environment.pop(true);
 			redirected = false;
 		}
 	}
@@ -475,14 +475,16 @@ l:		while (true) {
 		}
 
 		@Override
-		public void pop() {
+		public void pop(boolean close) {
 			if (!readers.isEmpty()) {
 				BufferedReader in = readers.pop();
 				BufferedWriter out = writers.pop();
-				try {
-					if (!in.equals(stdIn)) in.close();
-					if (!out.equals(stdOut)) out.close();
-				} catch (IOException ignorable) {}
+				if (close) {
+					try {
+						if (!in.equals(reader())) in.close();
+						if (!out.equals(writer())) out.close();
+					} catch (IOException ignorable) {}
+				}
 			}
 		}
 		
@@ -636,7 +638,7 @@ l:		while (true) {
 		public void disconnectStreams() {
 			try { inFromClient.pop().close(); } catch (Exception e) {}
 			try { outToClient.pop().close();  } catch (Exception e) {}
-			try { environment.pop(); } catch (Exception e) {}
+			try { environment.pop(true); } catch (Exception e) {}
 			
 			if (!inFromClient.isEmpty()) {
 				assignReaderAndWriter();

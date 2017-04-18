@@ -501,9 +501,9 @@ l:		while (true) {
 		
 		try {
 			command.execute(env, arg);
-			env.pop();
+			env.pop(true);
 		} catch (Exception e) {
-			env.pop();
+			env.pop(true);
 			env.writeln("Error occurred while executing command:");
 			env.writeln(command+": " + e.getMessage());
 		}

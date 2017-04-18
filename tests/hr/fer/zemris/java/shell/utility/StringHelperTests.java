@@ -333,29 +333,29 @@ public class StringHelperTests {
 	}
 	
 	@Test
-	public void testCharsAtEquals1() {
+	public void testCharsAtEqual1() {
 		String str = "Mississippi";
-		assertTrue(StringHelper.charsAtEquals(str, 0, 0, 'M'));
-		assertTrue(StringHelper.charsAtEquals(str, 2, 3, 's'));
-		assertTrue(StringHelper.charsAtEquals(str, 5, 6, 's'));
-		assertTrue(StringHelper.charsAtEquals(str, 8, 9, 'p'));
+		assertTrue(StringHelper.charsAtEqual(str, 0, 0, 'M'));
+		assertTrue(StringHelper.charsAtEqual(str, 2, 3, 's'));
+		assertTrue(StringHelper.charsAtEqual(str, 5, 6, 's'));
+		assertTrue(StringHelper.charsAtEqual(str, 8, 9, 'p'));
 	}
 	
 	@Test
-	public void testCharsAtEquals2() {
+	public void testCharsAtEqual2() {
 		String str = "aaaa";
-		assertTrue(StringHelper.charsAtEquals(str, 0, 0, 'a'));
-		assertTrue(StringHelper.charsAtEquals(str, 0, 1, 'a'));
-		assertTrue(StringHelper.charsAtEquals(str, 0, 2, 'a'));
-		assertTrue(StringHelper.charsAtEquals(str, 0, 3, 'a'));
+		assertTrue(StringHelper.charsAtEqual(str, 0, 0, 'a'));
+		assertTrue(StringHelper.charsAtEqual(str, 0, 1, 'a'));
+		assertTrue(StringHelper.charsAtEqual(str, 0, 2, 'a'));
+		assertTrue(StringHelper.charsAtEqual(str, 0, 3, 'a'));
 	}
 	
 	@Test
 	public void testCharsAtIndexTooBig() {
 		String str = "aaaa";
-		assertFalse(StringHelper.charsAtEquals(str, 0, 9, 'a'));
-		assertFalse(StringHelper.charsAtEquals(str, 3, 4, 'a'));
-		assertFalse(StringHelper.charsAtEquals(str, 4, 5, 'a'));
+		assertFalse(StringHelper.charsAtEqual(str, 0, 9, 'a'));
+		assertFalse(StringHelper.charsAtEqual(str, 3, 4, 'a'));
+		assertFalse(StringHelper.charsAtEqual(str, 4, 5, 'a'));
 	}
 	
 	@Test

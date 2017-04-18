@@ -138,7 +138,7 @@ public abstract class AbstractCommand implements ShellCommand {
 				return helpCmd.execute(env, commandName);
 			}
 			if (commandArguments.containsFlag("server") && env.isConnected()) {
-				env.push(Environment.stdIn, Environment.stdOut); // PUSH STANDARD
+				env.push(null, Environment.stdOut); // PUSH STDOUT
 			}
 			
 			/* Execute this command. */
@@ -160,7 +160,7 @@ public abstract class AbstractCommand implements ShellCommand {
 			env.writeln("An I/O error occured: " + e.getMessage());
 		} finally {
 			if (commandArguments.containsFlag("server") && env.isConnected()) {
-				env.pop(); // POP STANDARD
+				env.pop(false); // POP STDOUT
 			}
 			commandArguments.clearFlags();
 		}
