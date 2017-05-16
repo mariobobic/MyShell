@@ -31,6 +31,7 @@ import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.commands.system.LsCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
 import hr.fer.zemris.java.shell.utility.RequestContext;
 import hr.fer.zemris.java.shell.utility.StringHelper;
@@ -76,15 +77,19 @@ public class HttpServerCommand extends VisitorCommand {
 	
 	/** Amount of threads used by the thread pool. */
 	private static final int NUM_THREADS = 5;
+
+	/* Flags - this won't work in multithreading mode. */
+	/** Indicates if hidden files and folders should be shown. */
+	private boolean showHidden;
 	
 	/** Map of running server threads. */
 	private Map<Path, ServerThread> serversMap = new LinkedHashMap<>();
-
+	
 	/**
 	 * Constructs a new command object of type {@code HttpServerCommand}.
 	 */
 	public HttpServerCommand() {
-		super("HTTPSERVER", createCommandDescription());
+		super("HTTPSERVER", createCommandDescription(), createFlagDescriptions());
 	}
 	
 	@Override
@@ -108,6 +113,35 @@ public class HttpServerCommand extends VisitorCommand {
 		desc.add("If stop is chosen, it must be followed by a server path to stop or 'all' to stop all.");
 		desc.add("If no arguments are specified, this command prints out server paths.");
 		return desc;
+	}
+	
+	/**
+	 * Creates a list of {@code FlagDescription} objects where each entry
+	 * describes the available flags of this command. This method is generates
+	 * description exclusively for the command that this class represents.
+	 * 
+	 * @return a list of strings that represents description
+	 */
+	private static List<FlagDescription> createFlagDescriptions() {
+		List<FlagDescription> desc = new ArrayList<>();
+		desc.add(new FlagDescription("h", "show-hidden", null, "Shows hidden files and folders."));
+		return desc;
+	}
+	
+	@Override
+	protected String compileFlags(Environment env, String s) {
+		/* Initialize default values. */
+		showHidden = false;
+
+		/* Compile! */
+		s = commandArguments.compile(s);
+		
+		/* Replace default values with flag values, if any. */
+		if (commandArguments.containsFlag("h", "show-hidden")) {
+			showHidden = true;
+		}
+
+		return super.compileFlags(env, s);
 	}
 	
 	@Override
@@ -457,8 +491,14 @@ public class HttpServerCommand extends VisitorCommand {
 				// Create context
 				RequestContext rc = new RequestContext(ostream, params, permParams, null);
 				
-				// Check if requestedPath exists and is not hidden
-				if (!Files.exists(requestedPath) || Helper.isHidden(requestedPath)) {
+				// Check if requestedPath exists
+				if (!Files.exists(requestedPath)) {
+					sendError(404, "Not found");
+					return;
+				}
+				
+				// Check if requestedPath is hidden (if showHidden flag is true this check passes)
+				if (!showHidden && Helper.isHidden(requestedPath) && !requestedPath.equals(documentRoot)) {
 					sendError(404, "Not found");
 					return;
 				}
@@ -577,7 +617,7 @@ public class HttpServerCommand extends VisitorCommand {
 				 "    </p>\r\n"+
 				 "    <hr/>\r\n"+
 				 "  </body>\r\n"+
-				 "</html>\r\n").getBytes(StandardCharsets.UTF_8)
+				 "</html>\r\n").getBytes(StandardCharsets.US_ASCII)
 			);
 			
 			ostream.flush();
@@ -620,7 +660,7 @@ public class HttpServerCommand extends VisitorCommand {
 			// TODO diacritics break the HTML?
 			StringBuilder sb = new StringBuilder("\r\n");
 			for (Path child : children) {
-				if (Helper.isHidden(child) || isExcluded(child)) continue;
+				if ((!showHidden && Helper.isHidden(child)) || isExcluded(child)) continue;
 				
 				String url = encodePath(documentRoot.relativize(child).normalize());
 				String str = LsCommand.getFileString(child, true, false);

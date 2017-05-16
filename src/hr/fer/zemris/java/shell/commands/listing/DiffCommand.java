@@ -16,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
@@ -197,9 +198,12 @@ public class DiffCommand extends VisitorCommand {
 	 * @return true if processing succeeds, false otherwise.
 	 */
 	private static boolean processFiles(Environment env, Path file1, Path file2, Charset charset, boolean all) {
-		try {
-			Iterator<String> iter1 = Files.lines(file1, charset).iterator();
-			Iterator<String> iter2 = Files.lines(file2, charset).iterator();
+		try (
+			Stream<String> stream1 = Files.lines(file1, charset);
+			Stream<String> stream2 = Files.lines(file2, charset);
+		) {
+			Iterator<String> iter2 = stream1.iterator();
+			Iterator<String> iter1 = stream2.iterator();
 			
 			int counter = 0;
 			int numDifferences = 0;

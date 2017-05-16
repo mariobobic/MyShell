@@ -10,7 +10,9 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -44,6 +46,7 @@ import hr.fer.zemris.java.shell.utility.Crypto;
 import hr.fer.zemris.java.shell.utility.Expander;
 import hr.fer.zemris.java.shell.utility.Helper;
 import hr.fer.zemris.java.shell.utility.StringHelper;
+import hr.fer.zemris.java.shell.utility.exceptions.IllegalPathException;
 import hr.fer.zemris.java.shell.utility.exceptions.ShellIOException;
 
 /**
@@ -135,6 +138,8 @@ public class MyShell {
 	private static EnvironmentImpl environment = new EnvironmentImpl();
 	/** Indicates if the output stream has been redirected to a file. */
 	private static boolean redirected = false;
+	/** Execution status of the last executed command. */
+	private static ShellStatus executionStatus;
 	
 	/**
 	 * Program entry point.
@@ -185,16 +190,23 @@ l:		while (true) {
 				
 				try {
 					arg = checkRedirect(arg);
-					ShellStatus executionStatus = shellCommand.execute(environment, arg);
-					restoreRedirect();
-					if (executionStatus == ShellStatus.TERMINATE) {
-						break l;
-					}
+				} catch (InvalidPathException e) {
+					environment.writeln(e.getMessage());
+					continue;
+				}
+				
+				try {
+					executionStatus = shellCommand.execute(environment, arg);
 				} catch (RuntimeException critical) {
 					System.err.println("A critical error occured: " + critical.getMessage());
 					System.err.println("Stack trace:");
 					critical.printStackTrace();
 					return;
+				}
+				
+				restoreRedirect();
+				if (executionStatus == ShellStatus.TERMINATE) {
+					break l;
 				}
 			}
 		}
@@ -280,11 +292,11 @@ l:		while (true) {
 	
 	/**
 	 * Checks if the <tt>input</tt> string contains an output redirect to a
-	 * file. If there is no &gt; symbol in the input, the same input is
+	 * file. If there is unquoted no &gt; symbol in the input, the same input is
 	 * returned. Else the file path is parsed and it is attempted to redirect
 	 * the shell output stream to the file. This method fails if the specified
 	 * path is already a directory. If a file already exists on the specified
-	 * path, it is prompted to overwrite it.
+	 * path, user is prompted to overwrite it.
 	 * 
 	 * @param input input to be checked for file redirection
 	 * @return input without the file redirection substring
@@ -294,8 +306,8 @@ l:		while (true) {
 			return input;
 		}
 		
-		// TODO BUG this may occur in some pattern or string argument.
-		int index = input.lastIndexOf("> ");
+		// Find the last unquoted '>' symbol
+		int index = StringHelper.lastIndexOfUnquoted(input, 0, c -> c.equals('>'));
 		if (index == -1) {
 			return input;
 		}
@@ -303,7 +315,6 @@ l:		while (true) {
 		/* Extract the output file from the given input string. */
 		String output = input.substring(0, index).trim();
 		String argument = input.substring(index+1).trim();
-		// TODO BUG this may throw an InvalidPathException.
 		Path outputFile = Helper.resolveAbsolutePath(environment, argument);
 		
 		/* Check conditions. */
@@ -622,6 +633,9 @@ l:		while (true) {
 		/** Cryptographic ciphers in decryption mode. */
 		private Stack<Crypto> decryptos = new Stack<>();
 		
+		/** Download path of this connection. */
+		private Path downloadPath = Helper.getUserHomeDirectory().resolve("Downloads");
+		
 		@Override
 		public void connectStreams(InputStream in, OutputStream out, Crypto encrypto, Crypto decrypto) {
 			inFromClient.push(in);
@@ -701,6 +715,27 @@ l:		while (true) {
 			}
 			
 			return crypto;
+		}
+
+		@Override
+		public Path getDownloadPath() {
+			return downloadPath;
+		}
+
+		@Override
+		public void setDownloadPath(Path path) {
+			if (!Files.isDirectory(path)) {
+				try {
+					Files.createDirectories(path);
+				} catch (FileAlreadyExistsException e) {
+					String m = "A file by the name of " + path + " already exists.";
+					throw new IllegalPathException(m);
+				} catch (IOException e) {
+					throw new IllegalPathException(e);
+				}
+			}
+			
+			this.downloadPath = path;
 		}
 		
 	}

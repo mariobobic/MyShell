@@ -76,7 +76,7 @@ public class EchoCommand extends AbstractCommand {
 		noNewline = false;
 
 		/* Compile! */
-		s = commandArguments.compile(s);
+		s = commandArguments.compile(s, false);
 		
 		/* Replace default values with flag values, if any. */
 		if (commandArguments.containsFlag("n")) {

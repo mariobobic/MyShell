@@ -20,6 +20,7 @@ import java.util.Arrays;
 
 import javax.crypto.BadPaddingException;
 
+import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.exceptions.NotEnoughDiskSpaceException;
 
 /**
@@ -34,6 +35,9 @@ public abstract class NetworkTransfer {
 	public static final char[] DOWNLOAD_KEYWORD = "__DOWNLOAD_START".toCharArray();
 	/** Keyword used for sending and detecting an upload start. */
 	public static final char[] UPLOAD_KEYWORD = "__UPLOAD_START".toCharArray();
+	
+	/** Default connection timeout, 10 seconds. */
+	public static final int DEFAULT_TIMEOUT = 1000*10;
 	
 	/**
 	 * Disable instantiation or inheritance.
@@ -80,17 +84,19 @@ public abstract class NetworkTransfer {
 	 * using the specified input and output streams.
 	 * <p>
 	 * This method <strong>proceeds</strong> with the download process by
-	 * calling the {@link #download(InputStream, OutputStream, Crypto)} method
-	 * in a loop as long as the file server sends the
-	 * {@link #DOWNLOAD_KEYWORD} hint.
+	 * calling the
+	 * {@link #download(Environment, InputStream, OutputStream, Crypto)} method
+	 * in a loop as long as the file server sends the {@link #DOWNLOAD_KEYWORD}
+	 * hint.
 	 * 
+	 * @param env an environment
 	 * @param path path to be requested for download
 	 * @param inFromServer input stream of the file server
 	 * @param outToServer output stream of the file server
 	 * @param decrypto cryptographic cipher for decrypting files
 	 * @throws IOException if an I/O error occurs
 	 */
-	public static void requestDownload(String path, InputStream inFromServer, OutputStream outToServer, Crypto decrypto) throws IOException {
+	public static void requestDownload(Environment env, String path, InputStream inFromServer, OutputStream outToServer, Crypto decrypto) throws IOException {
 		// Send a hint that server should start upload
 		byte[] start = new String(UPLOAD_KEYWORD).getBytes(StandardCharsets.UTF_8);
 		outToServer.write(start);
@@ -98,7 +104,7 @@ public abstract class NetworkTransfer {
 		assertSuccessful(status, "Download request not accepted");
 		
 		// Send file name
-		byte[] filename = path.toString().getBytes(StandardCharsets.UTF_8);
+		byte[] filename = path.getBytes(StandardCharsets.UTF_8);
 		outToServer.write(filename);
 		status = inFromServer.read(); // wait for signal: received file name
 		assertSuccessful(status, "Server did not receive file name");
@@ -108,7 +114,7 @@ public abstract class NetworkTransfer {
 		
 		while (clientReader.read(cbuf) != -1) {
 			if (NetworkTransfer.isAHint(cbuf, DOWNLOAD_KEYWORD)) {
-				NetworkTransfer.download(inFromServer, outToServer, decrypto);
+				NetworkTransfer.download(env, inFromServer, outToServer, decrypto);
 			} else {
 				break;
 			}
@@ -136,12 +142,13 @@ public abstract class NetworkTransfer {
 	 * success or failure to the server.
 	 * </ol>
 	 * 
+	 * @param env an environment
 	 * @param inFromServer input stream of the server
 	 * @param outToServer output stream of the server
 	 * @param decrypto cryptographic cipher for decrypting files
 	 * @throws IOException if an I/O error occurs
 	 */
-	public static void download(InputStream inFromServer, OutputStream outToServer, Crypto decrypto) throws IOException {
+	public static void download(Environment env, InputStream inFromServer, OutputStream outToServer, Crypto decrypto) throws IOException {
 		if (decrypto.getMode() != Crypto.DECRYPT) {
 			throw new IllegalArgumentException("Crypto must be in decryption mode.");
 		}
@@ -174,10 +181,10 @@ public abstract class NetworkTransfer {
 		//////////////////////////////////////////////////
 		
 		// Create an appropriate directory structure
-		Path path = Paths.get(System.getProperty("user.home"), "Downloads", filename);
+		Path path = env.getConnection().getDownloadPath().resolve(filename);
 		try {
 			Helper.requireDiskSpace(size, path);
-			Files.createDirectories(path.getParent());
+			Files.createDirectories(Helper.getParent(path));
 			outToServer.write(1); // send a signal: ready
 		} catch (NotEnoughDiskSpaceException e) {
 			outToServer.write(0); // send a signal: not ready
@@ -242,12 +249,13 @@ public abstract class NetworkTransfer {
 	 * This method <strong>proceeds</strong> with the upload process by calling
 	 * the {@link #upload(Path, InputStream, OutputStream, Crypto)} method.
 	 * 
+	 * @param env an environment
 	 * @param inFromClient input stream of the file recipient
 	 * @param outToClient output stream of the file recipient
 	 * @param encrypto cryptographic cipher for encrypting files
 	 * @throws IOException if an I/O error occurs
 	 */
-	public static void processUploadRequest(InputStream inFromClient, OutputStream outToClient, Crypto encrypto) throws IOException {
+	public static void processUploadRequest(Environment env, InputStream inFromClient, OutputStream outToClient, Crypto encrypto) throws IOException {
 		// Accept upload
 		byte[] bytes = new byte[1024];
 		outToClient.write(1); // send a signal: accepted download
@@ -257,7 +265,7 @@ public abstract class NetworkTransfer {
 		outToClient.write(1); // send a signal: received file name
 		
 		String filename = new String(bytes).trim();
-		Path path = Paths.get(filename);
+		Path path = Helper.resolveAbsolutePath(env, filename);
 		
 		// Continue upload
 		upload(path, inFromClient, outToClient, encrypto);

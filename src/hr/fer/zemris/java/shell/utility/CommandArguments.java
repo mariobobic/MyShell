@@ -256,11 +256,45 @@ public class CommandArguments {
 	 */
 	// TODO compiling flags breaks newlines and tabs and replaces them with spaces
 	public String compile(String s) {
-		cleanArgument = null;
+		return compile(s, true);
+	}
+	
+	/**
+	 * Compiles the specified string <tt>s</tt>, storing all its flags to a map
+	 * of flags, leaving out the given string without flags. In other words, the
+	 * argument is <em>clean</em> of flags.
+	 * <p>
+	 * In order for this method to successfully process flags, they must be
+	 * defined earlier with the {@link #addFlagDefinition(String, boolean)}
+	 * method. Flags that were not defined, but were listed in the specified
+	 * string <tt>s</tt> will throw an {@code InvalidFlagException}, unless the
+	 * <tt>throwForUndefined</tt> value is set to true. One-letter flags that
+	 * were defined to receive an argument but are merged with another flag will
+	 * throw the same exception with a different detail message. If there is no
+	 * argument provided for a flag that is defined to require an argument, the
+	 * same exception is thrown.
+	 * <p>
+	 * If the given input string <tt>s</tt> is <tt>null</tt>, it means no flags
+	 * are defined and the returning clean string is also <tt>null</tt>.
+	 * <p>
+	 * String arguments with an escape symbol in front of a dash <strong>will
+	 * not be</strong> unescaped in this method.
+	 * 
+	 * @param s string to be compiled
+	 * @param throwForUndefined true if {@code InvalidFlagException} should be
+	 *        thrown if undefined flags are encountered
+	 * @return a string <em>clean</em> of flags, or null if s was null
+	 * @throws InvalidFlagException if a flag found in <tt>s</tt> was not
+	 *         defined, there are multiple one-letter flags where at least one
+	 *         receives an argument or there is no argument provided for a flag
+	 *         that is defined to require an argument
+	 */
+	public String compile(String s, boolean throwForUndefined) {
 		if (s == null) {
 			return null;
 		}
 		
+		cleanArgument = null;
 		String[] args = StringHelper.extractArguments(s, 0, true);
 		Set<String> undefinedFlags = new LinkedHashSet<>();
 		StringJoiner cleanArgumentBuilder = new StringJoiner(" ");
@@ -274,13 +308,18 @@ public class CommandArguments {
 				i = processFlag(name, undefinedFlags, args, 1, i);
 			} else if (arg.startsWith("-") && arg.length() > 1) {
 				/* Short flags */
-				arg = arg.substring(1);
-				for (int j = 0, n = arg.length(); j < n; j++) {
-					String name = arg.substring(j, j+1);
+				String names = arg.substring(1);
+				for (int j = 0, n = names.length(); j < n; j++) {
+					String name = names.substring(j, j+1);
 					i = processFlag(name, undefinedFlags, args, n, i);
 				}
 			} else {
 				cleanArgumentBuilder.add(arg);
+			}
+			
+			if (!throwForUndefined && !undefinedFlags.isEmpty()) {
+				cleanArgumentBuilder.add(arg);
+				undefinedFlags.clear();
 			}
 		}
 		
@@ -290,8 +329,12 @@ public class CommandArguments {
 			throw new InvalidFlagException("Argument contains undefined flags: " + sj, undefinedFlags);
 		}
 		
-		cleanArgument = cleanArgumentBuilder.length() == 0 ?
-			null : cleanArgumentBuilder.toString();
+		if (cleanArgumentBuilder.length() == 0) {
+			cleanArgument = null;
+		} else {
+			cleanArgument = cleanArgumentBuilder.toString().replaceAll("\\\\-", "-");
+		}
+		
 		return cleanArgument;
 	}
 	
@@ -321,10 +364,9 @@ public class CommandArguments {
 	 * @param i argument index within the array of arguments
 	 * @param n number of flags contained within one argument
 	 * @return the argument index <tt>i</tt> which may be increased by one
-	 * @throws InvalidFlagException if a flag found in <tt>s</tt> was not
-	 *         defined, or there are multiple one-letter flags where at least
-	 *         one receives an argument or there is no argument provided for a
-	 *         flag that is defined to require an argument
+	 * @throws InvalidFlagException if there are multiple one-letter flags where
+	 *         at least one receives an argument or there is no argument
+	 *         provided for a flag that is defined to require an argument
 	 */
 	private int processFlag(String name, Set<String> undefinedFlags, String[] args, int n, int i) {
 		// Flag name has to be predefined
@@ -459,13 +501,10 @@ public class CommandArguments {
 	 * the input string are left out and therefore the argument is
 	 * <em>clean</em> of flags.
 	 * 
-	 * @return a compiled input string clean of flags
+	 * @return a compiled input string clean of flags, or <tt>null</tt> if
+	 *         arguments were not compiled previously
 	 */
 	public String getCleanArgument() {
-		if (cleanArgument == null) {
-			throw new IllegalStateException("Arguments must be compiled before returning clean argument");
-		}
-		
 		return cleanArgument;
 	}
 

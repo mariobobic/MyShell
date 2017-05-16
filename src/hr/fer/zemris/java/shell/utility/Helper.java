@@ -126,6 +126,28 @@ public abstract class Helper {
 	public static Path getParent(Path path) {
 		return path.equals(path.getRoot()) ? path : path.getParent();
 	}
+	
+	/**
+	 * Returns the user home directory path.
+	 * <p>
+	 * The user home directory is fetched using the
+	 * {@link System#getProperty(String)} method.
+	 * 
+	 * @return the user home directory path
+	 */
+	public static Path getUserHomeDirectory() {
+		return Paths.get(System.getProperty("user.home"));
+	}
+	
+	/**
+	 * Returns the user Downloads directory path.
+	 * 
+	 * @return the user Downloads directory path
+	 * @see #getUserHomeDirectory()
+	 */
+	public static Path getUserDownloadsDirectory() {
+		return getUserHomeDirectory().resolve("Downloads");
+	}
 
 	/**
 	 * Tells whether or not a file is considered <em>hidden</em>. The exact
@@ -153,6 +175,24 @@ public abstract class Helper {
 	}
 	
 	/**
+	 * Returns <tt>true</tt> if the specified <tt>pathname</tt> string is a
+	 * valid {@code Path}. In other words, return true if the the specified
+	 * pathname can be obtained as a {@code Path} object using the
+	 * {@link Paths#get(String, String...) Paths.get(pathname)} method.
+	 * 
+	 * @param pathname pathname to be tested
+	 * @return true if pathname is a valid path
+	 */
+	public static boolean isValidPath(String pathname) {
+		try {
+			Paths.get(pathname);
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+	
+	/**
 	 * Returns the first available {@code Path} with a unique file name. The
 	 * first available path means that, if a file with the specified
 	 * <tt>path</tt> exists on disk, an index is appended to it. If a file with
@@ -175,7 +215,7 @@ public abstract class Helper {
 			return path;
 		
 		int namingIndex = 0;
-		String name = path.getFileName().toString();
+		String name = getFileName(path).toString();
 		String extension = "";
 		
 		int dotIndex = name.lastIndexOf('.');

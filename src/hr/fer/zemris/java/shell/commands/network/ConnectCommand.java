@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.net.SocketException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -42,6 +43,8 @@ public class ConnectCommand extends AbstractCommand {
 	private String hash;
 	/** Indicates if host-client connection should be reversed. */
 	private boolean reverse;
+	/** Path of files that will be downloaded using the {@code DownloadCommand}. */
+	private Path downloadPath;
 
 	/**
 	 * Constructs a new command object of type {@code ConnectCommand}.
@@ -89,6 +92,8 @@ public class ConnectCommand extends AbstractCommand {
 	protected String compileFlags(Environment env, String s) {
 		/* Initialize default values. */
 		hash = Helper.generatePasswordHash("");
+		reverse = false;
+		downloadPath = Helper.getUserDownloadsDirectory();
 
 		/* Compile! */
 		s = commandArguments.compile(s);
@@ -102,12 +107,17 @@ public class ConnectCommand extends AbstractCommand {
 		if (commandArguments.containsFlag("r", "reverse")) {
 			reverse = true;
 		}
+		
+		if (commandArguments.containsFlag("d", "download-path")) {
+			downloadPath = Helper.resolveAbsolutePath(env,
+				commandArguments.getFlag("d", "download-path").getArgument());
+		}
 
 		return super.compileFlags(env, s);
 	}
 
 	@Override
-	protected ShellStatus execute0(Environment env, String s) {
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		if (s == null) {
 			throw new SyntaxException();
 		}
@@ -116,14 +126,18 @@ public class ConnectCommand extends AbstractCommand {
 		String host;
 		int port;
 		try (Scanner sc = new Scanner(s)) {
+			sc.useDelimiter("\\s+|:");
 			host = sc.next();
 			port = sc.nextInt();
 		} catch (Exception e) {
-			throw new SyntaxException();
+			throw new SyntaxException("Port must be numeric", e);
 		}
+		
+		env.getConnection().setDownloadPath(downloadPath);
 		
 		/* Do connect. */
 		try (Socket clientSocket = new Socket(host, port)) {
+//			clientSocket.setSoTimeout(NetworkTransfer.DEFAULT_TIMEOUT); // check HostCommand
 			if (!reverse) {
 				connect(env, clientSocket, hash);
 			} else {
@@ -172,9 +186,9 @@ public class ConnectCommand extends AbstractCommand {
 						char[] cbuf = new char[1024];
 						while ((len = serverReader.read(cbuf)) != -1) {
 							if (NetworkTransfer.isAHint(cbuf, NetworkTransfer.DOWNLOAD_KEYWORD)) {
-								NetworkTransfer.download(inFromServer, outToServer, decrypto);
+								NetworkTransfer.download(env, inFromServer, outToServer, decrypto);
 							} else if (NetworkTransfer.isAHint(cbuf, NetworkTransfer.UPLOAD_KEYWORD)) {
-								NetworkTransfer.processUploadRequest(inFromServer, outToServer, encrypto);
+								NetworkTransfer.processUploadRequest(env, inFromServer, outToServer, encrypto);
 							} else {
 								env.write(cbuf, 0, len);
 							}

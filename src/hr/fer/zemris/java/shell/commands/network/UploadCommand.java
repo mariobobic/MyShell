@@ -18,7 +18,6 @@ import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
  *
  * @author Mario Bobic
  */
-//TODO inherit VisitorCommand and enable skipping files and directories
 public class UploadCommand extends AbstractCommand {
 	
 	/**
@@ -63,7 +62,7 @@ public class UploadCommand extends AbstractCommand {
 		try {
 			// Upload from MyShell CLIENT to MyShell HOST
 			Connection con = env.getConnection();
-			NetworkTransfer.requestDownload(s, con.getInFromClient(), con.getOutToClient(), con.getDecrypto());
+			NetworkTransfer.requestDownload(env, s, con.getInFromClient(), con.getOutToClient(), con.getDecrypto());
 		} catch (SocketException e) {
 			// Connection has ended
 			return ShellStatus.TERMINATE;

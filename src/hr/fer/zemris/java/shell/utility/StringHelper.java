@@ -347,9 +347,7 @@ public abstract class StringHelper {
 	 * @return the index of the first occurrence of a whitespace character
 	 */
 	public static int indexOfNonIdentifier(String str, int fromIndex) {
-		// TODO Negate predicate in one-liner?
-		Predicate<Character> predicate = Character::isUnicodeIdentifierPart;
-		return indexOf(str, fromIndex, predicate.negate());
+		return indexOf(str, fromIndex, not(Character::isUnicodeIdentifierPart));
 	}
 	
 	/**
@@ -364,7 +362,7 @@ public abstract class StringHelper {
 	 * @return the index of the first occurrence of a character that satisfies
 	 *         the given predicate
 	 */
-	private static int indexOf(String str, int fromIndex, Predicate<Character> predicate) {
+	public static int indexOf(String str, int fromIndex, Predicate<Character> predicate) {
 		if (fromIndex < 0) {
 			fromIndex = 0;
 		}
@@ -378,6 +376,85 @@ public abstract class StringHelper {
 		return -1;
 	}
 	
+	/**
+	 * Returns the index within the specified string <tt>str</tt> of the first
+	 * occurrence of a character that is not under double quotation-marks and
+	 * satisfies the specified <tt>predicate</tt>, starting at the specified
+	 * index.
+	 * 
+	 * @param str string whose index of the first character that satisfies the
+	 *        predicate is to be returned
+	 * @param fromIndex the index from which to start the search
+	 * @param predicate predicate to be satisfied
+	 * @return the index of the first occurrence of a character that satisfies
+	 *         the given predicate that is not under quotes
+	 */
+	public static int indexOfUnquoted(String str, int fromIndex, Predicate<Character> predicate) {
+		if (fromIndex < 0) {
+			fromIndex = 0;
+		}
+		
+		boolean underQuote = false;
+		for (int i = fromIndex, n = str.length(); i < n; i++) {
+			char c = str.charAt(i);
+			if (c == '"' && !isEscaped(str, i)) {
+				underQuote = !underQuote;
+				continue;
+			}
+			
+			if (!underQuote && predicate.test(c)) {
+				return i;
+			}
+		}
+		
+		return -1;
+	}
+	
+	/**
+	 * Returns the index within the specified string <tt>str</tt> of the last
+	 * occurrence of a character that is not under double quotation-marks and
+	 * satisfies the specified <tt>predicate</tt>, starting at the specified
+	 * index.
+	 * 
+	 * @param str string whose index of the last character that satisfies the
+	 *        predicate is to be returned
+	 * @param fromIndex the index from which to start the search
+	 * @param predicate predicate to be satisfied
+	 * @return the index of the last occurrence of a character that satisfies
+	 *         the given predicate that is not under quotes
+	 */
+	public static int lastIndexOfUnquoted(String str, int fromIndex, Predicate<Character> predicate) {
+		if (fromIndex < 0) {
+			fromIndex = 0;
+		}
+		
+		boolean underQuote = false;
+		for (int i = str.length()-1; i >= fromIndex; i--) {
+			char c = str.charAt(i);
+			if (c == '"' && !isEscaped(str, i)) {
+				underQuote = !underQuote;
+				continue;
+			}
+			
+			if (!underQuote && predicate.test(c)) {
+				return i;
+			}
+		}
+		
+		return -1;
+	}
+	
+	/**
+	 * Returns the negated predicate of the specified <tt>predicate</tt>.
+	 * 
+	 * @param <T> predicate type
+	 * @param predicate predicate to be negated
+	 * @return the negated predicate
+	 */
+	private static <T> Predicate<T> not(Predicate<T> predicate) {
+		return predicate.negate();
+	}
+
 	/**
 	 * Returns true if the character at the specified <tt>index</tt> is equal to
 	 * the specified character <tt>c</tt>.

@@ -2,13 +2,17 @@ package hr.fer.zemris.java.shell.commands.system;
 
 import java.awt.Desktop;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Helper;
 import hr.fer.zemris.java.shell.utility.StringHelper;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
@@ -22,11 +26,15 @@ import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
  */
 public class OpenCommand extends AbstractCommand {
 
+	/* Flags */
+	/** Indicates if a random file should be opened. */
+	private boolean random;
+	
 	/**
 	 * Constructs a new command object of type {@code OpenCommand}.
 	 */
 	public OpenCommand() {
-		super("OPEN", createCommandDescription());
+		super("OPEN", createCommandDescription(), createFlagDescriptions());
 	}
 	
 	@Override
@@ -50,6 +58,35 @@ public class OpenCommand extends AbstractCommand {
 				+ "were specified these arguments are passed to the process.");
 		return desc;
 	}
+	
+	/**
+	 * Creates a list of {@code FlagDescription} objects where each entry
+	 * describes the available flags of this command. This method is generates
+	 * description exclusively for the command that this class represents.
+	 * 
+	 * @return a list of strings that represents description
+	 */
+	private static List<FlagDescription> createFlagDescriptions() {
+		List<FlagDescription> desc = new ArrayList<>();
+		desc.add(new FlagDescription("r", "random", null, "Open a random file in the specified directory."));
+		return desc;
+	}
+	
+	@Override
+	protected String compileFlags(Environment env, String s) {
+		/* Initialize default values. */
+		random = false;
+
+		/* Compile! */
+		s = commandArguments.compile(s);
+
+		/* Replace default values with flag values, if any. */
+		if (commandArguments.containsFlag("r", "random")) {
+			random = true;
+		}
+		
+		return super.compileFlags(env, s);
+	}
 
 	@Override
 	protected ShellStatus execute0(Environment env, String s) throws IOException {
@@ -57,10 +94,30 @@ public class OpenCommand extends AbstractCommand {
 			throw new SyntaxException();
 		}
 		
+		// Fetch and check path
 		String[] args = StringHelper.extractArguments(s);
 		Path path = Helper.resolveAbsolutePath(env, args[0]);
 		Helper.requireExists(path);
-		
+
+		// Pick a random element, if the flag is present
+		if (random) {
+			if (!Files.isDirectory(path)) {
+				env.writeln("By using 'random' flag, the specified path must be a directory!");
+				return ShellStatus.CONTINUE;
+			}
+
+			// TODO try using only stream API for getting a random element
+			List<Path> files = Files.list(path).collect(Collectors.toList());
+			if (files.isEmpty()) {
+				env.writeln("Directory " + path + " is empty.");
+				return ShellStatus.CONTINUE;
+			}
+			
+			int index = ThreadLocalRandom.current().nextInt(files.size());
+			path = files.get(index);
+		}
+
+		// Open the file (with possible arguments)
 		try {
 			args[0] = path.toString();
 			new ProcessBuilder(args).start();

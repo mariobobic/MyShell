@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,7 +33,9 @@ public class HostCommand extends AbstractCommand {
 	private String hash;
 	/** Indicates if host-client connection should be reversed. */
 	private boolean reverse;
-
+	/** Path of files that will be downloaded using the {@code DownloadCommand}. */
+	private Path downloadPath;
+	
 	/**
 	 * Constructs a new command object of type {@code HostCommand}.
 	 */
@@ -71,6 +74,7 @@ public class HostCommand extends AbstractCommand {
 		List<FlagDescription> desc = new ArrayList<>();
 		desc.add(new FlagDescription("p", "pass", "pass", "Specify a connection password."));
 		desc.add(new FlagDescription("r", "reverse", null, "Reverse host-client connection."));
+		desc.add(new FlagDescription("d", "download-path", "path", "Set the path of downloads."));
 		return desc;
 	}
 	
@@ -79,6 +83,7 @@ public class HostCommand extends AbstractCommand {
 		/* Initialize default values. */
 		hash = Helper.generatePasswordHash("");
 		reverse = false;
+		downloadPath = Helper.getUserDownloadsDirectory();
 
 		/* Compile! */
 		s = commandArguments.compile(s);
@@ -92,35 +97,44 @@ public class HostCommand extends AbstractCommand {
 		if (commandArguments.containsFlag("r", "reverse")) {
 			reverse = true;
 		}
+		
+		if (commandArguments.containsFlag("d", "download-path")) {
+			downloadPath = Helper.resolveAbsolutePath(env,
+				commandArguments.getFlag("d", "download-path").getArgument());
+		}
 
 		return super.compileFlags(env, s);
 	}
 	
 	@Override
-	protected ShellStatus execute0(Environment env, String s) {
-		if (s == null) {
-			throw new SyntaxException();
-		}
-		
-		/* Parse the port number. */
+	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		int port;
-		try {
-			port = Integer.parseInt(s);
-		} catch (NumberFormatException e) {
-			throw new SyntaxException();
+		if (s == null) {
+			port = 0;
+		} else {
+			try {
+				/* Parse the port number. */
+				port = Integer.parseInt(s);
+			} catch (NumberFormatException e) {
+				throw new SyntaxException("Port must be numeric", e);
+			}
 		}
 		
-		/* Print out a message that the connection is ready. */
-		env.write("Hosting server... connect to " + Helper.getLocalIP());
-		env.writeln(" / " + Helper.getPublicIP());
+		env.getConnection().setDownloadPath(downloadPath);
 		
 		/* Create a host access point and redirect the input and output stream. */
-		try (ServerSocket serverSocket = new ServerSocket(port);
-			 Socket connectionSocket = serverSocket.accept()) {
-			if (!reverse) {
-				host(env, connectionSocket, hash);
-			} else {
-				ConnectCommand.connect(env, connectionSocket, hash);
+		try (ServerSocket serverSocket = new ServerSocket(port)) {
+			/* Print out a message that the connection is ready. */
+			port = serverSocket.getLocalPort();
+			env.write("Hosting server... connect to " + Helper.getLocalIP()+":"+port);
+			env.writeln(" / " + Helper.getPublicIP()+":"+port);
+			
+			try (Socket connectionSocket = serverSocket.accept()) {
+				if (!reverse) {
+					host(env, connectionSocket, hash);
+				} else {
+					ConnectCommand.connect(env, connectionSocket, hash);
+				}
 			}
 		} catch (Exception e) {
 			env.writeln(e.getMessage());

@@ -21,7 +21,6 @@ import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
  *
  * @author Mario Bobic
  */
-// TODO inherit VisitorCommand and enable skipping files and directories
 public class DownloadCommand extends AbstractCommand {
 	
 	/**

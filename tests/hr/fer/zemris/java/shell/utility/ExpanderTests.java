@@ -282,7 +282,7 @@ public class ExpanderTests {
 	}
 	
 	@Test
-	@Ignore // TODO support nested expressions
+	@Ignore // TODO support nested brace expressions
 	public void testBraceExpansionNested() {
 		String input = "folder{1{old,new},2{stale,fresh}}";
 

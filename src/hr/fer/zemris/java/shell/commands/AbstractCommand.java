@@ -147,7 +147,7 @@ public abstract class AbstractCommand implements ShellCommand {
 		} catch (InvalidPathException e) {
 			env.writeln("Invalid path: " + e.getInput());
 		} catch (SyntaxException e) {
-			printSyntaxError(env);
+			printSyntaxError(env, e);
 		} catch (InvalidFlagException e) {
 			env.writeln(e.getMessage());
 		} catch (IllegalPathException e) {
@@ -214,10 +214,14 @@ public abstract class AbstractCommand implements ShellCommand {
 	 * actually expected as input arguments.
 	 * 
 	 * @param env an environment
+	 * @param e the syntax exception
 	 */
-	protected final void printSyntaxError(Environment env) {
+	protected final void printSyntaxError(Environment env, SyntaxException e) {
 		formatln(env, "The syntax of the command is incorrect. Expected: %s %s", 
 			getCommandName().toLowerCase(), getCommandSyntax());
+		if (e.getMessage() != null) {
+			formatln(env, "%s: %s", commandName, e.getMessage());
+		}
 	}
 	
 	/**
@@ -230,8 +234,7 @@ public abstract class AbstractCommand implements ShellCommand {
 	 * @return the string <tt>s</tt> cleared of flags
 	 */
 	protected String compileFlags(Environment env, String s) {
-		String clean = commandArguments.compile(s);
-		return clean == null ? null : clean.replaceAll("\\\\-", "-");
+		return commandArguments.compile(s, false);
 	}
 	
 	@Override

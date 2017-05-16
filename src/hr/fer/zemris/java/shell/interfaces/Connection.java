@@ -2,8 +2,10 @@ package hr.fer.zemris.java.shell.interfaces;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Path;
 
 import hr.fer.zemris.java.shell.utility.Crypto;
+import hr.fer.zemris.java.shell.utility.exceptions.IllegalPathException;
 
 /**
  * This interface represents a remote connection between two machines. One
@@ -77,5 +79,21 @@ public interface Connection {
 	 * @return the cryptographic cipher in decryption mode
 	 */
 	Crypto getDecrypto();
+	
+	/**
+	 * Returns the download path of this connection.
+	 * 
+	 * @return the download path of this connection
+	 */
+	Path getDownloadPath();
+	
+	/**
+	 * Sets the download path of this connection to the specified <tt>path</tt>.
+	 * 
+	 * @param path path to be set
+	 * @throws IllegalPathException if the specified path exists, but is a file
+	 *         or if the specified path does not exists and can not be created
+	 */
+	void setDownloadPath(Path path);
 
 }

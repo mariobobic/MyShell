@@ -100,6 +100,12 @@ public class FilterCommand extends VisitorCommand {
 			this.environment = environment;
 			this.patternParts = StringHelper.splitPattern(pattern.trim().toUpperCase());
 		}
+		
+		@Override
+		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+			printMatch(dir);
+			return FileVisitResult.CONTINUE;
+		}
 
 		/**
 		 * Checks if the file matches the given {@link #patternParts} and writes
@@ -107,12 +113,7 @@ public class FilterCommand extends VisitorCommand {
 		 */
 		@Override
 		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-			String fileName = file.getFileName().toString().toUpperCase();
-			
-			if (StringHelper.matches(fileName, patternParts)) {
-				markAndPrintPath(environment, file);
-			}
-
+			printMatch(file);
 			return FileVisitResult.CONTINUE;
 		}
 		
@@ -125,6 +126,19 @@ public class FilterCommand extends VisitorCommand {
 			environment.writeln("Failed to access " + file);
 			fails++;
 			return FileVisitResult.CONTINUE;
+		}
+		
+		/**
+		 * Prints the specified path if it matches pattern parts.
+		 * 
+		 * @param path path to be tested
+		 */
+		private void printMatch(Path path) {
+			String fileName = path.getFileName().toString().toUpperCase();
+			
+			if (StringHelper.matches(fileName, patternParts)) {
+				markAndPrintPath(environment, path);
+			}
 		}
 
 		/**
