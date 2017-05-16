@@ -78,7 +78,7 @@ public class Progress implements Runnable {
 		this.total = total;
 		this.auto = auto;
 		
-		totalStr = Helper.humanReadableByteCount(total);
+		totalStr = Utility.humanReadableByteCount(total);
 		
 		if (auto) {
 			start();
@@ -159,21 +159,21 @@ public class Progress implements Runnable {
 		try {
 			/* Percentage */
 			int percent = (int) (100 * current / total);
-			String currentStr = Helper.humanReadableByteCount(current);
+			String currentStr = Utility.humanReadableByteCount(current);
 
 			/* Time */
 			long elapsedTime = System.nanoTime() - startTime;
 			long recentElapsedTime = System.nanoTime() - recentStartTime;
-			String elapsedTimeStr = Helper.humanReadableTimeUnit(elapsedTime);
+			String elapsedTimeStr = Utility.humanReadableTimeUnit(elapsedTime);
 
 			/* Speed */
 			long averageSpeed = current / (elapsedTime/1_000_000_000L);
 			long currentSpeed = recent / (recentElapsedTime/1_000_000_000L);
-			String currentSpeedStr = Helper.humanReadableByteCount(currentSpeed) + "/s";
+			String currentSpeedStr = Utility.humanReadableByteCount(currentSpeed) + "/s";
 
 			/* Estimation */
 			String estimatedTime = currentSpeed > 0 ?
-				Helper.humanReadableTimeUnit(1_000_000_000L * ((total - current) / currentSpeed)) : "∞";
+				Utility.humanReadableTimeUnit(1_000_000_000L * ((total - current) / currentSpeed)) : "∞";
 			
 			
 			/* Print it! */

@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -58,8 +58,8 @@ public class NameShuffleCommand extends AbstractCommand {
 			throw new SyntaxException();
 		}
 		
-		Path path = Helper.resolveAbsolutePath(env, s);
-		Helper.requireDirectory(path);
+		Path path = Utility.resolveAbsolutePath(env, s);
+		Utility.requireDirectory(path);
 		
 		/* Create an original list of files and keep it for later printing. */
 		List<Path> originalListOfFiles = Files.list(path).collect(Collectors.toList());

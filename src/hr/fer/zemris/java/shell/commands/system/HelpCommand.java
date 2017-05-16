@@ -9,7 +9,7 @@ import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.interfaces.ShellCommand;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 
 /**
  * A command that is used for displaying all other commands, including this one,
@@ -76,7 +76,7 @@ public class HelpCommand extends AbstractCommand {
 		
 		for (ShellCommand command : commands) {
 			String name = command.getCommandName();
-			String desc = Helper.firstElement(command.getCommandDescription());
+			String desc = Utility.firstElement(command.getCommandDescription());
 			formatln(env, "%-"+len+"s %s", name+":", desc);
 		}
 	}

@@ -15,8 +15,8 @@ import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Crypto;
-import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.StringHelper;
+import hr.fer.zemris.java.shell.utility.Utility;
+import hr.fer.zemris.java.shell.utility.StringUtility;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -60,16 +60,16 @@ public class EncryptCommand extends AbstractCommand {
 
 	@Override
 	protected ShellStatus execute0(Environment env, String s) throws IOException {
-		String[] args = StringHelper.extractArguments(s, 2);
+		String[] args = StringUtility.extractArguments(s, 2);
 		if (args.length != 2) {
 			throw new SyntaxException();
 		}
 		
-		Path sourcefile = Helper.resolveAbsolutePath(env, args[1]);
-		Helper.requireFile(sourcefile);
+		Path sourcefile = Utility.resolveAbsolutePath(env, args[1]);
+		Utility.requireFile(sourcefile);
 		
-		Path destfile = Paths.get(sourcefile + Helper.CRYPT_FILE_EXT);
-		Helper.requireDiskSpace(Crypto.postSize(sourcefile), destfile);
+		Path destfile = Paths.get(sourcefile + Utility.CRYPT_FILE_EXT);
+		Utility.requireDiskSpace(Crypto.postSize(sourcefile), destfile);
 		
 		if (Files.exists(destfile)) {
 			if (!promptConfirm(env, "File " + destfile + " already exists. Overwrite?")) {
@@ -78,7 +78,7 @@ public class EncryptCommand extends AbstractCommand {
 			}
 		}
 
-		String hash = Helper.generatePasswordHash(args[0]);
+		String hash = Utility.generatePasswordHash(args[0]);
 		Crypto crypto = new Crypto(hash, Crypto.ENCRYPT);
 		
 		try {

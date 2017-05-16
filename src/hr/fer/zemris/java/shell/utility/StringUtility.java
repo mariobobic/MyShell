@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
  *
  * @author Mario Bobic
  */
-public abstract class StringHelper {
+public abstract class StringUtility {
 	
 	/** The quote character. */
 	private static final Character QUOT = '"';
@@ -19,7 +19,7 @@ public abstract class StringHelper {
 	/**
 	 * Disable instantiation or inheritance.
 	 */
-	private StringHelper() {
+	private StringUtility() {
 	}
 
 	/**

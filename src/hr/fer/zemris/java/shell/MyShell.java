@@ -44,8 +44,8 @@ import hr.fer.zemris.java.shell.interfaces.ShellCommand;
 import hr.fer.zemris.java.shell.utility.CommandUtility;
 import hr.fer.zemris.java.shell.utility.Crypto;
 import hr.fer.zemris.java.shell.utility.Expander;
-import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.StringHelper;
+import hr.fer.zemris.java.shell.utility.Utility;
+import hr.fer.zemris.java.shell.utility.StringUtility;
 import hr.fer.zemris.java.shell.utility.exceptions.IllegalPathException;
 import hr.fer.zemris.java.shell.utility.exceptions.ShellIOException;
 
@@ -151,7 +151,7 @@ public class MyShell {
 		
 l:		while (true) {
 			Path path = environment.getCurrentPath();
-			Path pathName = Helper.getFileName(path);
+			Path pathName = Utility.getFileName(path);
 			environment.write("$" + pathName + environment.promptSymbol + " ");
 			
 			String input = readInput();
@@ -164,7 +164,7 @@ l:		while (true) {
 				
 				String cmd;
 				String arg;
-				int splitter = StringHelper.indexOfWhitespace(line);
+				int splitter = StringUtility.indexOfWhitespace(line);
 				if (splitter != -1) {
 					cmd = line.substring(0, splitter).toUpperCase();
 					arg = line.substring(splitter+1).trim();
@@ -281,7 +281,7 @@ l:		while (true) {
 		
 		String variable = input.substring(0, index);
 		String value = input.substring(index+1);
-		if (!StringHelper.isValidIdentifierName(variable) ||
+		if (!StringUtility.isValidIdentifierName(variable) ||
 			(!value.isEmpty() && Character.isWhitespace(value.charAt(0)))) {
 			return false;
 		}
@@ -307,7 +307,7 @@ l:		while (true) {
 		}
 		
 		// Find the last unquoted '>' symbol
-		int index = StringHelper.lastIndexOfUnquoted(input, 0, c -> c.equals('>'));
+		int index = StringUtility.lastIndexOfUnquoted(input, 0, c -> c.equals('>'));
 		if (index == -1) {
 			return input;
 		}
@@ -315,11 +315,11 @@ l:		while (true) {
 		/* Extract the output file from the given input string. */
 		String output = input.substring(0, index).trim();
 		String argument = input.substring(index+1).trim();
-		Path outputFile = Helper.resolveAbsolutePath(environment, argument);
+		Path outputFile = Utility.resolveAbsolutePath(environment, argument);
 		
 		/* Check conditions. */
 		if (Files.isDirectory(outputFile)) {
-			outputFile = Helper.firstAvailable(outputFile.resolve("output.txt"));
+			outputFile = Utility.firstAvailable(outputFile.resolve("output.txt"));
 		}
 		
 		if (Files.exists(outputFile)) {
@@ -543,7 +543,7 @@ l:		while (true) {
 
 		@Override
 		public void addToHistory(String input) {
-			input = StringHelper.replaceUnescaped(input, Expander.LAST_INPUT, Helper.lastElement(history), 0);
+			input = StringUtility.replaceUnescaped(input, Expander.LAST_INPUT, Utility.lastElement(history), 0);
 			history.add(input);
 		}
 		
@@ -634,7 +634,7 @@ l:		while (true) {
 		private Stack<Crypto> decryptos = new Stack<>();
 		
 		/** Download path of this connection. */
-		private Path downloadPath = Helper.getUserHomeDirectory().resolve("Downloads");
+		private Path downloadPath = Utility.getUserHomeDirectory().resolve("Downloads");
 		
 		@Override
 		public void connectStreams(InputStream in, OutputStream out, Crypto encrypto, Crypto decrypto) {

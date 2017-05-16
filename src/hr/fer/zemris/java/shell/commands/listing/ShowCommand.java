@@ -20,8 +20,8 @@ import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
-import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.StringHelper;
+import hr.fer.zemris.java.shell.utility.Utility;
+import hr.fer.zemris.java.shell.utility.StringUtility;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -119,14 +119,14 @@ public class ShowCommand extends VisitorCommand {
 			throw new SyntaxException();
 		}
 		
-		String[] args = StringHelper.extractArguments(s, 2);
+		String[] args = StringUtility.extractArguments(s, 2);
 		
 		/* Resolve path from the second argument, if present. */
 		Path dir;
 		if (args.length == 1) {
 			dir = env.getCurrentPath();
 		} else {
-			dir = Helper.resolveAbsolutePath(env, args[1]);
+			dir = Utility.resolveAbsolutePath(env, args[1]);
 		}
 
 		Comparator<Path> comparator = getComparator(args[0]);
@@ -136,7 +136,7 @@ public class ShowCommand extends VisitorCommand {
 		}
 		
 		/* Make necessary checks. */
-		Helper.requireDirectory(dir);
+		Utility.requireDirectory(dir);
 		
 		ShowFileVisitor largestVisitor = new ShowFileVisitor(comparator);
 		walkFileTree(dir, largestVisitor);
@@ -146,7 +146,7 @@ public class ShowCommand extends VisitorCommand {
 		
 		List<Path> largestFiles = largestVisitor.getFiles();
 		for (Path f : largestFiles) {
-			String bytes = " (" + Helper.humanReadableByteCount(size(f)) + ")";
+			String bytes = " (" + Utility.humanReadableByteCount(size(f)) + ")";
 			String modTime = " (" + FORMATTER.format(lastModified(f).toInstant()) + ")";
 			env.write(f.normalize() + bytes + modTime);
 			markAndPrintNumber(env, f);

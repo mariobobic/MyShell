@@ -21,9 +21,9 @@ import hr.fer.zemris.java.shell.commands.system.ExitCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Crypto;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 import hr.fer.zemris.java.shell.utility.NetworkTransfer;
-import hr.fer.zemris.java.shell.utility.StringHelper;
+import hr.fer.zemris.java.shell.utility.StringUtility;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -91,16 +91,16 @@ public class ConnectCommand extends AbstractCommand {
 	@Override
 	protected String compileFlags(Environment env, String s) {
 		/* Initialize default values. */
-		hash = Helper.generatePasswordHash("");
+		hash = Utility.generatePasswordHash("");
 		reverse = false;
-		downloadPath = Helper.getUserDownloadsDirectory();
+		downloadPath = Utility.getUserDownloadsDirectory();
 
 		/* Compile! */
 		s = commandArguments.compile(s);
 		
 		/* Replace default values with flag values, if any. */
 		if (commandArguments.containsFlag("p", "pass")) {
-			hash = Helper.generatePasswordHash(
+			hash = Utility.generatePasswordHash(
 				commandArguments.getFlag("p", "pass").getArgument());
 		}
 		
@@ -109,7 +109,7 @@ public class ConnectCommand extends AbstractCommand {
 		}
 		
 		if (commandArguments.containsFlag("d", "download-path")) {
-			downloadPath = Helper.resolveAbsolutePath(env,
+			downloadPath = Utility.resolveAbsolutePath(env,
 				commandArguments.getFlag("d", "download-path").getArgument());
 		}
 
@@ -247,7 +247,7 @@ public class ConnectCommand extends AbstractCommand {
 		
 		String cmd;
 		String arg;
-		int splitter = StringHelper.indexOfWhitespace(line);
+		int splitter = StringUtility.indexOfWhitespace(line);
 		if (splitter != -1) {
 			cmd = line.substring(0, splitter).toUpperCase();
 			arg = line.substring(splitter+1).trim();

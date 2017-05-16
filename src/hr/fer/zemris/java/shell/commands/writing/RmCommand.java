@@ -15,7 +15,7 @@ import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -94,8 +94,8 @@ public class RmCommand extends VisitorCommand {
 			return ShellStatus.CONTINUE;
 		}
 		
-		Path path = Helper.resolveAbsolutePath(env, s);
-		Helper.requireExists(path);
+		Path path = Utility.resolveAbsolutePath(env, s);
+		Utility.requireExists(path);
 		
 		// Require confirmation for directories
 		if (Files.isDirectory(path) && !force) {
@@ -133,7 +133,7 @@ public class RmCommand extends VisitorCommand {
 		 */
 		public RmFileVisitor(Environment environment, Path start) {
 			this.environment = environment;
-			this.root = Helper.getParent(start);
+			this.root = Utility.getParent(start);
 		}
 		
 		@Override

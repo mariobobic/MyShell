@@ -295,7 +295,7 @@ public class CommandArguments {
 		}
 		
 		cleanArgument = null;
-		String[] args = StringHelper.extractArguments(s, 0, true);
+		String[] args = StringUtility.extractArguments(s, 0, true);
 		Set<String> undefinedFlags = new LinkedHashSet<>();
 		StringJoiner cleanArgumentBuilder = new StringJoiner(" ");
 		
@@ -471,7 +471,7 @@ public class CommandArguments {
 		retFlags.removeIf(Objects::isNull);
 		
 		// Get first flag or null
-		Flag flag = Helper.firstElement(retFlags);
+		Flag flag = Utility.firstElement(retFlags);
 		if (retFlags.size() > 1) {
 			flag = new Flag(name);
 			for (Flag retFlag : retFlags) {
@@ -583,7 +583,7 @@ public class CommandArguments {
 		 * @return the first argument of this flag or <tt>null</tt>
 		 */
 		public String getArgument() {
-			return Helper.firstElement(arguments);
+			return Utility.firstElement(arguments);
 		}
 		
 		/**
@@ -704,14 +704,14 @@ public class CommandArguments {
 		/**
 		 * Returns this flag's first argument as a long integer considering that
 		 * the argument is given as a size parsable by the
-		 * {@link Helper#parseSize(String)} method.
+		 * {@link Utility#parseSize(String)} method.
 		 * 
 		 * @return the argument of this flag as a long integer parsed from size
 		 * @throws InvalidFlagException if parsing to a long integer fails
 		 */
 		public long getSizeArgument() {
 			try {
-				return Helper.parseSize(getArgument());
+				return Utility.parseSize(getArgument());
 			} catch (IllegalArgumentException e) {
 				throw exceptionForType("size in bytes");
 			}

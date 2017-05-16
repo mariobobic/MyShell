@@ -15,7 +15,7 @@ import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Crypto;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -81,16 +81,16 @@ public class HostCommand extends AbstractCommand {
 	@Override
 	protected String compileFlags(Environment env, String s) {
 		/* Initialize default values. */
-		hash = Helper.generatePasswordHash("");
+		hash = Utility.generatePasswordHash("");
 		reverse = false;
-		downloadPath = Helper.getUserDownloadsDirectory();
+		downloadPath = Utility.getUserDownloadsDirectory();
 
 		/* Compile! */
 		s = commandArguments.compile(s);
 		
 		/* Replace default values with flag values, if any. */
 		if (commandArguments.containsFlag("p", "pass")) {
-			hash = Helper.generatePasswordHash(
+			hash = Utility.generatePasswordHash(
 				commandArguments.getFlag("p", "pass").getArgument());
 		}
 		
@@ -99,7 +99,7 @@ public class HostCommand extends AbstractCommand {
 		}
 		
 		if (commandArguments.containsFlag("d", "download-path")) {
-			downloadPath = Helper.resolveAbsolutePath(env,
+			downloadPath = Utility.resolveAbsolutePath(env,
 				commandArguments.getFlag("d", "download-path").getArgument());
 		}
 
@@ -126,8 +126,8 @@ public class HostCommand extends AbstractCommand {
 		try (ServerSocket serverSocket = new ServerSocket(port)) {
 			/* Print out a message that the connection is ready. */
 			port = serverSocket.getLocalPort();
-			env.write("Hosting server... connect to " + Helper.getLocalIP()+":"+port);
-			env.writeln(" / " + Helper.getPublicIP()+":"+port);
+			env.write("Hosting server... connect to " + Utility.getLocalIP()+":"+port);
+			env.writeln(" / " + Utility.getPublicIP()+":"+port);
 			
 			try (Socket connectionSocket = serverSocket.accept()) {
 				if (!reverse) {

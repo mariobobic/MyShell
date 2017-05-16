@@ -156,7 +156,7 @@ l:		while (true) {
 
 			String match = input.substring(start, outsideEnd);
 			String inside = input.substring(insideStart, end);
-			if (inside.isEmpty() || StringHelper.isEscaped(input, start)) {
+			if (inside.isEmpty() || StringUtility.isEscaped(input, start)) {
 				continue;
 			}
 
@@ -169,7 +169,7 @@ l:		while (true) {
 				if (dotArgs.length == 2) {
 					
 					// Both are integers
-					if (Helper.isLong(dotArgs[0]) && Helper.isLong(dotArgs[1])) {
+					if (Utility.isLong(dotArgs[0]) && Utility.isLong(dotArgs[1])) {
 						long l0 = Long.parseLong(dotArgs[0]);
 						long l1 = Long.parseLong(dotArgs[1]);
 						currentLines.addAll(loopThrough(l0, l1, input, match, start));
@@ -194,7 +194,7 @@ l:		while (true) {
 					}
 
 					// There are more arguments in braces
-					currentLines.add(StringHelper.replaceFirst(input, match, arg, start));
+					currentLines.add(StringUtility.replaceFirst(input, match, arg, start));
 				}
 			}
 
@@ -232,11 +232,11 @@ l:		while (true) {
 		
 		if (l0 < l1)
 			for (long l = l0; l <= l1; l++) {
-				list.add(StringHelper.replaceFirst(source, target, Long.toString(l), startIndex));
+				list.add(StringUtility.replaceFirst(source, target, Long.toString(l), startIndex));
 			}
 		else
 			for (long l = l0; l >= l1; l--) {
-				list.add(StringHelper.replaceFirst(source, target, Long.toString(l), startIndex));
+				list.add(StringUtility.replaceFirst(source, target, Long.toString(l), startIndex));
 			}
 		
 		return list;
@@ -258,11 +258,11 @@ l:		while (true) {
 		
 		if (c0 < c1)
 			for (char c = c0; c <= c1; c++) {
-				list.add(StringHelper.replaceFirst(source, target, Character.toString(c), startIndex));
+				list.add(StringUtility.replaceFirst(source, target, Character.toString(c), startIndex));
 			}
 		else
 			for (char c = c0; c >= c1; c--) {
-				list.add(StringHelper.replaceFirst(source, target, Character.toString(c), startIndex));
+				list.add(StringUtility.replaceFirst(source, target, Character.toString(c), startIndex));
 			}
 		
 		return list;
@@ -282,7 +282,7 @@ l:		while (true) {
 	 * @return the specified input expanded as a special character expansion
 	 */
 	static String specialCharacterExpansion(Environment env, String input) {
-		return StringHelper.replaceUnescaped(input, LAST_INPUT, Helper.lastElement(env.getHistory()));
+		return StringUtility.replaceUnescaped(input, LAST_INPUT, Utility.lastElement(env.getHistory()));
 		// Code reserved for future use.
 //		int i = 0;
 //		
@@ -353,7 +353,7 @@ l:		while (true) {
 			int start = input.indexOf("$", i);
 			if (start == -1) break;
 			
-			int end = StringHelper.indexOfNonIdentifier(input, start+1);
+			int end = StringUtility.indexOfNonIdentifier(input, start+1);
 			if (end != -1 && input.charAt(end) == '{') {
 				end = input.indexOf('}');
 				wrapped = true;
@@ -365,7 +365,7 @@ l:		while (true) {
 			
 			i = end; // set i to the first non-identifier
 			
-			if (StringHelper.isEscaped(input, start)) {
+			if (StringUtility.isEscaped(input, start)) {
 				continue;
 			}
 
@@ -381,7 +381,7 @@ l:		while (true) {
 				value = env.getVariable(varName);
 
 				if (value == null) {
-					if (!StringHelper.isValidIdentifierName(varName)) {
+					if (!StringUtility.isValidIdentifierName(varName)) {
 						continue;
 					}
 					
@@ -398,8 +398,8 @@ l:		while (true) {
 			
 			if (value != null) {
 				String target = wrapped ? "${"+varInput+"}" : "$"+varInput;
-				input = StringHelper.replaceFirst(input, target, value, start);
-				i -= StringHelper.lengthDifference(target, value);
+				input = StringUtility.replaceFirst(input, target, value, start);
+				i -= StringUtility.lengthDifference(target, value);
 			}
 		}
 		
@@ -450,14 +450,14 @@ l:		while (true) {
 			
 			String match = input.substring(start, outsideEnd);
 			String inside = input.substring(insideStart, end);
-			if (inside.isEmpty() || StringHelper.isEscaped(input, start)) {
+			if (inside.isEmpty() || StringUtility.isEscaped(input, start)) {
 				continue;
 			}
 			
 			String result = executeCommand(env, inside);
 			if (result == null) continue;
 			
-			input = StringHelper.replaceFirst(input, match, result, start);
+			input = StringUtility.replaceFirst(input, match, result, start);
 		}
 		
 		return input;
@@ -482,7 +482,7 @@ l:		while (true) {
 		
 		String cmd;
 		String arg;
-		int splitter = StringHelper.indexOfWhitespace(line);
+		int splitter = StringUtility.indexOfWhitespace(line);
 		if (splitter != -1) {
 			cmd = line.substring(0, splitter).toUpperCase();
 			arg = line.substring(splitter+1).trim();
@@ -565,13 +565,13 @@ l:		while (true) {
 			
 			String match = input.substring(start, outsideEnd);
 			String inside = input.substring(insideStart, end);
-			if (inside.isEmpty() || StringHelper.isEscaped(input, start)) {
+			if (inside.isEmpty() || StringUtility.isEscaped(input, start)) {
 				continue;
 			}
 			
 			String result;
 			try {
-				inside = StringHelper.replaceUnescaped(inside, "\\-", "-");
+				inside = StringUtility.replaceUnescaped(inside, "\\-", "-");
 				double res = new DoubleEvaluator().evaluate(inside);
 				result = nf.format(res);
 			} catch (IllegalArgumentException e) {
@@ -579,10 +579,10 @@ l:		while (true) {
 			}
 			
 			// Escape minuses of expressions preceded by a whitespace
-			if (start == 0 || StringHelper.charAtSatisfies(input, start-1, Character::isWhitespace)) {
+			if (start == 0 || StringUtility.charAtSatisfies(input, start-1, Character::isWhitespace)) {
 				result = CommandArguments.escapeFlags(result);
 			}
-			input = StringHelper.replaceFirst(input, match, result, start);
+			input = StringUtility.replaceFirst(input, match, result, start);
 		}
 		
 		return input;

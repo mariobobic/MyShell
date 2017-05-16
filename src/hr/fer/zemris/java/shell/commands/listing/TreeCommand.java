@@ -13,7 +13,7 @@ import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.CommandUtility;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 
 /**
  * Walks the directory tree from the specified path and prints a whole file tree
@@ -55,9 +55,9 @@ public class TreeCommand extends VisitorCommand {
 	@Override
 	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		Path path = s == null ?
-			env.getCurrentPath() : Helper.resolveAbsolutePath(env, s);
+			env.getCurrentPath() : Utility.resolveAbsolutePath(env, s);
 		
-		Helper.requireDirectory(path);
+		Utility.requireDirectory(path);
 		
 		/* Passed all checks, start working. */
 		TreeFileVisitor treeVisitor = new TreeFileVisitor(env);

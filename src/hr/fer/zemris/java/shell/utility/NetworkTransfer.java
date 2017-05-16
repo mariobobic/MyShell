@@ -136,7 +136,7 @@ public abstract class NetworkTransfer {
 	 * signal of failure if there is not enough space on disk or a file with
 	 * directory's name already exists.
 	 * <li>If a file with the specified name already exists, the new file is
-	 * saved with the {@link Helper#firstAvailable(Path) first available} name.
+	 * saved with the {@link Utility#firstAvailable(Path) first available} name.
 	 * <li>The download starts and prints progress on standard output.
 	 * <li>After the download finishes, this method sends the last signal of
 	 * success or failure to the server.
@@ -183,8 +183,8 @@ public abstract class NetworkTransfer {
 		// Create an appropriate directory structure
 		Path path = env.getConnection().getDownloadPath().resolve(filename);
 		try {
-			Helper.requireDiskSpace(size, path);
-			Files.createDirectories(Helper.getParent(path));
+			Utility.requireDiskSpace(size, path);
+			Files.createDirectories(Utility.getParent(path));
 			outToServer.write(1); // send a signal: ready
 		} catch (NotEnoughDiskSpaceException e) {
 			outToServer.write(0); // send a signal: not ready
@@ -196,14 +196,14 @@ public abstract class NetworkTransfer {
 		}
 		
 		// Do not overwrite, find first available file name
-		path = Helper.firstAvailable(path);
+		path = Utility.firstAvailable(path);
 		
 		//////////////////////////////////////////////////
 		/////////////////// Downloading //////////////////
 		//////////////////////////////////////////////////
 		
 		Path relativeName = Paths.get(filename).resolveSibling(path.getFileName());
-		String nameAndSize = relativeName + " (" + Helper.humanReadableByteCount(size) + ")";
+		String nameAndSize = relativeName + " (" + Utility.humanReadableByteCount(size) + ")";
 		System.out.println("Downloading " + nameAndSize);
 		
 		// Prepare download
@@ -265,7 +265,7 @@ public abstract class NetworkTransfer {
 		outToClient.write(1); // send a signal: received file name
 		
 		String filename = new String(bytes).trim();
-		Path path = Helper.resolveAbsolutePath(env, filename);
+		Path path = Utility.resolveAbsolutePath(env, filename);
 		
 		// Continue upload
 		upload(path, inFromClient, outToClient, encrypto);
@@ -353,7 +353,7 @@ public abstract class NetworkTransfer {
 			//////////////////// Uploading ///////////////////
 			//////////////////////////////////////////////////
 			
-			String nameAndSize = filename + " (" + Helper.humanReadableByteCount(Files.size(file)) + ")";
+			String nameAndSize = filename + " (" + Utility.humanReadableByteCount(Files.size(file)) + ")";
 			System.out.println("Uploading " + nameAndSize);
 			
 			// Start streaming file
@@ -409,7 +409,7 @@ public abstract class NetworkTransfer {
 		 * @param outToClient output stream of the recipient
 		 */
 		public UploadFileVisitor(Path start, InputStream inFromClient, OutputStream outToClient, Crypto encrypto) {
-			this.root = Helper.getParent(start);
+			this.root = Utility.getParent(start);
 			this.inFromClient = inFromClient;
 			this.outToClient = outToClient;
 			this.encrypto = encrypto;

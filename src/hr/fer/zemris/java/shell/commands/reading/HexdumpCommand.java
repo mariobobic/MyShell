@@ -11,7 +11,7 @@ import java.util.StringJoiner;
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -59,8 +59,8 @@ public class HexdumpCommand extends AbstractCommand {
 			throw new SyntaxException();
 		}
 		
-		Path file = Helper.resolveAbsolutePath(env, s);
-		Helper.requireFile(file);
+		Path file = Utility.resolveAbsolutePath(env, s);
+		Utility.requireFile(file);
 		
 		/* Passed all checks, start working. */
 		try (BufferedInputStream in = new BufferedInputStream(Files.newInputStream(file))) {

@@ -13,8 +13,8 @@ import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
-import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.StringHelper;
+import hr.fer.zemris.java.shell.utility.Utility;
+import hr.fer.zemris.java.shell.utility.StringUtility;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -111,13 +111,13 @@ public class RenameAllCommand extends AbstractCommand {
 			throw new SyntaxException();
 		}
 		
-		String[] args = StringHelper.extractArguments(s, 2);
+		String[] args = StringUtility.extractArguments(s, 2);
 		if (args.length < 2) {
 			throw new SyntaxException();
 		}
 		
-		Path path = Helper.resolveAbsolutePath(env, args[0]);
-		Helper.requireDirectory(path);
+		Path path = Utility.resolveAbsolutePath(env, args[0]);
+		Utility.requireDirectory(path);
 		
 		if (startIndex < 0) {
 			env.writeln("The start index must be positive: " + startIndex);
@@ -147,7 +147,7 @@ public class RenameAllCommand extends AbstractCommand {
 			String newName = containsIndex ? name.replace("{i}", number) : name+number;
 			
 			Path originalFile = listOfFiles.get(i);
-			newName = newName.replace("{ext}", Helper.extension(originalFile));
+			newName = newName.replace("{ext}", Utility.extension(originalFile));
 			
 			Path renamingFile = path.resolve(newName);
 			

@@ -22,8 +22,8 @@ import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
-import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.StringHelper;
+import hr.fer.zemris.java.shell.utility.Utility;
+import hr.fer.zemris.java.shell.utility.StringUtility;
 import hr.fer.zemris.java.shell.utility.exceptions.InvalidFlagException;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
@@ -113,7 +113,7 @@ public class DiffCommand extends VisitorCommand {
 		/* Replace default values with flag values, if any. */
 		if (commandArguments.containsFlag("c", "charset")) {
 			String arg = commandArguments.getFlag("c", "charset").getArgument();
-			charset = Helper.resolveCharset(arg);
+			charset = Utility.resolveCharset(arg);
 			if (charset == null) {
 				throw new InvalidFlagException("Invalid charset: " + arg);
 			}
@@ -133,16 +133,16 @@ public class DiffCommand extends VisitorCommand {
 	@Override
 	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		/* Extract arguments and check the array length. */
-		String[] args = StringHelper.extractArguments(s);
+		String[] args = StringUtility.extractArguments(s);
 		if (args.length != 2) {
 			throw new SyntaxException();
 		}
 		
 		/* Resolve paths. */
-		Path path1 = Helper.resolveAbsolutePath(env, args[0]);
-		Path path2 = Helper.resolveAbsolutePath(env, args[1]);
-		Helper.requireExists(path1);
-		Helper.requireExists(path2);
+		Path path1 = Utility.resolveAbsolutePath(env, args[0]);
+		Path path2 = Utility.resolveAbsolutePath(env, args[1]);
+		Utility.requireExists(path1);
+		Utility.requireExists(path2);
 		
 		/* Both paths must be of same type. */
 		boolean path1IsFile = Files.isRegularFile(path1);

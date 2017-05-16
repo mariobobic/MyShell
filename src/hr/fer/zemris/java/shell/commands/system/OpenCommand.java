@@ -13,8 +13,8 @@ import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
-import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.StringHelper;
+import hr.fer.zemris.java.shell.utility.Utility;
+import hr.fer.zemris.java.shell.utility.StringUtility;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -95,9 +95,9 @@ public class OpenCommand extends AbstractCommand {
 		}
 		
 		// Fetch and check path
-		String[] args = StringHelper.extractArguments(s);
-		Path path = Helper.resolveAbsolutePath(env, args[0]);
-		Helper.requireExists(path);
+		String[] args = StringUtility.extractArguments(s);
+		Path path = Utility.resolveAbsolutePath(env, args[0]);
+		Utility.requireExists(path);
 
 		// Pick a random element, if the flag is present
 		if (random) {

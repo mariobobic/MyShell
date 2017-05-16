@@ -346,7 +346,7 @@ public class ExpanderTests {
 		String input = "This is escaped\\!!";
 
 		String expected = "This is escaped!!";
-		String actual = Helper.firstElement(Expander.expand(environment, input));
+		String actual = Utility.firstElement(Expander.expand(environment, input));
 		
 		assertEquals(expected, actual);
 	}
@@ -357,7 +357,7 @@ public class ExpanderTests {
 		String input = "\\!!\\!!";
 
 		String expected = "!!!!";
-		String actual = Helper.firstElement(Expander.expand(environment, input));
+		String actual = Utility.firstElement(Expander.expand(environment, input));
 		
 		assertEquals(expected, actual);
 	}
@@ -368,7 +368,7 @@ public class ExpanderTests {
 		String input = "\\!!!";
 
 		String expected = "\\!history"; // bash related behavior
-		String actual = Helper.firstElement(Expander.expand(environment, input));
+		String actual = Utility.firstElement(Expander.expand(environment, input));
 		
 		assertEquals(expected, actual);
 	}
@@ -379,7 +379,7 @@ public class ExpanderTests {
 		String input = "A \\\\!! class.";
 
 		String expected = "A \\history class.";
-		String actual = Helper.firstElement(Expander.expand(environment, input));
+		String actual = Utility.firstElement(Expander.expand(environment, input));
 		
 		assertEquals(expected, actual);
 	}
@@ -514,7 +514,7 @@ public class ExpanderTests {
 		String input = "\\$var1";
 		
 		String expected = "$var1";
-		String actual = Helper.firstElement(Expander.expand(environment, input));
+		String actual = Utility.firstElement(Expander.expand(environment, input));
 		
 		assertEquals(expected, actual);
 	}
@@ -526,7 +526,7 @@ public class ExpanderTests {
 		String input = "\\$var1$var2";
 		
 		String expected = "$var1value2";
-		String actual = Helper.firstElement(Expander.expand(environment, input));
+		String actual = Utility.firstElement(Expander.expand(environment, input));
 		
 		assertEquals(expected, actual);
 	}
@@ -537,7 +537,7 @@ public class ExpanderTests {
 		String input = "\\${var1}";
 		
 		String expected = "${var1}";
-		String actual = Helper.firstElement(Expander.expand(environment, input));
+		String actual = Utility.firstElement(Expander.expand(environment, input));
 		
 		assertEquals(expected, actual);
 	}
@@ -548,7 +548,7 @@ public class ExpanderTests {
 		String input = "\\$\\{var1}";
 		
 		String expected = "${var1}";
-		String actual = Helper.firstElement(Expander.expand(environment, input));
+		String actual = Utility.firstElement(Expander.expand(environment, input));
 		
 		assertEquals(expected, actual);
 	}
@@ -560,7 +560,7 @@ public class ExpanderTests {
 
 		// plain:          \$var
 		String expected = "\\$var";
-		String actual = Helper.firstElement(Expander.expand(environment, input));
+		String actual = Utility.firstElement(Expander.expand(environment, input));
 		
 		assertEquals(expected, actual);
 	}
@@ -571,7 +571,7 @@ public class ExpanderTests {
 		String input = "\\\\$var";
 		
 		String expected = "\\value";
-		String actual = Helper.firstElement(Expander.expand(environment, input));
+		String actual = Utility.firstElement(Expander.expand(environment, input));
 		
 		assertEquals(expected, actual);
 	}
@@ -647,7 +647,7 @@ public class ExpanderTests {
 		String input = "\\${var:-default}";
 
 		String expected = "${var:-default}";
-		String actual = Helper.firstElement(Expander.expand(environment, input));
+		String actual = Utility.firstElement(Expander.expand(environment, input));
 		
 		assertEquals(expected, actual);
 	}
@@ -723,7 +723,7 @@ public class ExpanderTests {
 		String input = "\\${var:=default}";
 
 		String expected = "${var:=default}";
-		String actual = Helper.firstElement(Expander.expand(environment, input));
+		String actual = Utility.firstElement(Expander.expand(environment, input));
 		
 		assertEquals(expected, actual);
 	}
@@ -735,7 +735,7 @@ public class ExpanderTests {
 		String input = "${reserved?!#$}";
 
 		String expected = "success";
-		String actual = Helper.firstElement(Expander.expand(environment, input));
+		String actual = Utility.firstElement(Expander.expand(environment, input));
 		
 		assertEquals(expected, actual);
 	}
@@ -925,7 +925,7 @@ public class ExpanderTests {
 		String input = "$(($(($a + 4))*$b % $c))";
 		
 		String expected = "3";
-		String actual = Helper.firstElement(Expander.expand(environment, input));
+		String actual = Utility.firstElement(Expander.expand(environment, input));
 		
 		assertEquals(expected, actual);
 	}
@@ -995,7 +995,7 @@ public class ExpanderTests {
 		String input = "\\$((1))";
 		
 		String expected = "$((1))";
-		String actual = Helper.firstElement(Expander.expand(environment, input));
+		String actual = Utility.firstElement(Expander.expand(environment, input));
 		
 		assertEquals(expected, actual);
 	}
@@ -1005,7 +1005,7 @@ public class ExpanderTests {
 		String input = "\\\\$((1+1))";
 		
 		String expected = "\\2";
-		String actual = Helper.firstElement(Expander.expand(environment, input));
+		String actual = Utility.firstElement(Expander.expand(environment, input));
 		
 		assertEquals(expected, actual);
 	}

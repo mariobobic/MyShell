@@ -8,7 +8,7 @@ import java.util.List;
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 
 /**
  * A command that is used for changing the current working directory. The given
@@ -52,9 +52,9 @@ public class CdCommand extends AbstractCommand {
 	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		Path path = (s == null) ?
 			env.getHomePath() :
-			Helper.resolveAbsolutePath(env, s);
+			Utility.resolveAbsolutePath(env, s);
 		
-		Helper.requireDirectory(path);
+		Utility.requireDirectory(path);
 		
 		path = path.toRealPath();
 		env.setCurrentPath(path);

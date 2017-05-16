@@ -12,7 +12,7 @@ import java.util.List;
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 
 /**
  * A command that is used for counting the amount of files and directories in a
@@ -53,9 +53,9 @@ public class CountCommand extends VisitorCommand {
 	@Override
 	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		Path path = s == null ?
-			env.getCurrentPath() : Helper.resolveAbsolutePath(env, s);
+			env.getCurrentPath() : Utility.resolveAbsolutePath(env, s);
 		
-		Helper.requireDirectory(path);
+		Utility.requireDirectory(path);
 		
 		CountFileVisitor countVisitor = new CountFileVisitor();
 		walkFileTree(path, countVisitor);

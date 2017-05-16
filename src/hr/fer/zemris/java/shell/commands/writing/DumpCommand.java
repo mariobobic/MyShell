@@ -12,9 +12,9 @@ import java.util.List;
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 import hr.fer.zemris.java.shell.utility.Progress;
-import hr.fer.zemris.java.shell.utility.StringHelper;
+import hr.fer.zemris.java.shell.utility.StringUtility;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -62,7 +62,7 @@ public class DumpCommand extends AbstractCommand {
 	
 	@Override
 	protected ShellStatus execute0(Environment env, String s) throws IOException {
-		String[] args = StringHelper.extractArguments(s);
+		String[] args = StringUtility.extractArguments(s);
 		
 		/* Consider size having a space. */
 		String sizeUnit;
@@ -79,13 +79,13 @@ public class DumpCommand extends AbstractCommand {
 		
 		long size;
 		try {
-			size = Helper.parseSize(sizeUnit);
+			size = Utility.parseSize(sizeUnit);
 		} catch (IllegalArgumentException e) {
 			throw new SyntaxException();
 		}
 
-		Path path = Helper.resolveAbsolutePath(env, pathname);
-		Helper.requireDiskSpace(size, path);
+		Path path = Utility.resolveAbsolutePath(env, pathname);
+		Utility.requireDiskSpace(size, path);
 		if (Files.isDirectory(path)) {
 			env.writeln("A directory named " + path.getFileName() + " already exists.");
 			return ShellStatus.CONTINUE;
@@ -98,7 +98,7 @@ public class DumpCommand extends AbstractCommand {
 		}
 		
 		dumpBytes(env, path, size);
-		env.writeln("Dumped " + Helper.humanReadableByteCount(size) + " in file " + path.getFileName());
+		env.writeln("Dumped " + Utility.humanReadableByteCount(size) + " in file " + path.getFileName());
 		
 		return ShellStatus.CONTINUE;
 	}

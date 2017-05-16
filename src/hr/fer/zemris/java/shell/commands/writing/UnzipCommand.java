@@ -16,9 +16,9 @@ import java.util.zip.ZipInputStream;
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 import hr.fer.zemris.java.shell.utility.Progress;
-import hr.fer.zemris.java.shell.utility.StringHelper;
+import hr.fer.zemris.java.shell.utility.StringUtility;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -68,22 +68,22 @@ public class UnzipCommand extends AbstractCommand {
 			throw new SyntaxException();
 		}
 		
-		String[] args = StringHelper.extractArguments(s);
+		String[] args = StringUtility.extractArguments(s);
 		if (args.length > 2) {
 			throw new SyntaxException();
 		}
 		
-		Path source = Helper.resolveAbsolutePath(env, args[0]);
+		Path source = Utility.resolveAbsolutePath(env, args[0]);
 		Path target;
 		try {
-			target = Helper.resolveAbsolutePath(env, args[1]);
+			target = Utility.resolveAbsolutePath(env, args[1]);
 		} catch (ArrayIndexOutOfBoundsException e) {
-			String newName = Helper.getFileName(source).toString().replaceFirst(Helper.ZIP_FILE_EXT+"$", "");
+			String newName = Utility.getFileName(source).toString().replaceFirst(Utility.ZIP_FILE_EXT+"$", "");
 			target = source.resolveSibling(newName);
-			target = Helper.firstAvailable(target);
+			target = Utility.firstAvailable(target);
 		}
 
-		Helper.requireExists(source);
+		Utility.requireExists(source);
 		if (Files.isRegularFile(target)) {
 			env.writeln("The target path must not be a file.");
 			return ShellStatus.CONTINUE;

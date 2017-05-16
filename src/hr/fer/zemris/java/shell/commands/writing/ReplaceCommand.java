@@ -13,8 +13,8 @@ import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
-import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.StringHelper;
+import hr.fer.zemris.java.shell.utility.Utility;
+import hr.fer.zemris.java.shell.utility.StringUtility;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -92,7 +92,7 @@ public class ReplaceCommand extends AbstractCommand {
 			throw new SyntaxException();
 		}
 		
-		String[] args = StringHelper.extractArguments(s);
+		String[] args = StringUtility.extractArguments(s);
 		if (args.length < 2 || args.length > 3) {
 			throw new SyntaxException();
 		}
@@ -101,7 +101,7 @@ public class ReplaceCommand extends AbstractCommand {
 		String target;
 		String replacement;
 		if (args.length == 3) {
-			path = Helper.resolveAbsolutePath(env, args[0]);
+			path = Utility.resolveAbsolutePath(env, args[0]);
 			target = args[1];
 			replacement = args[2];
 		} else {
@@ -109,7 +109,7 @@ public class ReplaceCommand extends AbstractCommand {
 			target = args[0];
 			replacement = args[1];
 		}
-		Helper.requireExists(path);
+		Utility.requireExists(path);
 		
 		/* If sequences are equal, you are done. */
 		if (target.equals(replacement)) {
@@ -137,7 +137,7 @@ public class ReplaceCommand extends AbstractCommand {
 			
 			Path dest = file.resolveSibling(newName);
 			if (!name.equalsIgnoreCase(newName)) {
-				dest = Helper.firstAvailable(dest);
+				dest = Utility.firstAvailable(dest);
 			}
 			
 			/* Atomic move serves just for case-sensitive rename. */

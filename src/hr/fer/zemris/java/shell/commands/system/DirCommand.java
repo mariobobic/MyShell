@@ -14,7 +14,7 @@ import java.util.List;
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 
 /**
  * A command that is used for writing out the current contents of a directory in
@@ -63,9 +63,9 @@ public class DirCommand extends AbstractCommand {
 	@Override
 	protected ShellStatus execute0(Environment env, String s) {
 		Path dir = s == null ?
-			env.getCurrentPath() : Helper.resolveAbsolutePath(env, s);
+			env.getCurrentPath() : Utility.resolveAbsolutePath(env, s);
 		
-		Helper.requireDirectory(dir);
+		Utility.requireDirectory(dir);
 		
 		/* Clear previously marked paths. */
 		env.clearMarks();

@@ -14,7 +14,7 @@ import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -95,8 +95,8 @@ public class ExtractCommand extends VisitorCommand {
 			throw new SyntaxException();
 		}
 		
-		Path path = Helper.resolveAbsolutePath(env, s);
-		Helper.requireDirectory(path);
+		Path path = Utility.resolveAbsolutePath(env, s);
+		Utility.requireDirectory(path);
 		
 		ExtractFileVisitor extractVisitor = new ExtractFileVisitor(env, path);
 		walkFileTree(path, extractVisitor);
@@ -140,7 +140,7 @@ public class ExtractCommand extends VisitorCommand {
 			if (Files.exists(target)) {
 				String relativized = root.relativize(file).toString();
 				String newName = relativized.replace(File.separator, "_");
-				target = Helper.firstAvailable(root.resolve(newName));
+				target = Utility.firstAvailable(root.resolve(newName));
 			}
 
 			Files.move(file, target);

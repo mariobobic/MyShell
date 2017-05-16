@@ -18,9 +18,9 @@ import java.util.zip.ZipOutputStream;
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 import hr.fer.zemris.java.shell.utility.Progress;
-import hr.fer.zemris.java.shell.utility.StringHelper;
+import hr.fer.zemris.java.shell.utility.StringUtility;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -70,20 +70,20 @@ public class ZipCommand extends VisitorCommand {
 			throw new SyntaxException();
 		}
 		
-		String[] args = StringHelper.extractArguments(s);
+		String[] args = StringUtility.extractArguments(s);
 		if (args.length > 2) {
 			throw new SyntaxException();
 		}
 		
-		Path source = Helper.resolveAbsolutePath(env, args[0]);
+		Path source = Utility.resolveAbsolutePath(env, args[0]);
 		Path target;
 		try {
-			target = Helper.resolveAbsolutePath(env, args[1]);
+			target = Utility.resolveAbsolutePath(env, args[1]);
 		} catch (ArrayIndexOutOfBoundsException e) {
-			target = source.resolveSibling(Helper.getFileName(source) + Helper.ZIP_FILE_EXT);
+			target = source.resolveSibling(Utility.getFileName(source) + Utility.ZIP_FILE_EXT);
 		}
 		
-		Helper.requireExists(source);
+		Utility.requireExists(source);
 		
 		if (source.equals(target)) {
 			env.writeln("Zip file name must be different from original file name.");
@@ -91,7 +91,7 @@ public class ZipCommand extends VisitorCommand {
 		}
 		
 		if (Files.isDirectory(target)) {
-			target = target.resolve(source.getFileName() + Helper.ZIP_FILE_EXT);
+			target = target.resolve(source.getFileName() + Utility.ZIP_FILE_EXT);
 		}
 		
 		if (Files.exists(target)) {
@@ -162,7 +162,7 @@ public class ZipCommand extends VisitorCommand {
 		 */
 		public ZipFileVisitor(Environment environment, Path start, ZipOutputStream zos) {
 			this.environment = environment;
-			this.start = Helper.getParent(start);
+			this.start = Utility.getParent(start);
 			this.zos = zos;
 		}
 

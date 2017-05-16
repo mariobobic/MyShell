@@ -14,8 +14,8 @@ import hr.fer.zemris.java.shell.MyShell;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.interfaces.ShellCommand;
-import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.StringHelper;
+import hr.fer.zemris.java.shell.utility.Utility;
+import hr.fer.zemris.java.shell.utility.StringUtility;
 import hr.fer.zemris.java.shell.utility.exceptions.NotEnoughDiskSpaceException;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
@@ -65,14 +65,14 @@ public class MoveCommand extends AbstractCommand {
 
 	@Override
 	protected ShellStatus execute0(Environment env, String s) throws IOException {
-		String[] args = StringHelper.extractArguments(s);
+		String[] args = StringUtility.extractArguments(s);
 		if (args.length != 2) {
 			throw new SyntaxException();
 		}
 		
-		Path source = Helper.resolveAbsolutePath(env, args[0]);
-		Path target = Helper.resolveAbsolutePath(env, args[1]);
-		Helper.requireExists(source);
+		Path source = Utility.resolveAbsolutePath(env, args[0]);
+		Path target = Utility.resolveAbsolutePath(env, args[1]);
+		Utility.requireExists(source);
 		
 		moveFile(source, target, env);
 		
@@ -102,10 +102,10 @@ public class MoveCommand extends AbstractCommand {
 		// If source and target have different root directory, the move operation wouldn't work
 		if (!source.getRoot().equals(target.getRoot())) {
 			ShellCommand copyCmd = MyShell.getCommand(getStaticName(CopyCommand.class));
-			copyCmd.execute(env, "-s " + StringHelper.quote(source, target));
+			copyCmd.execute(env, "-s " + StringUtility.quote(source, target));
 			
 			ShellCommand rmCmd = MyShell.getCommand(getStaticName(RmCommand.class));
-			rmCmd.execute(env, "-fs " + StringHelper.quote(source));
+			rmCmd.execute(env, "-fs " + StringUtility.quote(source));
 
 			env.writeln("Moved: " + target);
 			return;

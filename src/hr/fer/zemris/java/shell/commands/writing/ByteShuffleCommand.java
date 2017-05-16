@@ -14,9 +14,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 import hr.fer.zemris.java.shell.utility.Progress;
-import hr.fer.zemris.java.shell.utility.StringHelper;
+import hr.fer.zemris.java.shell.utility.StringUtility;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -62,10 +62,10 @@ public class ByteShuffleCommand extends AbstractCommand {
 			throw new SyntaxException();
 		}
 		
-		String[] args = StringHelper.extractArguments(s);
+		String[] args = StringUtility.extractArguments(s);
 		
-		Path file = Helper.resolveAbsolutePath(env, args[0]);
-		Helper.requireFile(file);
+		Path file = Utility.resolveAbsolutePath(env, args[0]);
+		Utility.requireFile(file);
 		
 		// TODO Flag this up!
 		int offset;
@@ -87,7 +87,7 @@ public class ByteShuffleCommand extends AbstractCommand {
 		}
 
 		Path tempFile = Files.createTempFile(file.getParent(), null, null);
-		Helper.requireDiskSpace(Files.size(file), tempFile);
+		Utility.requireDiskSpace(Files.size(file), tempFile);
 		
 		Progress progress = new Progress(env, Files.size(file)+length, true);
 		try (
@@ -118,7 +118,7 @@ public class ByteShuffleCommand extends AbstractCommand {
 		}
 
 		/* Rename the temp file. */
-		Path newFile = Helper.firstAvailable(file);
+		Path newFile = Utility.firstAvailable(file);
 		Files.move(tempFile, newFile);
 		
 		return ShellStatus.CONTINUE;

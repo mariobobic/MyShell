@@ -11,7 +11,7 @@ import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Connection;
 import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 import hr.fer.zemris.java.shell.utility.NetworkTransfer;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
@@ -61,8 +61,8 @@ public class DownloadCommand extends AbstractCommand {
 			throw new SyntaxException();
 		}
 		
-		Path path = Helper.resolveAbsolutePath(env, s);
-		Helper.requireExists(path);
+		Path path = Utility.resolveAbsolutePath(env, s);
+		Utility.requireExists(path);
 		
 		// Passed all checks, good to go
 		try {

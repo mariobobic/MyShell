@@ -20,7 +20,7 @@ import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 
 /**
  * A command that is used for writing out the current contents of a directory.
@@ -119,9 +119,9 @@ public class LsCommand extends AbstractCommand {
 	@Override
 	protected ShellStatus execute0(Environment env, String s) throws IOException {
 		Path dir = s == null ?
-			env.getCurrentPath() : Helper.resolveAbsolutePath(env, s);
+			env.getCurrentPath() : Utility.resolveAbsolutePath(env, s);
 		
-		Helper.requireDirectory(dir);
+		Utility.requireDirectory(dir);
 		
 		/* Clear previously marked paths. */
 		env.clearMarks();
@@ -197,7 +197,7 @@ public class LsCommand extends AbstractCommand {
 		long size = directorySize ? calculateSize(path) : Files.size(path);
 		sb.append(!humanReadable ?
 			String.format(" %11d" , size) :
-			String.format(" %11s", Helper.humanReadableByteCount(size))
+			String.format(" %11s", Utility.humanReadableByteCount(size))
 		);
 		
 		/* Third column */

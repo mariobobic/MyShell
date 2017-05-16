@@ -32,9 +32,9 @@ import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.commands.system.LsCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 import hr.fer.zemris.java.shell.utility.RequestContext;
-import hr.fer.zemris.java.shell.utility.StringHelper;
+import hr.fer.zemris.java.shell.utility.StringUtility;
 
 /**
  * A command that is used to host a HTTP server. This command accepts a
@@ -146,7 +146,7 @@ public class HttpServerCommand extends VisitorCommand {
 	
 	@Override
 	protected ShellStatus execute0(Environment env, String s) {
-		String[] args = StringHelper.extractArguments(s, 2);
+		String[] args = StringUtility.extractArguments(s, 2);
 		if (args.length == 0) {
 			if (serversMap.isEmpty()) {
 				env.writeln("There are no HTTP servers hosted on this machine.");
@@ -228,8 +228,8 @@ public class HttpServerCommand extends VisitorCommand {
 		env.writeln("Started HTTP server in " + path + " ("+FORMATTER.format(LocalDateTime.now())+")");
 		
 		/* Print out a message that the connection is ready. */
-		env.write("Connect to " + Helper.getLocalIP() + ":" + port);
-		env.writeln(" / " + Helper.getPublicIP() + ":" + port);
+		env.write("Connect to " + Utility.getLocalIP() + ":" + port);
+		env.writeln(" / " + Utility.getPublicIP() + ":" + port);
 		return true;
 	}
 	
@@ -266,10 +266,10 @@ public class HttpServerCommand extends VisitorCommand {
 			}
 			
 			// Else this argument should be a path
-			path = Helper.resolveAbsolutePath(env, args[1]);
+			path = Utility.resolveAbsolutePath(env, args[1]);
 		}
 		
-		Helper.requireDirectory(path);
+		Utility.requireDirectory(path);
 		if (!serversMap.containsKey(path)) {
 			env.writeln("There is no HTTP server running for path " + path);
 			return false;
@@ -498,7 +498,7 @@ public class HttpServerCommand extends VisitorCommand {
 				}
 				
 				// Check if requestedPath is hidden (if showHidden flag is true this check passes)
-				if (!showHidden && Helper.isHidden(requestedPath) && !requestedPath.equals(documentRoot)) {
+				if (!showHidden && Utility.isHidden(requestedPath) && !requestedPath.equals(documentRoot)) {
 					sendError(404, "Not found");
 					return;
 				}
@@ -660,7 +660,7 @@ public class HttpServerCommand extends VisitorCommand {
 			// TODO diacritics break the HTML?
 			StringBuilder sb = new StringBuilder("\r\n");
 			for (Path child : children) {
-				if ((!showHidden && Helper.isHidden(child)) || isExcluded(child)) continue;
+				if ((!showHidden && Utility.isHidden(child)) || isExcluded(child)) continue;
 				
 				String url = encodePath(documentRoot.relativize(child).normalize());
 				String str = LsCommand.getFileString(child, true, false);
@@ -668,7 +668,7 @@ public class HttpServerCommand extends VisitorCommand {
 					.append(str).append("</a>").append("\r\n");
 			}
 			
-			Path root = Helper.getFileName(dir);
+			Path root = Utility.getFileName(dir);
 			return (
 			 "<html>\r\n"+
 			 "  <head><title>Contents of "+root+"</title>"+CSS+"</head>\r\n"+

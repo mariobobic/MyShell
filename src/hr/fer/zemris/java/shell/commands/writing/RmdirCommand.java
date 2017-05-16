@@ -9,7 +9,7 @@ import java.util.List;
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -51,7 +51,7 @@ public class RmdirCommand extends AbstractCommand {
 			throw new SyntaxException();
 		}
 		
-		Path dir = Helper.resolveAbsolutePath(env, s);
+		Path dir = Utility.resolveAbsolutePath(env, s);
 		if (!Files.isDirectory(dir)){
 			env.writeln(dir.getFileName() + " is not a directory.");
 		} else {

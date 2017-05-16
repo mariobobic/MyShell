@@ -32,7 +32,7 @@ import hr.fer.zemris.java.shell.utility.exceptions.NotEnoughDiskSpaceException;
  *
  * @author Mario Bobic
  */
-public abstract class Helper {
+public abstract class Utility {
 
 	/** Extension used for encrypted files. */
 	public static final String CRYPT_FILE_EXT = ".crypt";
@@ -46,7 +46,7 @@ public abstract class Helper {
 	/**
 	 * Disable instantiation or inheritance.
 	 */
-	private Helper() {
+	private Utility() {
 	}
 	
 	/**
@@ -68,7 +68,7 @@ public abstract class Helper {
 	public static Path resolveAbsolutePath(Environment env, String str) {
 		/* If the entered argument is parsable as an integer,
 		 * see if a path is marked with that number. */
-		if (Helper.isInteger(str)) {
+		if (Utility.isInteger(str)) {
 			int num = Integer.parseInt(str);
 			Path path = env.getMarked(num);
 			if (path != null) return path;

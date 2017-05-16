@@ -13,7 +13,7 @@ import java.util.List;
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.StringHelper;
+import hr.fer.zemris.java.shell.utility.StringUtility;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -98,7 +98,7 @@ public class FilterCommand extends VisitorCommand {
 		 */
 		public FilterFileVisitor(Environment environment, String pattern) {
 			this.environment = environment;
-			this.patternParts = StringHelper.splitPattern(pattern.trim().toUpperCase());
+			this.patternParts = StringUtility.splitPattern(pattern.trim().toUpperCase());
 		}
 		
 		@Override
@@ -136,7 +136,7 @@ public class FilterCommand extends VisitorCommand {
 		private void printMatch(Path path) {
 			String fileName = path.getFileName().toString().toUpperCase();
 			
-			if (StringHelper.matches(fileName, patternParts)) {
+			if (StringUtility.matches(fileName, patternParts)) {
 				markAndPrintPath(environment, path);
 			}
 		}
@@ -160,7 +160,7 @@ public class FilterCommand extends VisitorCommand {
 		 * @param pattern a pattern that may contain the asterisk character
 		 * @return true if {@code name} matches the {@code pattern}. False otherwise
 		 * @deprecated this method can have only 2 parts of the pattern. Use
-		 *             {@link StringHelper#matches(String, String)} instead
+		 *             {@link StringUtility#matches(String, String)} instead
 		 */
 		@Deprecated
 		@SuppressWarnings("unused")

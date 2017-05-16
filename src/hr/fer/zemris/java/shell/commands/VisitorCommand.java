@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 import hr.fer.zemris.java.shell.utility.exceptions.InvalidFlagException;
 
 /**
@@ -147,7 +147,7 @@ public abstract class VisitorCommand extends AbstractCommand {
 		if (commandArguments.containsFlag("e", "exclude")) {
 			List<String> args = commandArguments.getFlag("e", "exclude").getArguments();
 			excludes = args.stream()
-				.map(str -> Helper.resolveAbsolutePath(env, str))
+				.map(str -> Utility.resolveAbsolutePath(env, str))
 				.collect(Collectors.toSet());
 			
 			/* If excluding paths are set, but one does not exist. */

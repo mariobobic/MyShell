@@ -21,8 +21,8 @@ import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
-import hr.fer.zemris.java.shell.utility.Helper;
-import hr.fer.zemris.java.shell.utility.StringHelper;
+import hr.fer.zemris.java.shell.utility.Utility;
+import hr.fer.zemris.java.shell.utility.StringUtility;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
@@ -136,7 +136,7 @@ public class FindCommand extends VisitorCommand {
 
 		/* Possible 1 or 2 arguments, where the second is a pattern
 		 * that may contain spaces and quotation marks. */
-		String[] args = StringHelper.extractArguments(s, 2);
+		String[] args = StringUtility.extractArguments(s, 2);
 
 		/* Set path and filter pattern. */
 		Path path;
@@ -146,8 +146,8 @@ public class FindCommand extends VisitorCommand {
 			path = env.getCurrentPath();
 			filter = args[0];
 		} else if (args.length == 2) {
-			path = Helper.resolveAbsolutePath(env, args[0]);
-			Helper.requireExists(path);
+			path = Utility.resolveAbsolutePath(env, args[0]);
+			Utility.requireExists(path);
 			filter = args[1];
 		} else {
 			throw new SyntaxException();
@@ -239,7 +239,7 @@ public class FindCommand extends VisitorCommand {
 	/**
 	 * Represents a pattern that can be given either as a {@code String} or a
 	 * {@code Pattern}. If a string is given, it is decompiled to pattern parts
-	 * using the {@link StringHelper#splitPattern(String)} method. Else the
+	 * using the {@link StringUtility#splitPattern(String)} method. Else the
 	 * pattern is already a compiled representation of a regular expression.
 	 * <p>
 	 * This class contains a {@link #matches(String)} method that matches the
@@ -262,7 +262,7 @@ public class FindCommand extends VisitorCommand {
 		 * @param pattern a string pattern possibly containing asterisks
 		 */
 		public MyPattern(String pattern) {
-			patternParts = StringHelper.splitPattern(pattern.toUpperCase());
+			patternParts = StringUtility.splitPattern(pattern.toUpperCase());
 		}
 
 		/**
@@ -283,7 +283,7 @@ public class FindCommand extends VisitorCommand {
 		 */
 		public boolean matches(String input) {
 			if (patternParts != null) {
-				return StringHelper.matches(input.toUpperCase(), patternParts);
+				return StringUtility.matches(input.toUpperCase(), patternParts);
 			} else {
 				return regexPattern.matcher(input).matches();
 			}
@@ -325,7 +325,7 @@ public class FindCommand extends VisitorCommand {
 			this.environment = environment;
 			this.start = start;
 			this.pattern = pattern;
-			this.limitStr = Helper.humanReadableByteCount(sizeLimit);
+			this.limitStr = Utility.humanReadableByteCount(sizeLimit);
 		}
 
 		/**
@@ -370,7 +370,7 @@ public class FindCommand extends VisitorCommand {
 					Path relativeFile = start.relativize(file);
 					formatln(environment, "   %s (%s)",
 						relativeFile,
-						Helper.humanReadableByteCount(Files.size(file))
+						Utility.humanReadableByteCount(Files.size(file))
 					);
 				}
 

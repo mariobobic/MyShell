@@ -17,9 +17,9 @@ import java.util.List;
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 import hr.fer.zemris.java.shell.utility.Progress;
-import hr.fer.zemris.java.shell.utility.StringHelper;
+import hr.fer.zemris.java.shell.utility.StringUtility;
 import hr.fer.zemris.java.shell.utility.exceptions.NotEnoughDiskSpaceException;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
@@ -74,14 +74,14 @@ public class CopyCommand extends VisitorCommand {
 			throw new SyntaxException();
 		}
 		
-		String[] args = StringHelper.extractArguments(s);
+		String[] args = StringUtility.extractArguments(s);
 		if (args.length != 2) {
 			throw new SyntaxException();
 		}
 		
-		Path source = Helper.resolveAbsolutePath(env, args[0]);
-		Path target = Helper.resolveAbsolutePath(env, args[1]);
-		Helper.requireExists(source);
+		Path source = Utility.resolveAbsolutePath(env, args[0]);
+		Path target = Utility.resolveAbsolutePath(env, args[1]);
+		Utility.requireExists(source);
 		
 		/* Both paths must be of same type. */
 		if (Files.isDirectory(source) && Files.isRegularFile(target)) {
@@ -156,7 +156,7 @@ public class CopyCommand extends VisitorCommand {
 	 * @throws IOException if an I/O error occurs
 	 */
 	private static void createNewFile(Environment env, Path source, Path target) throws IOException {
-		Helper.requireDiskSpace(Files.size(source), target);
+		Utility.requireDiskSpace(Files.size(source), target);
 		
 		Progress progress = new Progress(env, Files.size(source), true);
 		try (

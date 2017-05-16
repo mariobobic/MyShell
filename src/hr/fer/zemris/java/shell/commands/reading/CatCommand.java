@@ -14,7 +14,7 @@ import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 import hr.fer.zemris.java.shell.utility.exceptions.InvalidFlagException;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
@@ -84,7 +84,7 @@ public class CatCommand extends AbstractCommand {
 		/* Replace default values with flag values, if any. */
 		if (commandArguments.containsFlag("c", "charset")) {
 			String arg = commandArguments.getFlag("c", "charset").getArgument();
-			charset = Helper.resolveCharset(arg);
+			charset = Utility.resolveCharset(arg);
 			if (charset == null) {
 				throw new InvalidFlagException("Invalid charset: " + arg);
 			}
@@ -99,8 +99,8 @@ public class CatCommand extends AbstractCommand {
 			throw new SyntaxException();
 		}
 		
-		Path file = Helper.resolveAbsolutePath(env, s);
-		Helper.requireFile(file);
+		Path file = Utility.resolveAbsolutePath(env, s);
+		Utility.requireFile(file);
 		
 		/* Passed all checks, start working. */
 		try (BufferedReader br = new BufferedReader(

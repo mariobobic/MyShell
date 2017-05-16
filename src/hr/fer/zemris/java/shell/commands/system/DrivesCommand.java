@@ -14,7 +14,7 @@ import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
-import hr.fer.zemris.java.shell.utility.Helper;
+import hr.fer.zemris.java.shell.utility.Utility;
 
 /**
  * Lists names of available disk drives for the Java Virtual Machine. A single
@@ -90,8 +90,8 @@ public class DrivesCommand extends AbstractCommand {
 		        FileStore store = Files.getFileStore(root);
 		        
 		        formatln(env, "%s - available=%s, total=%s", root,
-		        	humanReadable ? Helper.humanReadableByteCount(store.getUsableSpace()) : store.getUsableSpace(),
-		        	humanReadable ? Helper.humanReadableByteCount(store.getTotalSpace())  : store.getTotalSpace()
+		        	humanReadable ? Utility.humanReadableByteCount(store.getUsableSpace()) : store.getUsableSpace(),
+		        	humanReadable ? Utility.humanReadableByteCount(store.getTotalSpace())  : store.getTotalSpace()
 		        );
 			} catch (IOException e) {
 				env.writeln(root + " - fetching information failed");
