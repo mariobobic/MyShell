@@ -1,6 +1,10 @@
 package hr.fer.zemris.java.shell.utility;
 
-import static org.junit.Assert.*;
+import hr.fer.zemris.java.shell.MyShell.EnvironmentImpl;
+import hr.fer.zemris.java.shell.utility.exceptions.IllegalPathException;
+import hr.fer.zemris.java.shell.utility.exceptions.NotEnoughDiskSpaceException;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -12,12 +16,12 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
-import hr.fer.zemris.java.shell.MyShell.EnvironmentImpl;
-import hr.fer.zemris.java.shell.utility.exceptions.IllegalPathException;
-import hr.fer.zemris.java.shell.utility.exceptions.NotEnoughDiskSpaceException;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests the functionality of {@link Utility} utility class.

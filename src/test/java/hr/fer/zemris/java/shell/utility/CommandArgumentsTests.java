@@ -1,14 +1,16 @@
 package hr.fer.zemris.java.shell.utility;
 
-import static org.junit.Assert.*;
+import hr.fer.zemris.java.shell.utility.CommandArguments.Flag;
+import hr.fer.zemris.java.shell.utility.exceptions.InvalidFlagException;
+import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Test;
-
-import hr.fer.zemris.java.shell.utility.CommandArguments.Flag;
-import hr.fer.zemris.java.shell.utility.exceptions.InvalidFlagException;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests the functionality of {@link CommandArguments} utility class.

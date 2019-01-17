@@ -20,6 +20,14 @@ $RECYCLE.BIN/
 # Eclipse folders
 .settings
 bin
+.classpath
+.project
+
+# IntelliJ stuff
+.idea/
+target/
+out/
+*.iml
 
 # =========================
 # Operating System Files

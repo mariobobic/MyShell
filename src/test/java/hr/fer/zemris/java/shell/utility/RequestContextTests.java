@@ -1,7 +1,7 @@
 package hr.fer.zemris.java.shell.utility;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import hr.fer.zemris.java.shell.utility.RequestContext.RCCookie;
+import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -10,9 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.junit.Test;
-
-import hr.fer.zemris.java.shell.utility.RequestContext.RCCookie;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests the functionality of {@link RequestContext} utility class.

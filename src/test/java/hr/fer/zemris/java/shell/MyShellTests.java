@@ -1,10 +1,9 @@
 package hr.fer.zemris.java.shell;
 
-import static org.junit.Assert.assertNotNull;
-
+import hr.fer.zemris.java.shell.MyShell.EnvironmentImpl;
 import org.junit.Test;
 
-import hr.fer.zemris.java.shell.MyShell.EnvironmentImpl;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Tests the functionality of {@link MyShell} class.
