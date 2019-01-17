@@ -54,6 +54,8 @@ public class DiffCommand extends VisitorCommand {
     private boolean all;
     /** Indicates if files that do not exists in second path should be printed. */
     private boolean noExist;
+    /** Indicates if only directory structure differences should be printer. */
+    private boolean structure;
 
     /**
      * Constructs a new command object of type {@code DiffCommand}.
@@ -82,6 +84,10 @@ public class DiffCommand extends VisitorCommand {
         desc.add("Paths must be either both files or both directories.");
         desc.add("Printing differences of directories works on files with same name and relative "
                 + "position with respect to the specified 'root' directory and same name.");
+        desc.add("The structure flag compares two directory structures and prints out their differences, where "
+                + "only the path specified first is used as reference for comparing. "
+                + "The second path is not visited, therefore files that exist in path2, but not "
+                + "in path1 are not detected. Reverse path order in this case.");
         return desc;
     }
 
@@ -97,6 +103,7 @@ public class DiffCommand extends VisitorCommand {
         desc.add(new FlagDescription("x", null, null, "Print file names that exist only in the first directory tree."));
         desc.add(new FlagDescription("a", "all", null, "Print whole document with differences highlighted."));
         desc.add(new FlagDescription("c", "charset", "charset", "Specify the charset to be used."));
+        desc.add(new FlagDescription("t", "structure", null, "Show only differences in directory structure."));
         return desc;
     }
 
@@ -106,6 +113,7 @@ public class DiffCommand extends VisitorCommand {
         charset = StandardCharsets.UTF_8;
         all = false;
         noExist = false;
+        structure = false;
 
         /* Compile! */
         s = commandArguments.compile(s);
@@ -125,6 +133,10 @@ public class DiffCommand extends VisitorCommand {
 
         if (commandArguments.containsFlag("x")) {
             noExist = true;
+        }
+
+        if (commandArguments.containsFlag("t", "structure")) {
+            structure = true;
         }
 
         return super.compileFlags(env, s);
@@ -304,11 +316,13 @@ public class DiffCommand extends VisitorCommand {
             Path otherFile = otherRoot.resolve(relative);
 
             if (Files.exists(otherFile)) {
-                boolean success = processFiles(environment, file, otherFile, charset, all);
-                if (!success) {
-                    fails.put(file, otherFile);
+                if (!structure) {
+                    boolean success = processFiles(environment, file, otherFile, charset, all);
+                    if (!success) {
+                        fails.put(file, otherFile);
+                    }
                 }
-            } else if (noExist) {
+            } else if (noExist || structure) {
                 formatln(environment, "Exists in %s but not in %s: %s",
                     root.getFileName(), otherRoot.getFileName(), relative);
             }
