@@ -14,21 +14,21 @@ import java.io.IOException;
  */
 // http://stackoverflow.com/questions/7704405/how-do-i-make-my-java-application-open-a-console-terminal-window
 public class JarLauncher {
-	
-	/**
-	 * Program entry point.
-	 * 
-	 * @param args not used
-	 * @throws IOException if an I/O error occurs
-	 */
-	public static void main(String[] args) throws IOException {
-		Console console = System.console();
 
-		if (console == null && !GraphicsEnvironment.isHeadless()) {
-			String filename = JarLauncher.class.getProtectionDomain().getCodeSource().getLocation().toString().substring(6);
-			Runtime.getRuntime().exec(new String[] {"cmd", "/c", "start", "cmd", "/k", "java -jar \"" + filename + "\""});
-		} else {
-			MyShell.main(new String[0]);
-		}
-	}
+    /**
+     * Program entry point.
+     *
+     * @param args not used
+     * @throws IOException if an I/O error occurs
+     */
+    public static void main(String[] args) throws IOException {
+        Console console = System.console();
+
+        if (console == null && !GraphicsEnvironment.isHeadless()) {
+            String filename = JarLauncher.class.getProtectionDomain().getCodeSource().getLocation().toString().substring(6);
+            Runtime.getRuntime().exec(new String[] {"cmd", "/c", "start", "cmd", "/k", "java -jar \"" + filename + "\""});
+        } else {
+            MyShell.main(new String[0]);
+        }
+    }
 }

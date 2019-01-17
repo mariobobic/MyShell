@@ -14,34 +14,34 @@ import hr.fer.zemris.java.shell.interfaces.Environment;
  */
 public class ExitCommand extends AbstractCommand {
 
-	/**
-	 * Constructs a new command object of type {@code ExitCommand}.
-	 */
-	public ExitCommand() {
-		super("EXIT", createCommandDescription());
-	}
+    /**
+     * Constructs a new command object of type {@code ExitCommand}.
+     */
+    public ExitCommand() {
+        super("EXIT", createCommandDescription());
+    }
 
-	@Override
-	public String getCommandSyntax() {
-		return "";
-	}
-	
-	/**
-	 * Creates a list of strings where each string represents a new line of this
-	 * command's description. This method is generates description exclusively
-	 * for the command that this class represents.
-	 * 
-	 * @return a list of strings that represents description
-	 */
-	private static List<String> createCommandDescription() {
-		List<String> desc = new ArrayList<>();
-		desc.add("Exits the MyShell program.");
-		return desc;
-	}
+    @Override
+    public String getCommandSyntax() {
+        return "";
+    }
 
-	@Override
-	protected ShellStatus execute0(Environment env, String s) {
-		return ShellStatus.TERMINATE;
-	}
+    /**
+     * Creates a list of strings where each string represents a new line of this
+     * command's description. This method is generates description exclusively
+     * for the command that this class represents.
+     *
+     * @return a list of strings that represents description
+     */
+    private static List<String> createCommandDescription() {
+        List<String> desc = new ArrayList<>();
+        desc.add("Exits the MyShell program.");
+        return desc;
+    }
+
+    @Override
+    protected ShellStatus execute0(Environment env, String s) {
+        return ShellStatus.TERMINATE;
+    }
 
 }

@@ -25,178 +25,178 @@ import hr.fer.zemris.java.shell.interfaces.Environment;
  * @author Mario Bobic
  */
 public class Progress implements Runnable {
-	
-	/** Scheduled executor for running tasks. */
-	private ScheduledExecutorService scheduledExecutor =
-		Executors.newSingleThreadScheduledExecutor();
-	
-	/** Time this job was constructed. */
-	private final long startTime = System.nanoTime();
-	
-	/** An environment. */
-	private Environment environment;
-	/** Total length to be processed. */
-	private final long total;
-	/** Currently processed length. */
-	private long current;
-	/** Total size to be processed converted to a human readable string. */
-	private final String totalStr;
 
-	/** Recently elapsed time. */
-	private long recentStartTime = startTime;
-	/** Recently processed length. */
-	private long recent;
-	
-	/** Indicates if the progress tracker has been started. */
-	private boolean started;
-	/** Indicates if start and stop should be called automatically. */
-	private boolean auto;
-	
-	/**
-	 * Constructs an instance of {@code Progress} with the specified arguments.
-	 *
-	 * @param env an environment
-	 * @param total total size to be processed
-	 */
-	public Progress(Environment env, long total) {
-		this(env, total, false);
-	}
-	
-	/**
-	 * Constructs an instance of {@code Progress} with the specified arguments.
-	 * <p>
-	 * If <tt>auto</tt> is set to <strong>true</strong>, the {@link #start()}
-	 * method is called automatically upon object construction and
-	 * {@link #stop()} when the processing finishes.
-	 *
-	 * @param env an environment, or {@code null} if stdout should be used
-	 * @param total total size to be processed
-	 * @param auto indicates if start and stop should be called automatically
-	 */
-	public Progress(Environment env, long total, boolean auto) {
-		this.environment = env;
-		this.total = total;
-		this.auto = auto;
-		
-		totalStr = Utility.humanReadableByteCount(total);
-		
-		if (auto) {
-			start();
-		}
-	}
+    /** Scheduled executor for running tasks. */
+    private ScheduledExecutorService scheduledExecutor =
+        Executors.newSingleThreadScheduledExecutor();
 
-	/**
-	 * Creates and executes a periodic action that becomes enabled first after a
-	 * second, and subsequently with 5 seconds between the termination of one
-	 * printing execution and the commencement of the next. The task can be
-	 * terminated by calling the {@link #stop()} method.
-	 */
-	public void start() {
-		if (!started) {
-			started = true;
-			scheduledExecutor.scheduleWithFixedDelay(this, 5, 5, TimeUnit.SECONDS);
-		}
-	}
-	
-	/**
-	 * Initiates an orderly shutdown in which the progress tracker is stopped.
-	 * Invocation has no additional effect if already stopped.
-	 */
-	public void stop() {
-		if (started) {
-			scheduledExecutor.shutdown();
-			started = false;
-		}
-	}
-	
-	/**
-	 * Adds the specified <tt>amount</tt> to the currently processed length.
-	 * <p>
-	 * If <tt>auto</tt> was specified and this call results in current reaching
-	 * the total length, progress tracking will automatically be stopped.
-	 * 
-	 * @param amount amount to be added to the current progress
-	 */
-	public void add(long amount) {
-		current += amount;
-		recent += amount;
-		
-		if (auto && current >= total) {
-			stop();
-		}
-	}
+    /** Time this job was constructed. */
+    private final long startTime = System.nanoTime();
 
-	/**
-	 * Returns the total length to be processed.
-	 * 
-	 * @return the total length to be processed
-	 */
-	public long getTotal() {
-		return total;
-	}
+    /** An environment. */
+    private Environment environment;
+    /** Total length to be processed. */
+    private final long total;
+    /** Currently processed length. */
+    private long current;
+    /** Total size to be processed converted to a human readable string. */
+    private final String totalStr;
 
-	/**
-	 * Returns the currently processed length.
-	 * 
-	 * @return the currently processed length
-	 */
-	public long getCurrent() {
-		return current;
-	}
+    /** Recently elapsed time. */
+    private long recentStartTime = startTime;
+    /** Recently processed length. */
+    private long recent;
 
-	/**
-	 * Sets the currently processed length to the specified value.
-	 * 
-	 * @param current value to be set
-	 */
-	public void setCurrent(long current) {
-		this.current = current;
-	}
-	
-	@Override
-	@SuppressWarnings("unused")
-	public void run() {
-		try {
-			/* Percentage */
-			int percent = (int) (100 * current / total);
-			String currentStr = Utility.humanReadableByteCount(current);
+    /** Indicates if the progress tracker has been started. */
+    private boolean started;
+    /** Indicates if start and stop should be called automatically. */
+    private boolean auto;
 
-			/* Time */
-			long elapsedTime = System.nanoTime() - startTime;
-			long recentElapsedTime = System.nanoTime() - recentStartTime;
-			String elapsedTimeStr = Utility.humanReadableTimeUnit(elapsedTime);
+    /**
+     * Constructs an instance of {@code Progress} with the specified arguments.
+     *
+     * @param env an environment
+     * @param total total size to be processed
+     */
+    public Progress(Environment env, long total) {
+        this(env, total, false);
+    }
 
-			/* Speed */
-			long averageSpeed = current / (elapsedTime/1_000_000_000L);
-			long currentSpeed = recent / (recentElapsedTime/1_000_000_000L);
-			String currentSpeedStr = Utility.humanReadableByteCount(currentSpeed) + "/s";
+    /**
+     * Constructs an instance of {@code Progress} with the specified arguments.
+     * <p>
+     * If <tt>auto</tt> is set to <strong>true</strong>, the {@link #start()}
+     * method is called automatically upon object construction and
+     * {@link #stop()} when the processing finishes.
+     *
+     * @param env an environment, or {@code null} if stdout should be used
+     * @param total total size to be processed
+     * @param auto indicates if start and stop should be called automatically
+     */
+    public Progress(Environment env, long total, boolean auto) {
+        this.environment = env;
+        this.total = total;
+        this.auto = auto;
 
-			/* Estimation */
-			String estimatedTime = currentSpeed > 0 ?
-				Utility.humanReadableTimeUnit(1_000_000_000L * ((total - current) / currentSpeed)) : "∞";
-			
-			
-			/* Print it! */
-			String output = String.format(
-				"  %2d%% processed (%s/%s), Elapsed time: %s, Current speed: %s, Estimated time: %s",
-				percent, currentStr, totalStr, elapsedTimeStr, currentSpeedStr, estimatedTime
-			);
-			
-			if (environment == null) {
-				System.out.println(output);
-			} else {
-				environment.writeln(output);
-			}
-			
-			/* Reset 'recent' calculations. */
-			recent = 0;
-			recentStartTime = System.nanoTime();
-		} catch (Exception e) {
-			scheduledExecutor.shutdownNow();
-			System.err.println("Exception: " + e);
-			System.err.println("Aborted progress tracker.");
-			throw e;
-		}
-	}
-	
+        totalStr = Utility.humanReadableByteCount(total);
+
+        if (auto) {
+            start();
+        }
+    }
+
+    /**
+     * Creates and executes a periodic action that becomes enabled first after a
+     * second, and subsequently with 5 seconds between the termination of one
+     * printing execution and the commencement of the next. The task can be
+     * terminated by calling the {@link #stop()} method.
+     */
+    public void start() {
+        if (!started) {
+            started = true;
+            scheduledExecutor.scheduleWithFixedDelay(this, 5, 5, TimeUnit.SECONDS);
+        }
+    }
+
+    /**
+     * Initiates an orderly shutdown in which the progress tracker is stopped.
+     * Invocation has no additional effect if already stopped.
+     */
+    public void stop() {
+        if (started) {
+            scheduledExecutor.shutdown();
+            started = false;
+        }
+    }
+
+    /**
+     * Adds the specified <tt>amount</tt> to the currently processed length.
+     * <p>
+     * If <tt>auto</tt> was specified and this call results in current reaching
+     * the total length, progress tracking will automatically be stopped.
+     *
+     * @param amount amount to be added to the current progress
+     */
+    public void add(long amount) {
+        current += amount;
+        recent += amount;
+
+        if (auto && current >= total) {
+            stop();
+        }
+    }
+
+    /**
+     * Returns the total length to be processed.
+     *
+     * @return the total length to be processed
+     */
+    public long getTotal() {
+        return total;
+    }
+
+    /**
+     * Returns the currently processed length.
+     *
+     * @return the currently processed length
+     */
+    public long getCurrent() {
+        return current;
+    }
+
+    /**
+     * Sets the currently processed length to the specified value.
+     *
+     * @param current value to be set
+     */
+    public void setCurrent(long current) {
+        this.current = current;
+    }
+
+    @Override
+    @SuppressWarnings("unused")
+    public void run() {
+        try {
+            /* Percentage */
+            int percent = (int) (100 * current / total);
+            String currentStr = Utility.humanReadableByteCount(current);
+
+            /* Time */
+            long elapsedTime = System.nanoTime() - startTime;
+            long recentElapsedTime = System.nanoTime() - recentStartTime;
+            String elapsedTimeStr = Utility.humanReadableTimeUnit(elapsedTime);
+
+            /* Speed */
+            long averageSpeed = current / (elapsedTime/1_000_000_000L);
+            long currentSpeed = recent / (recentElapsedTime/1_000_000_000L);
+            String currentSpeedStr = Utility.humanReadableByteCount(currentSpeed) + "/s";
+
+            /* Estimation */
+            String estimatedTime = currentSpeed > 0 ?
+                Utility.humanReadableTimeUnit(1_000_000_000L * ((total - current) / currentSpeed)) : "∞";
+
+
+            /* Print it! */
+            String output = String.format(
+                "  %2d%% processed (%s/%s), Elapsed time: %s, Current speed: %s, Estimated time: %s",
+                percent, currentStr, totalStr, elapsedTimeStr, currentSpeedStr, estimatedTime
+            );
+
+            if (environment == null) {
+                System.out.println(output);
+            } else {
+                environment.writeln(output);
+            }
+
+            /* Reset 'recent' calculations. */
+            recent = 0;
+            recentStartTime = System.nanoTime();
+        } catch (Exception e) {
+            scheduledExecutor.shutdownNow();
+            System.err.println("Exception: " + e);
+            System.err.println("Aborted progress tracker.");
+            throw e;
+        }
+    }
+
 }

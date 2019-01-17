@@ -33,50 +33,50 @@ import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
  * @author Mario Bobic
  */
 public class TouchCommand extends AbstractCommand {
-	
-	/**
-	 * Constructs a new command object of type {@code TouchCommand}.
-	 */
-	public TouchCommand() {
-		super("TOUCH", createCommandDescription());
-	}
-	
-	@Override
-	public String getCommandSyntax() {
-		return "<filename>";
-	}
-	
-	/**
-	 * Creates a list of strings where each string represents a new line of this
-	 * command's description. This method is generates description exclusively
-	 * for the command that this class represents.
-	 * 
-	 * @return a list of strings that represents description
-	 */
-	private static List<String> createCommandDescription() {
-		List<String> desc = new ArrayList<>();
-		desc.add("Updates the access date and modification date of a file or directory.");
-		desc.add("In its default usage, it is the equivalent of creating or opening "
-				+ "a file and saving it without any change to the file contents.");
-		return desc;
-	}
-	
-	@Override
-	protected ShellStatus execute0(Environment env, String s) throws IOException {
-		if (s == null) {
-			throw new SyntaxException();
-		}
-		
-		Path path = Utility.resolveAbsolutePath(env, s);
-		if (!Files.exists(path)) {
-			Files.createDirectories(Utility.getParent(path));
-			Files.createFile(path);
-		} else {
-			FileTime now = FileTime.fromMillis(System.currentTimeMillis());
-			Files.setLastModifiedTime(path, now);
-		}
 
-		return ShellStatus.CONTINUE;
-	}
+    /**
+     * Constructs a new command object of type {@code TouchCommand}.
+     */
+    public TouchCommand() {
+        super("TOUCH", createCommandDescription());
+    }
+
+    @Override
+    public String getCommandSyntax() {
+        return "<filename>";
+    }
+
+    /**
+     * Creates a list of strings where each string represents a new line of this
+     * command's description. This method is generates description exclusively
+     * for the command that this class represents.
+     *
+     * @return a list of strings that represents description
+     */
+    private static List<String> createCommandDescription() {
+        List<String> desc = new ArrayList<>();
+        desc.add("Updates the access date and modification date of a file or directory.");
+        desc.add("In its default usage, it is the equivalent of creating or opening "
+                + "a file and saving it without any change to the file contents.");
+        return desc;
+    }
+
+    @Override
+    protected ShellStatus execute0(Environment env, String s) throws IOException {
+        if (s == null) {
+            throw new SyntaxException();
+        }
+
+        Path path = Utility.resolveAbsolutePath(env, s);
+        if (!Files.exists(path)) {
+            Files.createDirectories(Utility.getParent(path));
+            Files.createFile(path);
+        } else {
+            FileTime now = FileTime.fromMillis(System.currentTimeMillis());
+            Files.setLastModifiedTime(path, now);
+        }
+
+        return ShellStatus.CONTINUE;
+    }
 
 }

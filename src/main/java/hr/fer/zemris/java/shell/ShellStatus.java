@@ -10,13 +10,13 @@ package hr.fer.zemris.java.shell;
  */
 public enum ShellStatus {
 
-	/**
-	 * Continue running the Shell and accepting new commands.
-	 */
-	CONTINUE,
-	
-	/**
-	 * Terminate the Shell upon executing the last command.
-	 */
-	TERMINATE
+    /**
+     * Continue running the Shell and accepting new commands.
+     */
+    CONTINUE,
+
+    /**
+     * Terminate the Shell upon executing the last command.
+     */
+    TERMINATE
 }

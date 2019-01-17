@@ -19,51 +19,51 @@ import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
  */
 public class MkdirCommand extends AbstractCommand {
 
-	/**
-	 * Constructs a new command object of type {@code MkdirCommand}.
-	 */
-	public MkdirCommand() {
-		super("MKDIR", createCommandDescription());
-	}
+    /**
+     * Constructs a new command object of type {@code MkdirCommand}.
+     */
+    public MkdirCommand() {
+        super("MKDIR", createCommandDescription());
+    }
 
-	@Override
-	public String getCommandSyntax() {
-		return "<path>";
-	}
-	
-	/**
-	 * Creates a list of strings where each string represents a new line of this
-	 * command's description. This method is generates description exclusively
-	 * for the command that this class represents.
-	 * 
-	 * @return a list of strings that represents description
-	 */
-	private static List<String> createCommandDescription() {
-		List<String> desc = new ArrayList<>();
-		desc.add("Creates one or multiple directories.");
-		return desc;
-	}
+    @Override
+    public String getCommandSyntax() {
+        return "<path>";
+    }
 
-	@Override
-	protected ShellStatus execute0(Environment env, String s) {
-		if (s == null) {
-			throw new SyntaxException();
-		}
-		
-		Path path = Utility.resolveAbsolutePath(env, s);
-		
-		if (Files.exists(path)) {
-			env.writeln(path + " already exists!");
-		} else {
-			try {
-				Files.createDirectories(path);
-				env.writeln("Created " + path);
-			} catch (IOException e) {
-				env.writeln("Can not create directory " + path);
-			}
-		}
-		
-		return ShellStatus.CONTINUE;
-	}
+    /**
+     * Creates a list of strings where each string represents a new line of this
+     * command's description. This method is generates description exclusively
+     * for the command that this class represents.
+     *
+     * @return a list of strings that represents description
+     */
+    private static List<String> createCommandDescription() {
+        List<String> desc = new ArrayList<>();
+        desc.add("Creates one or multiple directories.");
+        return desc;
+    }
+
+    @Override
+    protected ShellStatus execute0(Environment env, String s) {
+        if (s == null) {
+            throw new SyntaxException();
+        }
+
+        Path path = Utility.resolveAbsolutePath(env, s);
+
+        if (Files.exists(path)) {
+            env.writeln(path + " already exists!");
+        } else {
+            try {
+                Files.createDirectories(path);
+                env.writeln("Created " + path);
+            } catch (IOException e) {
+                env.writeln("Can not create directory " + path);
+            }
+        }
+
+        return ShellStatus.CONTINUE;
+    }
 
 }

@@ -22,123 +22,123 @@ import hr.fer.zemris.java.shell.utility.Utility;
  * @author Mario Bobic
  */
 public class CountCommand extends VisitorCommand {
-	
-	/**
-	 * Constructs a new command object of type {@code CountCommand}.
-	 */
-	public CountCommand() {
-		super("COUNT", createCommandDescription());
-	}
 
-	@Override
-	public String getCommandSyntax() {
-		return "(<path>)";
-	}
-	
-	/**
-	 * Creates a list of strings where each string represents a new line of this
-	 * command's description. This method is generates description exclusively
-	 * for the command that this class represents.
-	 * 
-	 * @return a list of strings that represents description
-	 */
-	private static List<String> createCommandDescription() {
-		List<String> desc = new ArrayList<>();
-		desc.add("Counts the number of files and folders.");
-		desc.add("This counting begins in the current working directory or the "
-				+ "directory specified and is going through all of the subdirectories.");
-		return desc;
-	}
+    /**
+     * Constructs a new command object of type {@code CountCommand}.
+     */
+    public CountCommand() {
+        super("COUNT", createCommandDescription());
+    }
 
-	@Override
-	protected ShellStatus execute0(Environment env, String s) throws IOException {
-		Path path = s == null ?
-			env.getCurrentPath() : Utility.resolveAbsolutePath(env, s);
-		
-		Utility.requireDirectory(path);
-		
-		CountFileVisitor countVisitor = new CountFileVisitor();
-		walkFileTree(path, countVisitor);
-		
-		int files = countVisitor.getFileCount();
-		int folders = countVisitor.getFolderCount();
-		int fails = countVisitor.getFails();
-		
-		env.writeln("Files: " + files);
-		env.writeln("Folders: " + folders);
-		if (fails != 0) {
-			env.writeln("Failed to access " + fails + " folders.");
-		}
+    @Override
+    public String getCommandSyntax() {
+        return "(<path>)";
+    }
 
-		return ShellStatus.CONTINUE;
-	}
-	
-	/**
-	 * A {@linkplain SimpleFileVisitor} extended and used to serve the
-	 * {@linkplain CountCommand}.
-	 *
-	 * @author Mario Bobic
-	 */
-	private class CountFileVisitor extends SimpleFileVisitor<Path> {
+    /**
+     * Creates a list of strings where each string represents a new line of this
+     * command's description. This method is generates description exclusively
+     * for the command that this class represents.
+     *
+     * @return a list of strings that represents description
+     */
+    private static List<String> createCommandDescription() {
+        List<String> desc = new ArrayList<>();
+        desc.add("Counts the number of files and folders.");
+        desc.add("This counting begins in the current working directory or the "
+                + "directory specified and is going through all of the subdirectories.");
+        return desc;
+    }
 
-		/** Number of files this visitor has encountered. */
-		private int fileCount = 0;
-		/** Number of folders this visitor has encountered. */
-		private int folderCount = 0;
+    @Override
+    protected ShellStatus execute0(Environment env, String s) throws IOException {
+        Path path = s == null ?
+            env.getCurrentPath() : Utility.resolveAbsolutePath(env, s);
 
-		/** Number of folders that failed to be accessed. */
-		private int fails = 0;
-		
-		@Override
-		public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-			folderCount++;
-			return FileVisitResult.CONTINUE;
-		}
+        Utility.requireDirectory(path);
 
-		@Override
-		public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-			fileCount++;
-			return FileVisitResult.CONTINUE;
-		}
+        CountFileVisitor countVisitor = new CountFileVisitor();
+        walkFileTree(path, countVisitor);
 
-		@Override
-		public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-			if (Files.isDirectory(file)) {
-				fails++;
-			} else {
-				fileCount++;
-			}
-			return FileVisitResult.CONTINUE;
-		}
+        int files = countVisitor.getFileCount();
+        int folders = countVisitor.getFolderCount();
+        int fails = countVisitor.getFails();
 
-		/**
-		 * Returns the number of files this visitor has encountered.
-		 * 
-		 * @return the number of files this visitor has encountered
-		 */
-		public int getFileCount() {
-			return fileCount;
-		}
-		
-		/**
-		 * Returns the number of folders this visitor has encountered, not
-		 * counting the folder it started from.
-		 * 
-		 * @return the number of files this visitor has encountered
-		 */
-		public int getFolderCount() {
-			return Math.max(folderCount - 1, 0);
-		}
-		
-		/**
-		 * Returns the number of folders that failed to be accessed.
-		 * 
-		 * @return the number of folders that failed to be accessed
-		 */
-		public int getFails() {
-			return fails;
-		}
-		
-	}
+        env.writeln("Files: " + files);
+        env.writeln("Folders: " + folders);
+        if (fails != 0) {
+            env.writeln("Failed to access " + fails + " folders.");
+        }
+
+        return ShellStatus.CONTINUE;
+    }
+
+    /**
+     * A {@linkplain SimpleFileVisitor} extended and used to serve the
+     * {@linkplain CountCommand}.
+     *
+     * @author Mario Bobic
+     */
+    private class CountFileVisitor extends SimpleFileVisitor<Path> {
+
+        /** Number of files this visitor has encountered. */
+        private int fileCount = 0;
+        /** Number of folders this visitor has encountered. */
+        private int folderCount = 0;
+
+        /** Number of folders that failed to be accessed. */
+        private int fails = 0;
+
+        @Override
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+            folderCount++;
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+            fileCount++;
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+            if (Files.isDirectory(file)) {
+                fails++;
+            } else {
+                fileCount++;
+            }
+            return FileVisitResult.CONTINUE;
+        }
+
+        /**
+         * Returns the number of files this visitor has encountered.
+         *
+         * @return the number of files this visitor has encountered
+         */
+        public int getFileCount() {
+            return fileCount;
+        }
+
+        /**
+         * Returns the number of folders this visitor has encountered, not
+         * counting the folder it started from.
+         *
+         * @return the number of files this visitor has encountered
+         */
+        public int getFolderCount() {
+            return Math.max(folderCount - 1, 0);
+        }
+
+        /**
+         * Returns the number of folders that failed to be accessed.
+         *
+         * @return the number of folders that failed to be accessed
+         */
+        public int getFails() {
+            return fails;
+        }
+
+    }
 
 }

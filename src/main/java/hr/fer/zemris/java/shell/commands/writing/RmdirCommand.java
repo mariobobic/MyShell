@@ -20,50 +20,50 @@ import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
  */
 public class RmdirCommand extends AbstractCommand {
 
-	/**
-	 * Constructs a new command object of type {@code RmdirCommand}.
-	 */
-	public RmdirCommand() {
-		super("RMDIR", createCommandDescription());
-	}
+    /**
+     * Constructs a new command object of type {@code RmdirCommand}.
+     */
+    public RmdirCommand() {
+        super("RMDIR", createCommandDescription());
+    }
 
-	@Override
-	public String getCommandSyntax() {
-		return "<path>";
-	}
-	
-	/**
-	 * Creates a list of strings where each string represents a new line of this
-	 * command's description. This method is generates description exclusively
-	 * for the command that this class represents.
-	 * 
-	 * @return a list of strings that represents description
-	 */
-	private static List<String> createCommandDescription() {
-		List<String> desc = new ArrayList<>();
-		desc.add("Removes a directory.");
-		return desc;
-	}
+    @Override
+    public String getCommandSyntax() {
+        return "<path>";
+    }
 
-	@Override
-	protected ShellStatus execute0(Environment env, String s) {
-		if (s == null) {
-			throw new SyntaxException();
-		}
-		
-		Path dir = Utility.resolveAbsolutePath(env, s);
-		if (!Files.isDirectory(dir)){
-			env.writeln(dir.getFileName() + " is not a directory.");
-		} else {
-			try {
-				Files.delete(dir);
-				env.writeln("Removed " + dir);
-			} catch (IOException e) {
-				env.writeln("The directory must be empty in order to be removed. Use RM instead.");
-			}
-		}
+    /**
+     * Creates a list of strings where each string represents a new line of this
+     * command's description. This method is generates description exclusively
+     * for the command that this class represents.
+     *
+     * @return a list of strings that represents description
+     */
+    private static List<String> createCommandDescription() {
+        List<String> desc = new ArrayList<>();
+        desc.add("Removes a directory.");
+        return desc;
+    }
 
-		return ShellStatus.CONTINUE;
-	}
+    @Override
+    protected ShellStatus execute0(Environment env, String s) {
+        if (s == null) {
+            throw new SyntaxException();
+        }
+
+        Path dir = Utility.resolveAbsolutePath(env, s);
+        if (!Files.isDirectory(dir)){
+            env.writeln(dir.getFileName() + " is not a directory.");
+        } else {
+            try {
+                Files.delete(dir);
+                env.writeln("Removed " + dir);
+            } catch (IOException e) {
+                env.writeln("The directory must be empty in order to be removed. Use RM instead.");
+            }
+        }
+
+        return ShellStatus.CONTINUE;
+    }
 
 }
