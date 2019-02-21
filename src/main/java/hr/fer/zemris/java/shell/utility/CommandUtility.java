@@ -1,8 +1,8 @@
 package hr.fer.zemris.java.shell.utility;
 
-import java.nio.file.Path;
-
 import hr.fer.zemris.java.shell.interfaces.Environment;
+
+import java.nio.file.Path;
 
 /**
  * Provides static utility methods for working with commands.

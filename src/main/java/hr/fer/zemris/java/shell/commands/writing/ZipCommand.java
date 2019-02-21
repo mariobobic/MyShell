@@ -1,6 +1,12 @@
 package hr.fer.zemris.java.shell.commands.writing;
 
-import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
+import hr.fer.zemris.java.shell.ShellStatus;
+import hr.fer.zemris.java.shell.commands.VisitorCommand;
+import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.Progress;
+import hr.fer.zemris.java.shell.utility.StringUtility;
+import hr.fer.zemris.java.shell.utility.Utility;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -15,13 +21,7 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import hr.fer.zemris.java.shell.ShellStatus;
-import hr.fer.zemris.java.shell.commands.VisitorCommand;
-import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.Utility;
-import hr.fer.zemris.java.shell.utility.Progress;
-import hr.fer.zemris.java.shell.utility.StringUtility;
-import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
+import static hr.fer.zemris.java.shell.utility.CommandUtility.promptConfirm;
 
 /**
  * Many sources of information contain redundant data or data that adds little

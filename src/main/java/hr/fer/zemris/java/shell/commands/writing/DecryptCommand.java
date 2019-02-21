@@ -1,7 +1,14 @@
 package hr.fer.zemris.java.shell.commands.writing;
 
-import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
+import hr.fer.zemris.java.shell.ShellStatus;
+import hr.fer.zemris.java.shell.commands.AbstractCommand;
+import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.Crypto;
+import hr.fer.zemris.java.shell.utility.StringUtility;
+import hr.fer.zemris.java.shell.utility.Utility;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
+import javax.crypto.BadPaddingException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -9,15 +16,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.crypto.BadPaddingException;
-
-import hr.fer.zemris.java.shell.ShellStatus;
-import hr.fer.zemris.java.shell.commands.AbstractCommand;
-import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.Crypto;
-import hr.fer.zemris.java.shell.utility.Utility;
-import hr.fer.zemris.java.shell.utility.StringUtility;
-import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
+import static hr.fer.zemris.java.shell.utility.CommandUtility.promptConfirm;
 
 /**
  * A command that is used for decrypting files with AES cryptoalgorithm. The

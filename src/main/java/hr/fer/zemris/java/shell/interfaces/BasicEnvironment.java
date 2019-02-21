@@ -1,13 +1,13 @@
 package hr.fer.zemris.java.shell.interfaces;
 
+import hr.fer.zemris.java.shell.utility.exceptions.ShellIOException;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-
-import hr.fer.zemris.java.shell.utility.exceptions.ShellIOException;
 
 /**
  * This interface represents an environment where the whole program works. It is

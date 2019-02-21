@@ -1,6 +1,13 @@
 package hr.fer.zemris.java.shell.commands.listing;
 
-import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
+import hr.fer.zemris.java.shell.ShellStatus;
+import hr.fer.zemris.java.shell.commands.VisitorCommand;
+import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.FlagDescription;
+import hr.fer.zemris.java.shell.utility.StringUtility;
+import hr.fer.zemris.java.shell.utility.Utility;
+import hr.fer.zemris.java.shell.utility.exceptions.InvalidFlagException;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -18,14 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import hr.fer.zemris.java.shell.ShellStatus;
-import hr.fer.zemris.java.shell.commands.VisitorCommand;
-import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.FlagDescription;
-import hr.fer.zemris.java.shell.utility.Utility;
-import hr.fer.zemris.java.shell.utility.StringUtility;
-import hr.fer.zemris.java.shell.utility.exceptions.InvalidFlagException;
-import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
+import static hr.fer.zemris.java.shell.utility.CommandUtility.formatln;
 
 /**
  * Analyzes line by line and displays a list of changes between two files. The

@@ -1,5 +1,13 @@
 package hr.fer.zemris.java.shell.commands.writing;
 
+import hr.fer.zemris.java.shell.ShellStatus;
+import hr.fer.zemris.java.shell.commands.AbstractCommand;
+import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.Progress;
+import hr.fer.zemris.java.shell.utility.StringUtility;
+import hr.fer.zemris.java.shell.utility.Utility;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
+
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -10,14 +18,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
-
-import hr.fer.zemris.java.shell.ShellStatus;
-import hr.fer.zemris.java.shell.commands.AbstractCommand;
-import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.Utility;
-import hr.fer.zemris.java.shell.utility.Progress;
-import hr.fer.zemris.java.shell.utility.StringUtility;
-import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 /**
  * A command that is used for shuffling bytes of a file. The user can specify

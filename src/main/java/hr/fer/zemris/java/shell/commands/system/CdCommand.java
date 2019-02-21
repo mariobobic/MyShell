@@ -1,14 +1,14 @@
 package hr.fer.zemris.java.shell.commands.system;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.Utility;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A command that is used for changing the current working directory. The given

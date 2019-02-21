@@ -1,5 +1,11 @@
 package hr.fer.zemris.java.shell.commands.listing;
 
+import hr.fer.zemris.java.shell.ShellStatus;
+import hr.fer.zemris.java.shell.commands.VisitorCommand;
+import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.CommandUtility;
+import hr.fer.zemris.java.shell.utility.Utility;
+
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
@@ -8,12 +14,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import hr.fer.zemris.java.shell.ShellStatus;
-import hr.fer.zemris.java.shell.commands.VisitorCommand;
-import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.CommandUtility;
-import hr.fer.zemris.java.shell.utility.Utility;
 
 /**
  * Walks the directory tree from the specified path and prints a whole file tree

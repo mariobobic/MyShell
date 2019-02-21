@@ -1,16 +1,16 @@
 package hr.fer.zemris.java.shell.commands.network;
 
-import java.io.IOException;
-import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.List;
-
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Connection;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.NetworkTransfer;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
+
+import java.io.IOException;
+import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This command is paired with {@link HostCommand} and {@link ConnectCommand}

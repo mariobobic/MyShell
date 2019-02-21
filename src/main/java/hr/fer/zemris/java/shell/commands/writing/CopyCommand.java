@@ -1,6 +1,14 @@
 package hr.fer.zemris.java.shell.commands.writing;
 
-import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
+import hr.fer.zemris.java.shell.ShellStatus;
+import hr.fer.zemris.java.shell.commands.VisitorCommand;
+import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.FlagDescription;
+import hr.fer.zemris.java.shell.utility.Progress;
+import hr.fer.zemris.java.shell.utility.StringUtility;
+import hr.fer.zemris.java.shell.utility.Utility;
+import hr.fer.zemris.java.shell.utility.exceptions.NotEnoughDiskSpaceException;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -14,14 +22,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.ShellStatus;
-import hr.fer.zemris.java.shell.commands.VisitorCommand;
-import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.Utility;
-import hr.fer.zemris.java.shell.utility.Progress;
-import hr.fer.zemris.java.shell.utility.StringUtility;
-import hr.fer.zemris.java.shell.utility.exceptions.NotEnoughDiskSpaceException;
-import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
+import static hr.fer.zemris.java.shell.utility.CommandUtility.promptConfirm;
 
 /**
  * A command that is used for copying one file and only one file, to another

@@ -1,14 +1,5 @@
 package hr.fer.zemris.java.shell.commands.network;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-
 import hr.fer.zemris.java.shell.MyShell;
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
@@ -17,6 +8,15 @@ import hr.fer.zemris.java.shell.utility.Crypto;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.Utility;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A command that is used for connecting to another computer running MyShell. In

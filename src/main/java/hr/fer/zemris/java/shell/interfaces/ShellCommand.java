@@ -1,8 +1,8 @@
 package hr.fer.zemris.java.shell.interfaces;
 
-import java.util.List;
-
 import hr.fer.zemris.java.shell.ShellStatus;
+
+import java.util.List;
 
 /**
  * An interface that is used as a contract for implementing Shell commands.

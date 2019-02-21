@@ -1,6 +1,12 @@
 package hr.fer.zemris.java.shell.commands.listing;
 
-import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
+import hr.fer.zemris.java.shell.ShellStatus;
+import hr.fer.zemris.java.shell.commands.VisitorCommand;
+import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.FlagDescription;
+import hr.fer.zemris.java.shell.utility.StringUtility;
+import hr.fer.zemris.java.shell.utility.Utility;
+import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
 
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -16,13 +22,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import hr.fer.zemris.java.shell.ShellStatus;
-import hr.fer.zemris.java.shell.commands.VisitorCommand;
-import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.FlagDescription;
-import hr.fer.zemris.java.shell.utility.Utility;
-import hr.fer.zemris.java.shell.utility.StringUtility;
-import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
+import static hr.fer.zemris.java.shell.utility.CommandUtility.markAndPrintNumber;
 
 /**
  * Walks the directory tree from the given path, or current path if no path is

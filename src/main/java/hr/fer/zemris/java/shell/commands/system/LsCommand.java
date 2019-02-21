@@ -1,6 +1,10 @@
 package hr.fer.zemris.java.shell.commands.system;
 
-import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
+import hr.fer.zemris.java.shell.ShellStatus;
+import hr.fer.zemris.java.shell.commands.AbstractCommand;
+import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.FlagDescription;
+import hr.fer.zemris.java.shell.utility.Utility;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -16,11 +20,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Stream;
 
-import hr.fer.zemris.java.shell.ShellStatus;
-import hr.fer.zemris.java.shell.commands.AbstractCommand;
-import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.FlagDescription;
-import hr.fer.zemris.java.shell.utility.Utility;
+import static hr.fer.zemris.java.shell.utility.CommandUtility.markAndPrintNumber;
 
 /**
  * A command that is used for writing out the current contents of a directory.

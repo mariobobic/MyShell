@@ -1,15 +1,5 @@
 package hr.fer.zemris.java.shell.commands;
 
-import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.file.InvalidPathException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-
 import hr.fer.zemris.java.shell.MyShell;
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.system.HelpCommand;
@@ -21,6 +11,16 @@ import hr.fer.zemris.java.shell.utility.exceptions.IllegalPathException;
 import hr.fer.zemris.java.shell.utility.exceptions.InvalidFlagException;
 import hr.fer.zemris.java.shell.utility.exceptions.NotEnoughDiskSpaceException;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.InvalidPathException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+
+import static hr.fer.zemris.java.shell.utility.CommandUtility.formatln;
 
 /**
  * Used as a superclass for other, usable Shell commands.

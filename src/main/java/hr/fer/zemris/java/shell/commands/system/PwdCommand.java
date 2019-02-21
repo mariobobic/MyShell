@@ -1,11 +1,11 @@
 package hr.fer.zemris.java.shell.commands.system;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A command that is used for printing the current working directory.

@@ -1,11 +1,11 @@
 package hr.fer.zemris.java.shell.interfaces;
 
+import hr.fer.zemris.java.shell.utility.Crypto;
+import hr.fer.zemris.java.shell.utility.exceptions.IllegalPathException;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
-
-import hr.fer.zemris.java.shell.utility.Crypto;
-import hr.fer.zemris.java.shell.utility.exceptions.IllegalPathException;
 
 /**
  * This interface represents a remote connection between two machines. One

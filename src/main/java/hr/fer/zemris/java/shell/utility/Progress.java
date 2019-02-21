@@ -1,10 +1,10 @@
 package hr.fer.zemris.java.shell.utility;
 
+import hr.fer.zemris.java.shell.interfaces.Environment;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import hr.fer.zemris.java.shell.interfaces.Environment;
 
 /**
  * This class is used for tracking progress and printing it to an environment

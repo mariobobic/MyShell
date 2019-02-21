@@ -1,5 +1,9 @@
 package hr.fer.zemris.java.shell.utility;
 
+import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.exceptions.NotEnoughDiskSpaceException;
+
+import javax.crypto.BadPaddingException;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -17,11 +21,6 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
-
-import javax.crypto.BadPaddingException;
-
-import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.exceptions.NotEnoughDiskSpaceException;
 
 /**
  * Provides static methods for network transfers - upload and download requests,

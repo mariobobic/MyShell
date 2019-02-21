@@ -1,13 +1,13 @@
 package hr.fer.zemris.java.shell.commands.system;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Writes arguments to the standard output.
@@ -20,7 +20,6 @@ import hr.fer.zemris.java.shell.utility.FlagDescription;
  * @author Mario Bobic
  */
 public class EchoCommand extends AbstractCommand {
-
 
     /* Flags */
     /** Indicates if a newline symbol should not be appended. */

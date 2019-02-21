@@ -1,5 +1,7 @@
 package hr.fer.zemris.java.shell.utility;
 
+import hr.fer.zemris.java.shell.utility.exceptions.InvalidFlagException;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -11,8 +13,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
-
-import hr.fer.zemris.java.shell.utility.exceptions.InvalidFlagException;
 
 /**
  * This class acts as a bridge between a single input string and arguments by

@@ -1,11 +1,11 @@
 package hr.fer.zemris.java.shell.commands.system;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Lists the history of inputs entered by the user. A single user input is

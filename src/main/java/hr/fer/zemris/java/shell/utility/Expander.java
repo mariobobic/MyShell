@@ -1,5 +1,10 @@
 package hr.fer.zemris.java.shell.utility;
 
+import com.fathzer.soft.javaluator.DoubleEvaluator;
+import hr.fer.zemris.java.shell.MyShell;
+import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.interfaces.ShellCommand;
+
 import java.io.StringWriter;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -8,12 +13,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
-
-import com.fathzer.soft.javaluator.DoubleEvaluator;
-
-import hr.fer.zemris.java.shell.MyShell;
-import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.interfaces.ShellCommand;
 
 /**
  * After the command has been split into tokens, these tokens or words are

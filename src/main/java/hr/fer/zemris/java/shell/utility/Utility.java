@@ -1,5 +1,10 @@
 package hr.fer.zemris.java.shell.utility;
 
+import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.exceptions.IllegalPathException;
+import hr.fer.zemris.java.shell.utility.exceptions.NotEnoughDiskSpaceException;
+
+import javax.xml.bind.DatatypeConverter;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -19,12 +24,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
-
-import javax.xml.bind.DatatypeConverter;
-
-import hr.fer.zemris.java.shell.interfaces.Environment;
-import hr.fer.zemris.java.shell.utility.exceptions.IllegalPathException;
-import hr.fer.zemris.java.shell.utility.exceptions.NotEnoughDiskSpaceException;
 
 /**
  * A helper class. Provides helper methods mostly for Path manipulation, but

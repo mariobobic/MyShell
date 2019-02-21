@@ -1,15 +1,15 @@
 package hr.fer.zemris.java.shell.commands.system;
 
-import static hr.fer.zemris.java.shell.utility.CommandUtility.*;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.interfaces.ShellCommand;
 import hr.fer.zemris.java.shell.utility.Utility;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static hr.fer.zemris.java.shell.utility.CommandUtility.formatln;
 
 /**
  * A command that is used for displaying all other commands, including this one,
