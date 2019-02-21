@@ -39,9 +39,11 @@ import hr.fer.zemris.java.shell.commands.writing.MkdirCommand;
 import hr.fer.zemris.java.shell.commands.writing.MoveCommand;
 import hr.fer.zemris.java.shell.commands.writing.NameShuffleCommand;
 import hr.fer.zemris.java.shell.commands.writing.RenameAllCommand;
+import hr.fer.zemris.java.shell.commands.writing.RenameCommand;
 import hr.fer.zemris.java.shell.commands.writing.ReplaceCommand;
 import hr.fer.zemris.java.shell.commands.writing.RmCommand;
 import hr.fer.zemris.java.shell.commands.writing.RmdirCommand;
+import hr.fer.zemris.java.shell.commands.writing.SortCommand;
 import hr.fer.zemris.java.shell.commands.writing.TouchCommand;
 import hr.fer.zemris.java.shell.commands.writing.UnzipCommand;
 import hr.fer.zemris.java.shell.commands.writing.ZipCommand;
@@ -150,9 +152,11 @@ public class MyShell {
                 new MoveCommand(),
                 new NameShuffleCommand(),
                 new RenameAllCommand(),
+                new RenameCommand(),
                 new ReplaceCommand(),
                 new RmCommand(),
                 new RmdirCommand(),
+                new SortCommand(),
                 new TouchCommand(),
                 new UnzipCommand(),
                 new ZipCommand(),
