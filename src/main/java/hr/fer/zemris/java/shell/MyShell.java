@@ -73,6 +73,7 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -345,8 +346,11 @@ l:		while (true) {
             return input;
         }
 
-        /* Extract the output file from the given input string. */
-        String output = input.substring(0, index).trim();
+        // Find out if this is appending or creating/overwriting. Append is >>, create is >
+        boolean doAppend = index > 0 && input.charAt(index - 1) == '>';
+
+        /* Get output text and extract output file from the given input string. */
+        String output = input.substring(0, index + (doAppend ? -1 : 0)).trim();
         String argument = input.substring(index+1).trim();
         Path outputFile = Utility.resolveAbsolutePath(environment, argument);
 
@@ -355,7 +359,7 @@ l:		while (true) {
             outputFile = Utility.firstAvailable(outputFile.resolve("output.txt"));
         }
 
-        if (Files.exists(outputFile)) {
+        if (!doAppend && Files.exists(outputFile)) {
             boolean overwrite = CommandUtility.promptConfirm(environment, "File " + outputFile + " already exists. Overwrite?");
             if (!overwrite) {
                 environment.writeln("Cancelled.");
@@ -365,7 +369,10 @@ l:		while (true) {
 
         /* Redirect the output stream. */
         try {
-            environment.push(null, Files.newBufferedWriter(outputFile));
+            BufferedWriter fileWriter = doAppend && Files.exists(outputFile) ?
+                    Files.newBufferedWriter(outputFile, StandardOpenOption.APPEND) :
+                    Files.newBufferedWriter(outputFile);
+            environment.push(null, fileWriter);
             redirected = true;
         } catch (IOException e) {
             environment.writeln("Could not redirect stream to file: " + e.getMessage());
