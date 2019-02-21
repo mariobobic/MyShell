@@ -59,6 +59,9 @@ public class TreeCommand extends VisitorCommand {
 
         Utility.requireDirectory(path);
 
+        /* Clear previously marked paths. */
+        env.clearMarks();
+
         /* Passed all checks, start working. */
         TreeFileVisitor treeVisitor = new TreeFileVisitor(env);
         walkFileTree(path, treeVisitor);

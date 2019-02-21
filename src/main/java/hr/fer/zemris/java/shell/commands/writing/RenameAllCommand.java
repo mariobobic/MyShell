@@ -65,7 +65,7 @@ public class RenameAllCommand extends AbstractCommand {
      */
     private static List<String> createCommandDescription() {
         List<String> desc = new ArrayList<>();
-        desc.add("Renames all files and directories to the new name.");
+        desc.add("Renames all files and directories inside the specified directory to a new name.");
         desc.add("Optional start index may be included.");
         desc.add("Wildcards can be used to be substituted with some elements in file names:");
         desc.add("Use the {i} sequence to substitute it with a file index.");
@@ -143,7 +143,7 @@ public class RenameAllCommand extends AbstractCommand {
         /* Rename all files. */
         for (int i = 0; i < n; i++) {
             int index = i + startIndex;
-            String number = getLeadingZeros(n, startIndex, index) + index;
+            String number = StringUtility.getIndexWithLeadingZeros(index, n-1);
             String newName = containsIndex ? name.replace("{i}", number) : name+number;
 
             Path originalFile = listOfFiles.get(i);
@@ -160,26 +160,6 @@ public class RenameAllCommand extends AbstractCommand {
         }
 
         return ShellStatus.CONTINUE;
-    }
-
-    /**
-     * Returns a string of zeroes that should be leading the
-     * <tt>currentIndex</tt> in relation to <tt>total</tt>.
-     *
-     * @param total total number of items
-     * @param offset index offset
-     * @param currentIndex index of the current processing item
-     * @return a string of leading zeroes
-     */
-    private static String getLeadingZeros(int total, int offset, int currentIndex) {
-        int decimalPlaces = Integer.toString(total+offset-1).length();
-        int numZeroes = decimalPlaces - (Integer.toString(currentIndex).length() % 10);
-
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < numZeroes; i++) {
-            sb.append('0');
-        }
-        return sb.toString();
     }
 
 }
