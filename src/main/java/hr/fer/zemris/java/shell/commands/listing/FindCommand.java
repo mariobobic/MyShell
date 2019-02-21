@@ -38,7 +38,7 @@ import static hr.fer.zemris.java.shell.utility.CommandUtility.markAndPrintPath;
 public class FindCommand extends VisitorCommand {
 
     /** Size limit of files that this command will search through. */
-    private static final long DEFAULT_SIZE_LIMIT = 5*1024*1024;
+    private static final long DEFAULT_SIZE_LIMIT = 0;
 
     /* Flags */
     /** True if regular expression should be used for pattern matching. */
@@ -90,7 +90,7 @@ public class FindCommand extends VisitorCommand {
         List<FlagDescription> desc = new ArrayList<>();
         desc.add(new FlagDescription("r", null, null, "Use regex pattern matching."));
         desc.add(new FlagDescription("c", null, null, "Regex pattern is case sensitive."));
-        desc.add(new FlagDescription("l", "limit", "limit", "Size limit for accessing files. Use 0 for unlimited."));
+        desc.add(new FlagDescription("l", "limit", "limit", "Maximum file size in bytes for content reading. Use -1 for unlimited."));
         desc.add(new FlagDescription("t", "trim", null, "Trim lines before printing."));
         return desc;
     }
@@ -121,7 +121,7 @@ public class FindCommand extends VisitorCommand {
 
         if (commandArguments.containsFlag("l", "limit")) {
             sizeLimit = commandArguments.getFlag("l", "limit").getSizeArgument();
-            if (sizeLimit == 0) {
+            if (sizeLimit == -1) {
                 sizeLimit = Integer.MAX_VALUE;
             }
         }
@@ -199,39 +199,46 @@ public class FindCommand extends VisitorCommand {
      * @param env an environment
      * @param myPattern pattern to be matched against
      * @param file file upon which pattern matching is executed
-     * @param trim indicates if lines should be trimmed before printing
      * @throws IOException if an I/O exception occurs
      */
-    private static void printMatches(Environment env, MyPattern myPattern, Path file, boolean trim) throws IOException {
+    private void printMatches(Environment env, MyPattern myPattern, Path file) throws IOException {
         if (!Files.isReadable(file)) {
             env.writeln("Failed to access " + file);
             return;
         }
 
-        try (BufferedReader br = new BufferedReader(
-            new InputStreamReader(
-                new BufferedInputStream(
-                    Files.newInputStream(file)), StandardCharsets.UTF_8))) {
+        // Print file immediately if name matches given criteria
+        boolean nameMatches = myPattern.matches(file.getFileName().toString());
+        if (nameMatches) {
+            markAndPrintPath(env, file);
+        }
 
+        if (Files.size(file) <= sizeLimit) {
             StringBuilder sb = new StringBuilder();
-            int counter = 0;
-            String line;
-            while ((line = br.readLine()) != null) {
-                counter++;
-                line = line.replace((char) 7, (char) 0);
-                if (trim) line = line.trim();
-                if (myPattern.matches(line)) {
-                    sb	.append("   ")
-                        .append(counter)
-                        .append(": ")
-                        .append(line)
-                        .append("\n");
+
+            try (BufferedReader br = new BufferedReader(
+                    new InputStreamReader(
+                            new BufferedInputStream(
+                                    Files.newInputStream(file)), StandardCharsets.UTF_8))) {
+
+                int counter = 0;
+                String line;
+                while ((line = br.readLine()) != null) {
+                    counter++;
+                    line = line.replace((char) 7, (char) 0);
+                    if (trim) line = line.trim();
+                    if (myPattern.matches(line)) {
+                        sb.append("   ")
+                                .append(counter)
+                                .append(": ")
+                                .append(line)
+                                .append("\n");
+                    }
                 }
             }
 
-            boolean nameMatches = myPattern.matches(file.getFileName().toString());
-            if (sb.length() != 0 || nameMatches) {
-                markAndPrintPath(env, file);
+            // Print matching contents
+            if (sb.length() != 0) {
                 env.writeln(sb.toString());
             }
         }
@@ -309,11 +316,6 @@ public class FindCommand extends VisitorCommand {
         /** Size limit converted to human readable byte count. */
         private String limitStr;
 
-        /** Files that were too big to process. */
-        private List<Path> bigFiles = new ArrayList<>();
-        /** Indicates if big files should be printed out. */
-        private boolean printBigFiles = true;
-
         /**
          * Initializes a new instance of this class setting the desired pattern
          * and an environment used only for writing out messages.
@@ -335,14 +337,18 @@ public class FindCommand extends VisitorCommand {
          */
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-            if (Files.size(file) <= sizeLimit) {
-                try {
-                    printMatches(environment, pattern, file, trim);
-                } catch (IOException e) {
-                    visitFileFailed(file, e);
-                }
-            } else {
-                bigFiles.add(file);
+            try {
+                printMatches(environment, pattern, file);
+            } catch (IOException e) {
+                visitFileFailed(file, e);
+            }
+
+            if (!isSilent() && Files.size(file) > sizeLimit) {
+                Path relativeFile = start.relativize(file);
+                formatln(environment, "Too big to process content: %s (%s)",
+                        relativeFile,
+                        Utility.humanReadableByteCount(Files.size(file))
+                );
             }
 
             return FileVisitResult.CONTINUE;
@@ -358,29 +364,6 @@ public class FindCommand extends VisitorCommand {
             return FileVisitResult.CONTINUE;
         }
 
-        @Override
-        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-            if (printBigFiles && !bigFiles.isEmpty()) {
-                Path relativeDir = start.relativize(dir);
-                formatln(environment,
-                    "Files in %s that were too big to process (Exceeded %s):",
-                    relativeDir, limitStr
-                );
-
-                for (Path file : bigFiles) {
-                    Path relativeFile = start.relativize(file);
-                    formatln(environment, "   %s (%s)",
-                        relativeFile,
-                        Utility.humanReadableByteCount(Files.size(file))
-                    );
-                }
-
-                environment.writeln("");
-                bigFiles.clear();
-            }
-
-            return FileVisitResult.CONTINUE;
-        }
     }
 
 }
