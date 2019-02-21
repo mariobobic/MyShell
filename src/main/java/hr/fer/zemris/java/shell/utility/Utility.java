@@ -21,6 +21,7 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.DosFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.ParseException;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
@@ -41,6 +42,11 @@ public abstract class Utility {
 
     /** Shorthand abbreviation for home directory. */
     private static final String HOME_DIR = "~";
+
+    // Files.isSymbolicLink() returns false for shortcuts on Windows. To know
+    // if a file is a shortcut on Windows, we need to check the extension.
+    /** Extension for filesystem shortcuts (symbolic links) on Windows. */
+    private static final String WINDOWS_SHORTCUT_SUFFIX = ".lnk";
 
     /**
      * Disable instantiation or inheritance.
@@ -348,6 +354,61 @@ public abstract class Utility {
         if (usable < bytes) {
             String info = "Required: " + bytes + " bytes. Available: " + usable + " bytes.";
             throw new NotEnoughDiskSpaceException("There is not enough space on the disk. " + info);
+        }
+    }
+
+    /**
+     * Returns the real path of the specified symbolic link or Windows shortcut
+     * file. If the specified path does not exist or is not a readable symbolic
+     * link or shortcut, the given file is returned.
+     *
+     * @param link link of which the real path is to be returned
+     * @return the real path of the given link, or that link if it is unreadable
+     */
+    public static Path getRealPathFromLink(Path link) {
+        try {
+            if (Files.isSymbolicLink(link)) {
+                return Files.readSymbolicLink(link);
+            } else if (Utility.isWindowsShortcut(link)) {
+                return Utility.getWindowsShortcutRealPath(link);
+            }
+        } catch (IOException e) {
+            // invalid link or shortcut
+        }
+
+        return link;
+    }
+
+    /**
+     * Returns true if the file is a Windows shortcut, other known as Windows link.
+     * The result is true if the file name ends with .lnk extension.
+     *
+     * @param file file to be checked
+     * @return true if the file is a Windows shortcut
+     */
+    public static boolean isWindowsShortcut(Path file) {
+        String filename = file.getFileName().toString();
+        return filename.toLowerCase().endsWith(WINDOWS_SHORTCUT_SUFFIX);
+    }
+
+    /**
+     * Consult {@link #isWindowsShortcut(Path)} first.
+     *
+     * Returns the real path of the specified Windows shortcut file. If the shortcut
+     * file is not in valid format, the given file is simply returned. If the given
+     * file can not be read, an IOException is thrown.
+     *
+     * @param shortcutFile file of which the real path is to be returned
+     * @return the real path of the given Windows shortcut file, or this file
+     * @throws IOException if the file does not exist or is not readable
+     */
+    public static Path getWindowsShortcutRealPath(Path shortcutFile) throws IOException {
+        try {
+            WindowsShortcut shortcut = new WindowsShortcut(shortcutFile.toFile());
+            return Paths.get(shortcut.getRealFilename());
+        } catch (ParseException e) {
+            // not a valid Windows shortcut
+            return shortcutFile;
         }
     }
 

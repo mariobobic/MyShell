@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,11 +39,15 @@ import static hr.fer.zemris.java.shell.utility.CommandUtility.promptConfirm;
  */
 public class CopyCommand extends VisitorCommand {
 
+    /* Flags */
+    /** Indicates if real files should be copied instead of symbolic links. */
+    private boolean followLinks;
+
     /**
      * Constructs a new command object of type {@code CopyCommand}.
      */
     public CopyCommand() {
-        super("COPY", createCommandDescription());
+        super("COPY", createCommandDescription(), createFlagDescriptions());
     }
 
     @Override
@@ -69,6 +74,35 @@ public class CopyCommand extends VisitorCommand {
         return desc;
     }
 
+    /**
+     * Creates a list of {@code FlagDescription} objects where each entry
+     * describes the available flags of this command. This method is generates
+     * description exclusively for the command that this class represents.
+     *
+     * @return a list of strings that represents description
+     */
+    private static List<FlagDescription> createFlagDescriptions() {
+        List<FlagDescription> desc = new ArrayList<>();
+        desc.add(new FlagDescription("l", "follow-links", null, "Copy real files instead of symbolic links."));
+        return desc;
+    }
+
+    @Override
+    protected String compileFlags(Environment env, String s) {
+        /* Initialize default values. */
+        followLinks = false;
+
+        /* Compile! */
+        s = commandArguments.compile(s);
+
+        /* Replace default values with flag values, if any. */
+        if (commandArguments.containsFlag("l", "follow-links")) {
+            followLinks = true;
+        }
+
+        return super.compileFlags(env, s);
+    }
+
     @Override
     protected ShellStatus execute0(Environment env, String s) throws IOException {
         if (s == null) {
@@ -92,8 +126,12 @@ public class CopyCommand extends VisitorCommand {
 
         /* Passed all checks, start working. */
         if (Files.isRegularFile(source)) {
-            copyFile(env, source, target);
+            copyFile(env, followLinks ? Utility.getRealPathFromLink(source) : source, target);
         } else {
+            if (Files.isDirectory(target)) {
+                target = target.resolve(source.getFileName());
+            }
+
             CopyFileVisitor copyVisitor = new CopyFileVisitor(env, source, target);
             walkFileTree(source, copyVisitor);
         }
@@ -115,7 +153,8 @@ public class CopyCommand extends VisitorCommand {
      */
     private void copyFile(Environment env, Path source, Path target) throws IOException {
         if (Files.isDirectory(source)) {
-            throw new IllegalArgumentException("Source file can not be a directory: " + source);
+            env.writeln("Source file can not be a directory: " + source);
+            return;
         }
 
         if (source.equals(target)) {
@@ -173,6 +212,10 @@ public class CopyCommand extends VisitorCommand {
         } finally {
             progress.stop();
         }
+
+        // Copy 'Last Modified' timestamp from source to target
+        FileTime timestamp = Files.getLastModifiedTime(source);
+        Files.setLastModifiedTime(target, timestamp);
     }
 
     /**
@@ -208,8 +251,12 @@ public class CopyCommand extends VisitorCommand {
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
             Path relative = root.relativize(file);
-            Path target = otherRoot.resolve(relative);
+            if (followLinks) {
+                file = Utility.getRealPathFromLink(file);
+                relative = relative.resolveSibling(file.getFileName());
+            }
 
+            Path target = otherRoot.resolve(relative);
             copyFile(environment, file, target);
 
             return FileVisitResult.CONTINUE;
