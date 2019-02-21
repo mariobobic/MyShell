@@ -623,4 +623,26 @@ public abstract class StringUtility {
         return sb.toString();
     }
 
+    /**
+     * Returns the current index prefixed with a string of leading zeroes.
+     *
+     * The amount of leading zeros necessary for the current index is calculated
+     * using the end index.
+     *
+     * @param currentIndex index of the current processing item
+     * @param endIndex final index, inclusive
+     * @return a string of leading zeroes
+     */
+    public static String getIndexWithLeadingZeros(long currentIndex, long endIndex) {
+        int numZeroes = Long.toString(endIndex).length() - Long.toString(currentIndex).length();
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < numZeroes; i++) {
+            sb.append('0');
+        }
+
+        sb.append(currentIndex);
+        return sb.toString();
+    }
+
 }

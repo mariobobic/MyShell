@@ -169,9 +169,10 @@ l:		while (true) {
 
                     // Both are integers
                     if (Utility.isLong(dotArgs[0]) && Utility.isLong(dotArgs[1])) {
+                        boolean useLeadingZeros = dotArgs[0].startsWith("0") || dotArgs[1].startsWith("0");
                         long l0 = Long.parseLong(dotArgs[0]);
                         long l1 = Long.parseLong(dotArgs[1]);
-                        currentLines.addAll(loopThrough(l0, l1, input, match, start));
+                        currentLines.addAll(loopThrough(l0, l1, input, match, start, useLeadingZeros));
 
                     // Both are characters
                     } else if (dotArgs[0].length() == 1 && dotArgs[1].length() == 1) {
@@ -224,21 +225,29 @@ l:		while (true) {
      * @param source source string on which the replacement is made
      * @param target the string to be replaced
      * @param startIndex the index from which to start the replacement
+     * @param useLeadingZeros if true, numbers will be prefixed with zeros
      * @return list of numbers included the given source string
      */
-    private static List<String> loopThrough(long l0, long l1, String source, String target, int startIndex) {
+    private static List<String> loopThrough(long l0, long l1, String source, String target, int startIndex, boolean useLeadingZeros) {
         List<String> list = new ArrayList<>();
 
-        if (l0 < l1)
+        if (l0 < l1) {
             for (long l = l0; l <= l1; l++) {
-                list.add(StringUtility.replaceFirst(source, target, Long.toString(l), startIndex));
+                String number = getBraceExpansionNumber(l, l1, useLeadingZeros);
+                list.add(StringUtility.replaceFirst(source, target, number, startIndex));
             }
-        else
+        } else {
             for (long l = l0; l >= l1; l--) {
-                list.add(StringUtility.replaceFirst(source, target, Long.toString(l), startIndex));
+                String number = getBraceExpansionNumber(l, l0, useLeadingZeros);
+                list.add(StringUtility.replaceFirst(source, target, number, startIndex));
             }
+        }
 
         return list;
+    }
+
+    private static String getBraceExpansionNumber(long currentIndex, long endIndex, boolean useLeadingZeros) {
+        return useLeadingZeros ? StringUtility.getIndexWithLeadingZeros(currentIndex, endIndex) : Long.toString(currentIndex);
     }
 
     /**
