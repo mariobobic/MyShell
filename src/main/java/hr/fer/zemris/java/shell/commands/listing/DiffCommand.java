@@ -25,7 +25,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import static hr.fer.zemris.java.shell.utility.CommandUtility.format;
 import static hr.fer.zemris.java.shell.utility.CommandUtility.formatln;
+import static hr.fer.zemris.java.shell.utility.CommandUtility.markAndPrintNumber;
 
 /**
  * Analyzes line by line and displays a list of changes between two files. The
@@ -323,8 +325,9 @@ public class DiffCommand extends VisitorCommand {
                     }
                 }
             } else if (noExist || structure) {
-                formatln(environment, "Exists in %s but not in %s: %s",
-                    root.getFileName(), otherRoot.getFileName(), relative);
+                format(environment, "Exists in %s but not in %s: %s",
+                    Utility.getFileName(root), Utility.getFileName(otherRoot), relative);
+                markAndPrintNumber(environment, file);
             }
 
             return FileVisitResult.CONTINUE;

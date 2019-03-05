@@ -4,6 +4,7 @@ import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
+import hr.fer.zemris.java.shell.utility.MyPattern;
 import hr.fer.zemris.java.shell.utility.StringUtility;
 import hr.fer.zemris.java.shell.utility.Utility;
 import hr.fer.zemris.java.shell.utility.exceptions.SyntaxException;
@@ -74,7 +75,7 @@ public class FindCommand extends VisitorCommand {
         desc.add("Searches for the pattern provided as argument, looking in file names and their content.");
         desc.add("Displays the absolute path of files whose file names or content match the given pattern.");
         desc.add("If needed to include spaces to the pattern, use double quotation marks on the argument.");
-        desc.add("Files that are exceeding the size limit will be ignored. Default limit iz 5 MiB.");
+        desc.add("Files that are exceeding the size limit will be ignored. By default, file contents are not read.");
         desc.add("The specified path may also be a file in which the pattern is searched for.");
         return desc;
     }
@@ -139,17 +140,17 @@ public class FindCommand extends VisitorCommand {
          * that may contain spaces and quotation marks. */
         String[] args = StringUtility.extractArguments(s, 2);
 
-        /* Set path and filter pattern. */
+        /* Set path and filtering pattern. */
         Path path;
-        String filter;
+        String pattern;
 
         if (args.length == 1) {
             path = env.getCurrentPath();
-            filter = args[0];
+            pattern = args[0];
         } else if (args.length == 2) {
             path = Utility.resolveAbsolutePath(env, args[0]);
             Utility.requireExists(path);
-            filter = args[1];
+            pattern = args[1];
         } else {
             throw new SyntaxException();
         }
@@ -159,10 +160,10 @@ public class FindCommand extends VisitorCommand {
         try {
             if (useRegex) {
                 myPattern = caseSensitive ?
-                    new MyPattern(Pattern.compile(filter)) :
-                    new MyPattern(Pattern.compile(filter, Pattern.CASE_INSENSITIVE));
+                    new MyPattern(Pattern.compile(pattern)) :
+                    new MyPattern(Pattern.compile(pattern, Pattern.CASE_INSENSITIVE));
             } else {
-                myPattern = new MyPattern(filter);
+                myPattern = new MyPattern(pattern);
             }
         } catch (PatternSyntaxException e) {
             env.writeln("Pattern error occurred:");
@@ -245,61 +246,6 @@ public class FindCommand extends VisitorCommand {
     }
 
     /**
-     * Represents a pattern that can be given either as a {@code String} or a
-     * {@code Pattern}. If a string is given, it is decompiled to pattern parts
-     * using the {@link StringUtility#splitPattern(String)} method. Else the
-     * pattern is already a compiled representation of a regular expression.
-     * <p>
-     * This class contains a {@link #matches(String)} method that matches the
-     * specified input string to the argument given in the constructor.
-     *
-     * @author Mario Bobic
-     */
-    private static class MyPattern {
-
-        /** Parts of the pattern to be matched against. */
-        private String[] patternParts;
-
-        /** Regular expression pattern to be matched against. */
-        private Pattern regexPattern;
-
-        /**
-         * Constructs an instance of {@code MyPattern} with the specified string
-         * pattern.
-         *
-         * @param pattern a string pattern possibly containing asterisks
-         */
-        public MyPattern(String pattern) {
-            patternParts = StringUtility.splitPattern(pattern.toUpperCase());
-        }
-
-        /**
-         * Constructs an instance of {@code MyPattern} with the specified
-         * regular expression pattern.
-         *
-         * @param regex a compiled representation of a regular expression
-         */
-        public MyPattern(Pattern regex) {
-            regexPattern = regex;
-        }
-
-        /**
-         * Returns true if the specified <tt>input</tt> matches this pattern.
-         *
-         * @param input input to be matched against
-         * @return true if the specified input matches this pattern
-         */
-        public boolean matches(String input) {
-            if (patternParts != null) {
-                return StringUtility.matches(input.toUpperCase(), patternParts);
-            } else {
-                return regexPattern.matcher(input).matches();
-            }
-        }
-
-    }
-
-    /**
      * A {@linkplain SimpleFileVisitor} extended and used to serve the
      * {@linkplain FindCommand}. Pattern matching is case insensitive.
      *
@@ -311,7 +257,7 @@ public class FindCommand extends VisitorCommand {
         private Environment environment;
         /** The starting file. */
         private Path start;
-        /** The wanted pattern to be filtered out. */
+        /** Pattern to be matched against. */
         private MyPattern pattern;
         /** Size limit converted to human readable byte count. */
         private String limitStr;
@@ -322,7 +268,7 @@ public class FindCommand extends VisitorCommand {
          *
          * @param environment an environment
          * @param start the starting file
-         * @param pattern the wanted pattern to be filtered out
+         * @param pattern pattern to be matched against
          */
         public FindFileVisitor(Environment environment, Path start, MyPattern pattern) {
             this.environment = environment;

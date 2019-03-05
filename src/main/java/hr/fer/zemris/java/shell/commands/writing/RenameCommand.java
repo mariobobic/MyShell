@@ -104,10 +104,8 @@ public class RenameCommand extends AbstractCommand {
             throw new SyntaxException();
         }
 
+        // Get path argument, this helps us avoid quotation marks
         String[] args = StringUtility.extractArguments(s, 1);
-        if (args.length < 1) {
-            throw new SyntaxException();
-        }
 
         Path path = Utility.resolveAbsolutePath(env, args[0]);
         Utility.requireExists(path);
