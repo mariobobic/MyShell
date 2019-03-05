@@ -14,7 +14,9 @@ import java.util.regex.Pattern;
 public abstract class StringUtility {
 
     /** The quote character. */
-    private static final Character QUOT = '"';
+    private static final Character QUOT_CHR = '"';
+    /** The quote string. */
+    private static final String QUOT_STR = "\"";
 
     /**
      * Disable instantiation or inheritance.
@@ -68,6 +70,10 @@ public abstract class StringUtility {
      */
     public static String[] extractArguments(String s, int limit, boolean keepQuots) {
         if (s == null) return new String[0];
+        if (!keepQuots && limit == 1 && s.startsWith(QUOT_STR) && s.endsWith(QUOT_STR)) {
+            String noQuots = s.substring(1, s.length() - 1);
+            return new String[] { noQuots };
+        }
 
         List<String> list = new ArrayList<>();
 
@@ -612,7 +618,7 @@ public abstract class StringUtility {
         StringBuilder sb = new StringBuilder();
 
         for (Object arg : args) {
-            sb.append(QUOT).append(arg).append(QUOT);
+            sb.append(QUOT_CHR).append(arg).append(QUOT_CHR);
             sb.append(" ");
         }
         // delete last space

@@ -26,17 +26,25 @@ public class StringHelperTests {
 		int actualLength = args.length;
 		
 		assertEquals(expectedLength, actualLength);
+		assertEquals("This", args[0]);
+		assertEquals("string", args[1]);
+		assertEquals("should", args[2]);
+		assertEquals("contain", args[3]);
+		assertEquals("exactly 5 arguments", args[4]); // notice no quotations here
 	}
 	
 	@Test
 	public void testExtractArguments2() {
-		String str = "This\t   string \nshould  contain \"exactly 3 arguments\" for sure";
+		String str = "This\t   string \nshould contain \"exactly 3 arguments\" for sure";
 		
 		String[] args = StringUtility.extractArguments(str, 3);
 		int expectedLength = 3;
 		int actualLength = args.length;
 		
 		assertEquals(expectedLength, actualLength);
+		assertEquals("This", args[0]);
+		assertEquals("string", args[1]);
+		assertEquals("should contain \"exactly 3 arguments\" for sure", args[2]);
 	}
 	
 	@Test
@@ -85,7 +93,35 @@ public class StringHelperTests {
 		String[] expected = {"Keep", "these", "\"quotes\"", "please."};
 		assertArrayEquals(expected, args);
 	}
-	
+
+	@Test
+	public void testExtractArgumentsLimitOne() {
+		String str = "\"Get me out of these quotes.\"";
+
+		String[] args = StringUtility.extractArguments(str, 1, false);
+
+		int expectedLength = 1;
+		int actualLength = args.length;
+		assertEquals(expectedLength, actualLength);
+
+		String[] expected = {"Get me out of these quotes."};
+		assertArrayEquals(expected, args);
+	}
+
+	@Test
+	public void testExtractArgumentsLimitOneKeepQuots() {
+		String str = "\"I can't get out of these quotes.\"";
+
+		String[] args = StringUtility.extractArguments(str, 1, true);
+
+		int expectedLength = 1;
+		int actualLength = args.length;
+		assertEquals(expectedLength, actualLength);
+
+		String[] expected = {"\"I can't get out of these quotes.\""};
+		assertArrayEquals(expected, args);
+	}
+
 	@Test
 	public void testSplitPattern() {
 		String pattern = "three*pattern*parts";
