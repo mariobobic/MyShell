@@ -18,9 +18,12 @@ import java.nio.file.attribute.FileTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import static hr.fer.zemris.java.shell.utility.CommandUtility.markAndPrintNumber;
 
@@ -45,18 +48,16 @@ public class ShowCommand extends VisitorCommand {
             DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss").withZone(ZoneId.systemDefault());
 
     /** A comparator that compares files by their size, smallest first. */
-    private static final Comparator<Path> COMP_SMALLEST = (f1, f2) -> {
-        return Long.compare(size(f1), size(f2));
-    };
+    private static final Comparator<Path> COMP_SMALLEST = Comparator.comparingLong(ShowCommand::size);
 
     /** A comparator that compares files by their modification date, oldest first. */
-    private static final Comparator<Path> COMP_OLDEST = (f1, f2) -> {
-        return lastModified(f1).compareTo(lastModified(f2));
-    };
+    private static final Comparator<Path> COMP_OLDEST = Comparator.comparing(ShowCommand::lastModified);
 
     /* Flags */
     /** Amount of files to be shown. */
     private int count;
+    /** True if only directories should be matched against the pattern. */
+    private boolean directoriesOnly;
 
     /**
      * Constructs a new command object of type {@code LargestCommand}.
@@ -94,6 +95,7 @@ public class ShowCommand extends VisitorCommand {
     private static List<FlagDescription> createFlagDescriptions() {
         List<FlagDescription> desc = new ArrayList<>();
         desc.add(new FlagDescription("n", "count", "count", "Amount of files to be shown."));
+        desc.add(new FlagDescription("d", null, null, "Compare directories instead of files."));
         return desc;
     }
 
@@ -108,6 +110,10 @@ public class ShowCommand extends VisitorCommand {
         /* Replace default values with flag values, if any. */
         if (commandArguments.containsFlag("n", "count")) {
             count = commandArguments.getFlag("n", "count").getPositiveIntArgument(false);
+        }
+
+        if (commandArguments.containsFlag("d")) {
+            directoriesOnly = true;
         }
 
         return super.compileFlags(env, s);
@@ -145,8 +151,10 @@ public class ShowCommand extends VisitorCommand {
         env.clearMarks();
 
         List<Path> largestFiles = largestVisitor.getFiles();
+        Map<Path, Long> directorySizes = largestVisitor.getDirectorySizes();
         for (Path f : largestFiles) {
-            String bytes = " (" + Utility.humanReadableByteCount(size(f)) + ")";
+            long size = directoriesOnly ? directorySizes.get(f) : size(f);
+            String bytes = " (" + Utility.humanReadableByteCount(size) + ")";
             String modTime = " (" + FORMATTER.format(lastModified(f).toInstant()) + ")";
             env.write(f.normalize() + bytes + modTime);
             markAndPrintNumber(env, f);
@@ -180,19 +188,15 @@ public class ShowCommand extends VisitorCommand {
     /**
      * Returns the size of a file (in bytes). The size may differ from the
      * actual size on the file system due to compression, support for sparse
-     * files, or other reasons. The size of files that are not
-     * {@link Files#isRegularFile regular} files is implementation specific and
-     * therefore unspecified.
+     * files, or other reasons. The size of directories is calculated as the
+     * sum of sizes of all files that reside in that directory and in
+     * subdirectories.
      *
      * @param file the path to the file
      * @return the file size, in bytes
      */
     private static long size(Path file) {
-        try {
-            return Files.size(file);
-        } catch (IOException e) {
-            return -1; // ??
-        }
+        return Utility.calculateSize(file);
     }
 
     /**
@@ -210,7 +214,7 @@ public class ShowCommand extends VisitorCommand {
         try {
             return Files.getLastModifiedTime(file);
         } catch (IOException e) {
-            return FileTime.fromMillis(0); // ??
+            return FileTime.fromMillis(0);
         }
     }
 
@@ -222,11 +226,10 @@ public class ShowCommand extends VisitorCommand {
      */
     private class ShowFileVisitor extends SimpleFileVisitor<Path> {
 
-        /** Comparator used to compare files. */
-        private Comparator<Path> comparator;
-
         /** List of largest files in the given directory tree. */
-        private List<Path> filteredFiles;
+        private Set<Path> filteredFiles;
+        /** Sizes of each directory that was visited, only filled if onlyDirectories == true. */
+        private Map<Path, Long> directorySizes = new HashMap<>();
 
         /**
          * Initializes a new instance of this class setting the quantity to the
@@ -235,8 +238,20 @@ public class ShowCommand extends VisitorCommand {
          * @param comparator comparator used for comparing files
          */
         public ShowFileVisitor(Comparator<Path> comparator) {
-            this.comparator = comparator;
-            filteredFiles = new ArrayList<>();
+            this.filteredFiles = new TreeSet<>(comparator);
+        }
+
+        /**
+         * Calculates the directory size by accumulating file sizes under the visited directory.
+         */
+        @Override
+        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+            if (directoriesOnly) {
+                long currentDirSize = directorySizes.getOrDefault(dir, 0L);
+                computeDirectorySizes(Utility.getParent(dir), currentDirSize);
+                addCandidate(dir);
+            }
+            return FileVisitResult.CONTINUE;
         }
 
         /**
@@ -244,7 +259,11 @@ public class ShowCommand extends VisitorCommand {
          */
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-            addCandidate(file);
+            if (directoriesOnly) {
+                computeDirectorySizes(Utility.getParent(file), attrs.size());
+            } else {
+                addCandidate(file);
+            }
             return FileVisitResult.CONTINUE;
         }
 
@@ -257,34 +276,17 @@ public class ShowCommand extends VisitorCommand {
             return FileVisitResult.CONTINUE;
         }
 
+        private void computeDirectorySizes(Path path, long size) {
+            directorySizes.compute(path, (dir2, oldSize) -> oldSize == null ? size : size + oldSize);
+        }
+
         /**
-         * Adds files unconditionally if the list has not yet reached the
-         * desired maximum quantity. If the list has been filled, the smallest
-         * file is checked with param <tt>file</tt> and the largest of these two
-         * will be left in the list.
+         * Adds candidate to a set of files or directories.
          *
-         * @param file candidate file
+         * @param path candidate file or directory
          */
-        private synchronized void addCandidate(Path file) {
-            boolean added = false;
-
-            if (filteredFiles.size() < count) {
-                filteredFiles.add(file);
-                added = true;
-            } else {
-                int lastIndex = count-1;
-                Path lastFile = filteredFiles.get(lastIndex);
-                if (comparator.compare(lastFile, file) > 0) {
-                    filteredFiles.remove(lastIndex);
-                    filteredFiles.add(file);
-                    added = true;
-                }
-            }
-
-            // Only sort if a file was added
-            if (added) {
-                Collections.sort(filteredFiles, comparator);
-            }
+        private void addCandidate(Path path) {
+            filteredFiles.add(path);
         }
 
         /**
@@ -293,7 +295,30 @@ public class ShowCommand extends VisitorCommand {
          * @return the list of largest files in the directory tree
          */
         public List<Path> getFiles() {
-            return filteredFiles;
+            ArrayList<Path> list = new ArrayList<>(count);
+
+            int i = 0;
+            for (Path file : filteredFiles) {
+                if (i == count) break;
+                list.add(file);
+                i++;
+            }
+
+            return list;
+        }
+
+        /**
+         * Returns a map of directories as keys and their sizes as values.
+         *
+         * Directories are stored in this map after a complete walk through
+         * the file tree is done. All directories that are subdirectories of
+         * the starting directory will be stored in this map, and their sizes
+         * calculated based on file sizes that the directories contain.
+         *
+         * @return a map of directories as keys and their sizes as values
+         */
+        public Map<Path, Long> getDirectorySizes() {
+            return directorySizes;
         }
     }
 

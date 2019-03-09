@@ -194,7 +194,7 @@ public class LsCommand extends AbstractCommand {
         ));
 
         /* Second column */
-        long size = directorySize ? calculateSize(path) : Files.size(path);
+        long size = directorySize ? Utility.calculateSize(path) : Files.size(path);
         sb.append(!humanReadable ?
             String.format(" %11d" , size) :
             String.format(" %11s", Utility.humanReadableByteCount(size))
@@ -215,31 +215,6 @@ public class LsCommand extends AbstractCommand {
         sb.append(" " + path.getFileName());
 
         return sb.toString();
-    }
-
-    /**
-     * Returns the size, in bytes, of the specified <tt>path</tt>. If the given
-     * path is a regular file, trivially its size is returned. Else the path is
-     * a directory and its contents are recursively explored, returning the
-     * total sum of all files within the directory.
-     * <p>
-     * If an I/O exception occurs, it is suppressed within this method and
-     * <tt>0</tt> is returned as the size of the path it is processing (it may
-     * or may not be the specified <tt>path</tt>).
-     *
-     * @param path path whose size is to be returned
-     * @return size of the specified path
-     */
-    private static long calculateSize(Path path) {
-        try {
-            if (Files.isRegularFile(path)) {
-                return Files.size(path);
-            }
-
-            return Files.list(path).mapToLong(LsCommand::calculateSize).sum();
-        } catch (IOException e) {
-            return 0L;
-        }
     }
 
 }

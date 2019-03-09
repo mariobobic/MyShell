@@ -429,6 +429,31 @@ public abstract class Utility {
     }
 
     /**
+     * Returns the size, in bytes, of the specified <tt>path</tt>. If the given
+     * path is a regular file, trivially its size is returned. Else the path is
+     * a directory and its contents are recursively explored, returning the
+     * total sum of all files within the directory.
+     * <p>
+     * If an I/O exception occurs, it is suppressed within this method and
+     * <tt>0</tt> is returned as the size of the path it is processing (it may
+     * or may not be the specified <tt>path</tt>).
+     *
+     * @param path path whose size is to be returned
+     * @return size of the specified path
+     */
+    public static long calculateSize(Path path) {
+        try {
+            if (Files.isRegularFile(path)) {
+                return Files.size(path);
+            }
+
+            return Files.list(path).mapToLong(Utility::calculateSize).sum();
+        } catch (IOException e) {
+            return 0L;
+        }
+    }
+
+    /**
      * Parses the specified string <tt>str</tt> as size and returns size in
      * bytes. The given argument may be a human readable byte count with units
      * specified, not necessarily separated by a space. If units are not
