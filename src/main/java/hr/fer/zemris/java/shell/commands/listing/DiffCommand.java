@@ -166,6 +166,9 @@ public class DiffCommand extends VisitorCommand {
             return ShellStatus.CONTINUE;
         }
 
+        /* Clear previously marked paths. */
+        env.clearMarks();
+
         /* Passed all checks, start working. */
         path1 = path1.toRealPath();
         path2 = path2.toRealPath();
