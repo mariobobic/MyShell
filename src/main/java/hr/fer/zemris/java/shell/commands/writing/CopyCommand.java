@@ -23,6 +23,7 @@ import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import static hr.fer.zemris.java.shell.utility.CommandUtility.formatln;
 import static hr.fer.zemris.java.shell.utility.CommandUtility.promptConfirm;
 
 /**
@@ -71,6 +72,7 @@ public class CopyCommand extends VisitorCommand {
         desc.add("If the second argument is a directory, a file with the same name is copied into it.");
         desc.add("The destination directory may or may not exist before the copying is done.");
         desc.add("If the destination directory does not exist, a corresponding directory structure is created.");
+        desc.add("Directory will be created, and the source copied into it if target ends with a file separator.");
         return desc;
     }
 
@@ -122,6 +124,12 @@ public class CopyCommand extends VisitorCommand {
         if (Files.isDirectory(source) && Files.isRegularFile(target)) {
             env.writeln("Can not copy directory onto a file.");
             return ShellStatus.CONTINUE;
+        }
+
+        /* If destination path ends with a system separator, assume it's a directory. */
+        boolean created = Utility.createDirectoriesIfPathEndsWithFileSeparator(args[1], target);
+        if (created) {
+            env.writeln("Created directory: " + target);
         }
 
         /* Passed all checks, start working. */
@@ -176,7 +184,7 @@ public class CopyCommand extends VisitorCommand {
         try {
             Files.createDirectories(target.getParent());
             createNewFile(env, source, target);
-            if (!isSilent()) env.writeln("Copied: " + target);
+            if (!isSilent()) formatln(env, "Copied: %s -> %s", source, target);
         } catch (NotEnoughDiskSpaceException e) {
             throw e;
         } catch (IOException e) {

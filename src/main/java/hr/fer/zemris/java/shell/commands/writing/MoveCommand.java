@@ -17,6 +17,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
+import static hr.fer.zemris.java.shell.utility.CommandUtility.formatln;
 import static hr.fer.zemris.java.shell.utility.CommandUtility.promptConfirm;
 
 /**
@@ -60,6 +61,7 @@ public class MoveCommand extends AbstractCommand {
         desc.add("If the second argument is a directory, the source is moved into the directory.");
         desc.add("The destination directory structure may or may not exist before the copying is done.");
         desc.add("If the destination directory does not exist, a corresponding directory structure is created.");
+        desc.add("Directory will be created, and the source moved into it if target ends with a file separator.");
         return desc;
     }
 
@@ -73,6 +75,12 @@ public class MoveCommand extends AbstractCommand {
         Path source = Utility.resolveAbsolutePath(env, args[0]);
         Path target = Utility.resolveAbsolutePath(env, args[1]);
         Utility.requireExists(source);
+
+        /* If destination path ends with a system separator, assume it's a directory. */
+        boolean created = Utility.createDirectoriesIfPathEndsWithFileSeparator(args[1], target);
+        if (created) {
+            env.writeln("Created directory: " + target);
+        }
 
         moveFile(source, target, env);
 
@@ -124,7 +132,7 @@ public class MoveCommand extends AbstractCommand {
         try {
             Files.createDirectories(target.getParent());
             Files.move(source, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-            env.writeln("Moved: " + target);
+            formatln(env, "Moved: %s -> %s", source, target);
         } catch (IOException e) {
             throw new IOException("Could not move " + source + " to " + target + ": " + e.getMessage());
         }

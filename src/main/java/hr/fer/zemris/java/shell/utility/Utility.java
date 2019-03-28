@@ -6,6 +6,7 @@ import hr.fer.zemris.java.shell.utility.exceptions.NotEnoughDiskSpaceException;
 
 import javax.xml.bind.DatatypeConverter;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
@@ -410,6 +411,29 @@ public abstract class Utility {
             // not a valid Windows shortcut
             return shortcutFile;
         }
+    }
+
+    /**
+     * Creates a directory hierarchy if the specified <tt>path</tt> ends with a slash or
+     * the default system file separator, if the path doesn't exist. Returns true if
+     * directories were created, false otherwise.
+     *
+     * @param path path to be checked, and directory to be created if it ends
+     *             with a file separator and does not yet exist
+     * @return true if directories were created, false otherwise
+     * @throws IOException if an I/O error occurs while creating directories
+     * @throws InvalidPathException if path ends with a file separator, but the
+     *                              path string cannot be converted to a Path
+     */
+    public static boolean createDirectoriesIfPathEndsWithFileSeparator(String path, Path dir) throws IOException, InvalidPathException {
+        if (path.endsWith("/") || path.endsWith(File.separator)) {
+            if (!Files.exists(dir)) {
+                Files.createDirectories(dir);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
