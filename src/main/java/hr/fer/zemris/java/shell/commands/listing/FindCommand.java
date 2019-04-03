@@ -77,6 +77,7 @@ public class FindCommand extends VisitorCommand {
         desc.add("If needed to include spaces to the pattern, use double quotation marks on the argument.");
         desc.add("Files that are exceeding the size limit will be ignored. By default, file contents are not read.");
         desc.add("The specified path may also be a file in which the pattern is searched for.");
+        desc.add("The limit flag argument may be specified as pure number in bytes, or a number followed by unit.");
         return desc;
     }
 
@@ -91,7 +92,7 @@ public class FindCommand extends VisitorCommand {
         List<FlagDescription> desc = new ArrayList<>();
         desc.add(new FlagDescription("r", null, null, "Use regex pattern matching."));
         desc.add(new FlagDescription("c", null, null, "Regex pattern is case sensitive."));
-        desc.add(new FlagDescription("l", "limit", "limit", "Maximum file size in bytes for content reading. Use -1 for unlimited."));
+        desc.add(new FlagDescription("l", "limit", "limit", "Maximum file size for content reading. Use -1 for unlimited."));
         desc.add(new FlagDescription("t", "trim", null, "Trim lines before printing."));
         return desc;
     }
@@ -238,8 +239,12 @@ public class FindCommand extends VisitorCommand {
                 }
             }
 
-            // Print matching contents
+            // Print matching contents, if any
             if (sb.length() != 0) {
+                if (!nameMatches) {
+                    markAndPrintPath(env, file);
+                }
+
                 env.writeln(sb.toString());
             }
         }
@@ -289,9 +294,9 @@ public class FindCommand extends VisitorCommand {
                 visitFileFailed(file, e);
             }
 
-            if (!isSilent() && Files.size(file) > sizeLimit) {
+            if (!isSilent() && sizeLimit != 0 && Files.size(file) > sizeLimit) {
                 Path relativeFile = start.relativize(file);
-                formatln(environment, "Too big to process content: %s (%s)",
+                formatln(environment, "File size exceeds content-processing limit: %s (%s)",
                         relativeFile,
                         Utility.humanReadableByteCount(Files.size(file))
                 );

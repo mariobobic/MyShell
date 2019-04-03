@@ -331,6 +331,7 @@ public class HttpServerCommand extends VisitorCommand {
             this.address = address;
             this.port = port;
             this.documentRoot = documentRoot;
+            setDaemon(true);
         }
 
         @Override
