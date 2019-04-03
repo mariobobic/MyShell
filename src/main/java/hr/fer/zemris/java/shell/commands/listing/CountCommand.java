@@ -16,8 +16,8 @@ import java.util.List;
 
 /**
  * A command that is used for counting the amount of files and directories in a
- * directory tree. This counting begins in the current working directory or the
- * directory specified and is going through all of the subdirectories.
+ * directory tree. This counting begins in the path specified, or current working
+ * directory and goes through all of the subdirectories.
  *
  * @author Mario Bobic
  */
@@ -45,8 +45,8 @@ public class CountCommand extends VisitorCommand {
     private static List<String> createCommandDescription() {
         List<String> desc = new ArrayList<>();
         desc.add("Counts the number of files and folders.");
-        desc.add("This counting begins in the current working directory or the "
-                + "directory specified and is going through all of the subdirectories.");
+        desc.add("Counting begins in the path specified, or current working "
+                + "directory and goes through all of the subdirectories.");
         return desc;
     }
 
@@ -79,7 +79,7 @@ public class CountCommand extends VisitorCommand {
      *
      * @author Mario Bobic
      */
-    private class CountFileVisitor extends SimpleFileVisitor<Path> {
+    public static class CountFileVisitor extends SimpleFileVisitor<Path> {
 
         /** Number of files this visitor has encountered. */
         private int fileCount = 0;

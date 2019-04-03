@@ -8,15 +8,10 @@ import hr.fer.zemris.java.shell.utility.Utility;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.attribute.BasicFileAttributeView;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileTime;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -51,6 +46,10 @@ public class LsCommand extends AbstractCommand {
     private boolean humanReadable;
     /** Indicates if directory sizes should be calculated. */
     private boolean directorySize;
+    /** Indicates if the given output should be cleared of details. */
+    private boolean cleanOutput;
+    /** Indicates if number of files and directories should be counted. */
+    private boolean countFiles;
 
     /**
      * Constructs a new command object of type {@code LsCommand}.
@@ -78,6 +77,10 @@ public class LsCommand extends AbstractCommand {
                 + "this command also writes the attributes of the file it encountered.");
         desc.add("Use ls <path> to list contents of a certain directory.");
         desc.add("Use ls to list contents of the current directory.");
+        desc.add("Clean output flag removes all details from line output, including file marks.");
+        desc.add("Count files flag recursively counts number of files and directories below each directory "
+               + "listed by this command. It does not include the listed directory in the count. Shown after "
+               + "file name as (numFiles/numDirs), or as (numFiles/numDirs/numErrors) if there are reading errors.");
         return desc;
     }
 
@@ -92,6 +95,8 @@ public class LsCommand extends AbstractCommand {
         List<FlagDescription> desc = new ArrayList<>();
         desc.add(new FlagDescription("h", null, null, "Print human readable sizes (e.g. 1kiB, 256MiB)."));
         desc.add(new FlagDescription("d", null, null, "Calculate size of directories (sum all file sizes)."));
+        desc.add(new FlagDescription("c", "clean", null, "Don't print details, use only file name."));
+        desc.add(new FlagDescription("n", "count", null, "Count number of files and directories (recursively)."));
         return desc;
     }
 
@@ -100,6 +105,8 @@ public class LsCommand extends AbstractCommand {
         /* Initialize default values. */
         humanReadable = false;
         directorySize = false;
+        cleanOutput = false;
+        countFiles = false;
 
         /* Compile! */
         s = commandArguments.compile(s);
@@ -113,24 +120,34 @@ public class LsCommand extends AbstractCommand {
             directorySize = true;
         }
 
+        if (commandArguments.containsFlag("c", "clean")) {
+            cleanOutput = true;
+        }
+
+        if (commandArguments.containsFlag("n", "count")) {
+            countFiles = true;
+        }
+
         return super.compileFlags(env, s);
     }
 
     @Override
     protected ShellStatus execute0(Environment env, String s) throws IOException {
-        Path dir = s == null ?
+        Path path = s == null ?
             env.getCurrentPath() : Utility.resolveAbsolutePath(env, s);
-
-        Utility.requireDirectory(dir);
 
         /* Clear previously marked paths. */
         env.clearMarks();
 
-        /* Passed all checks, start working. */
-        try (Stream<Path> pathStream = Files.list(dir)) {
-            pathStream.forEachOrdered(file -> {
-                printFile(env, file);
-            });
+        /* Print directory contents or single file. */
+        if (Files.isDirectory(path)) {
+            try (Stream<Path> pathStream = Files.list(path)) {
+                pathStream.forEachOrdered(file -> {
+                    printFile(env, file);
+                });
+            }
+        } else {
+            printFile(env, path);
         }
 
         return ShellStatus.CONTINUE;
@@ -155,66 +172,17 @@ public class LsCommand extends AbstractCommand {
      */
     private void printFile(Environment env, Path path) {
         try {
-            env.write(getFileString(path, humanReadable, directorySize));
-            markAndPrintNumber(env, path);
+            String fileString = Utility.getFileString(path, DATE_FORMAT, humanReadable, directorySize, cleanOutput, countFiles);
+            if (cleanOutput) {
+                env.writeln(fileString);
+            } else {
+                env.write(fileString);
+                markAndPrintNumber(env, path);
+            }
         } catch (IOException e) {
             env.writeln("An I/O error has occured.");
             env.writeln(e.getMessage());
         }
-    }
-
-    /**
-     * Returns a string representation of a single file or directory specified
-     * by the <tt>path</tt>. The path is written in four columns:
-     * <ol>
-     * <li>The first column indicates if current object is directory (d),
-     * readable (r), writable (w) and executable (x).
-     * <li>The second column contains object size in bytes that is right aligned
-     * and occupies 10 characters.
-     * <li>The third column shows file creation date and time with, where the
-     * date format is specified by the {@linkplain #DATE_FORMAT}.
-     * <li>The fourth column contains the name of the file or directory.
-     * </ol>
-     *
-     * @param path path to be written
-     * @param humanReadable if file size should be in human readable byte count
-     * @param directorySize if directory size should be calculated
-     * @return a string representation of a single file or directory
-     * @throws IOException if an I/O error occurs when reading the path
-     */
-    public static String getFileString(Path path, boolean humanReadable, boolean directorySize) throws IOException {
-        StringBuilder sb = new StringBuilder();
-
-        /* First column */
-        sb.append(String.format("%c%c%c%c",
-            Files.isDirectory(path)	? 'd' : '-',
-            Files.isReadable(path)	? 'r' : '-',
-            Files.isWritable(path)	? 'w' : '-',
-            Files.isExecutable(path)? 'x' : '-'
-        ));
-
-        /* Second column */
-        long size = directorySize ? Utility.calculateSize(path) : Files.size(path);
-        sb.append(!humanReadable ?
-            String.format(" %11d" , size) :
-            String.format(" %11s", Utility.humanReadableByteCount(size))
-        );
-
-        /* Third column */
-        BasicFileAttributeView faView = Files.getFileAttributeView(
-                path, BasicFileAttributeView.class, LinkOption.NOFOLLOW_LINKS
-        );
-        BasicFileAttributes attributes = faView.readAttributes();
-
-        FileTime fileTime = attributes.creationTime();
-        String formattedDateTime = DATE_FORMAT.format(new Date(fileTime.toMillis()));
-
-        sb.append(" " + formattedDateTime);
-
-        /* Fourth column */
-        sb.append(" " + path.getFileName());
-
-        return sb.toString();
     }
 
 }

@@ -2,7 +2,6 @@ package hr.fer.zemris.java.shell.commands.network;
 
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.VisitorCommand;
-import hr.fer.zemris.java.shell.commands.system.LsCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.RequestContext;
@@ -638,7 +637,7 @@ public class HttpServerCommand extends VisitorCommand {
          * the specified environment <tt>env</tt>.
          * <p>
          * Each path inside the directory is written according to the rules of
-         * the {@link LsCommand#getFileString(Path, boolean, boolean)} method.
+         * the {@link Utility#getFileString(Path, boolean, boolean)} method.
          *
          * @param dir directory whose string representation is to be returned
          * @return a HTML representation of the specified directory <tt>dir</tt>
@@ -663,7 +662,7 @@ public class HttpServerCommand extends VisitorCommand {
                 if ((!showHidden && Utility.isHidden(child)) || isExcluded(child)) continue;
 
                 String url = encodePath(documentRoot.relativize(child).normalize());
-                String str = LsCommand.getFileString(child, true, false);
+                String str = Utility.getFileString(child, true, false);
                 sb	.append("<a href='/").append(url).append("'>")
                     .append(str).append("</a>").append("\r\n");
             }

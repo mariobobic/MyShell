@@ -1,5 +1,6 @@
 package hr.fer.zemris.java.shell.utility;
 
+import hr.fer.zemris.java.shell.commands.listing.CountCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
 import hr.fer.zemris.java.shell.utility.exceptions.IllegalPathException;
 import hr.fer.zemris.java.shell.utility.exceptions.NotEnoughDiskSpaceException;
@@ -17,12 +18,19 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.DosFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.DateFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
@@ -49,6 +57,9 @@ public abstract class Utility {
     /** Extension for filesystem shortcuts (symbolic links) on Windows. */
     private static final String WINDOWS_SHORTCUT_SUFFIX = ".lnk";
 
+    /** Most commonly used date format. */
+    private static final DateFormat STANDARD_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
     /**
      * Disable instantiation or inheritance.
      */
@@ -74,7 +85,7 @@ public abstract class Utility {
     public static Path resolveAbsolutePath(Environment env, String str) {
         /* If the entered argument is parsable as an integer,
          * see if a path is marked with that number. */
-        if (Utility.isInteger(str)) {
+        if (isInteger(str)) {
             int num = Integer.parseInt(str);
             Path path = env.getMarked(num);
             if (path != null) return path;
@@ -370,8 +381,8 @@ public abstract class Utility {
         try {
             if (Files.isSymbolicLink(link)) {
                 return Files.readSymbolicLink(link);
-            } else if (Utility.isWindowsShortcut(link)) {
-                return Utility.getWindowsShortcutRealPath(link);
+            } else if (isWindowsShortcut(link)) {
+                return getWindowsShortcutRealPath(link);
             }
         } catch (IOException e) {
             // invalid link or shortcut
@@ -434,6 +445,121 @@ public abstract class Utility {
         }
 
         return false;
+    }
+
+    /**
+     * Returns a string representation of a single file or directory specified
+     * by the <tt>path</tt>. The path is written in four columns:
+     * <ol>
+     * <li>The first column indicates if current object is directory (d),
+     * readable (r), writable (w) and executable (x).
+     * <li>The second column contains object size in bytes that is right aligned
+     * and occupies 10 characters.
+     * <li>The third column shows file creation date and time, where the
+     * date format is specified by the {@link DateFormat} class.
+     * <li>The fourth column contains the name of the file or directory.
+     * </ol>
+     *
+     * Example of a directory string if all arguments except <tt>cleanOutput</tt> are true:
+     * <blockquote><pre>
+     *     drwx    20.0 MiB 2019-04-03 20:49:50 testdir (1/0)
+     * </pre></blockquote>
+     *
+     * Example of a couple of file string if only <tt>cleanOutput</tt> is true:
+     * <blockquote><pre>
+     *     testdir00
+     *     testdir01
+     *     testdir02
+     *     testdir03
+     *     testdir04
+     * </pre></blockquote>
+     *
+     * @param path path to be written
+     * @param humanReadable if file size should be in human readable byte count
+     * @param directorySize if directory size should be calculated
+     * @param cleanOutput if only file name should be included
+     * @param countFiles if number of files and directories should be included
+     * @return a string representation of a single file or directory
+     * @throws IOException if an I/O error occurs when reading the path
+     */
+    public static String getFileString(Path path, DateFormat dateFormat, boolean humanReadable, boolean directorySize,
+                                       boolean cleanOutput, boolean countFiles) throws IOException {
+        StringBuilder sb = new StringBuilder();
+
+        if (!cleanOutput) {
+            /* First column */
+            sb.append(String.format("%c%c%c%c",
+                    Files.isDirectory(path) ? 'd' : '-',
+                    Files.isReadable(path) ? 'r' : '-',
+                    Files.isWritable(path) ? 'w' : '-',
+                    Files.isExecutable(path) ? 'x' : '-'
+            )).append(" ");
+
+            /* Second column */
+            long size = directorySize ? calculateSize(path) : Files.size(path);
+            sb.append(!humanReadable ?
+                    String.format("%11d", size) :
+                    String.format("%11s", humanReadableByteCount(size))
+            ).append(" ");
+
+            /* Third column */
+            BasicFileAttributeView faView = Files.getFileAttributeView(
+                    path, BasicFileAttributeView.class, LinkOption.NOFOLLOW_LINKS
+            );
+            BasicFileAttributes attributes = faView.readAttributes();
+
+            FileTime fileTime = attributes.creationTime();
+            String formattedDateTime = dateFormat.format(new Date(fileTime.toMillis()));
+
+            sb.append(formattedDateTime).append(" ");
+        }
+
+        /* Fourth column */
+        sb.append(path.getFileName());
+
+        if (countFiles && Files.isDirectory(path)) {
+            /* Fifth column */
+            CountCommand.CountFileVisitor countVisitor = new CountCommand.CountFileVisitor();
+            Files.walkFileTree(path, countVisitor);
+
+            int files = countVisitor.getFileCount();
+            int folders = countVisitor.getFolderCount();
+            int fails = countVisitor.getFails();
+
+            sb.append(" ");
+            sb.append("(");
+            sb.append(files).append("/").append(folders);
+            if (fails > 0) {
+                sb.append("/").append(fails);
+            }
+            sb.append(")");
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Returns a string representation of a single file or directory specified
+     * by the <tt>path</tt>. The path is written in four columns:
+     * <ol>
+     * <li>The first column indicates if current object is directory (d),
+     * readable (r), writable (w) and executable (x).
+     * <li>The second column contains object size in bytes that is right aligned
+     * and occupies 10 characters.
+     * <li>The third column shows file creation date and time, where the
+     * date format is specified by the {@link DateFormat} class.
+     * <li>The fourth column contains the name of the file or directory.
+     * </ol>
+     *
+     * @param path path to be written
+     * @param humanReadable if file size should be in human readable byte count
+     * @param directorySize if directory size should be calculated
+     * @return a string representation of a single file or directory
+     * @throws IOException if an I/O error occurs when reading the path
+     * @see #getFileString(Path, DateFormat, boolean, boolean, boolean, boolean)
+     */
+    public static String getFileString(Path path, boolean humanReadable, boolean directorySize) throws IOException {
+        return getFileString(path, STANDARD_DATE_FORMAT, humanReadable, directorySize, false, false);
     }
 
     /**
