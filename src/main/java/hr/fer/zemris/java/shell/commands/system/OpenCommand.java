@@ -15,7 +15,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 
 /**
  * Launches the associated application to open the file specified as a command
@@ -99,22 +98,20 @@ public class OpenCommand extends AbstractCommand {
         Path path = Utility.resolveAbsolutePath(env, args[0]);
         Utility.requireExists(path);
 
-        // Pick a random element, if the flag is present
+        // Pick a random element, if the random flag is present
         if (random) {
             if (!Files.isDirectory(path)) {
-                env.writeln("By using 'random' flag, the specified path must be a directory!");
+                env.writeln("When using 'random' flag, the specified path must be a directory!");
                 return ShellStatus.CONTINUE;
             }
 
-            // TODO try using only stream API for getting a random element
-            List<Path> files = Files.list(path).collect(Collectors.toList());
-            if (files.isEmpty()) {
+            Path randomPath = pickRandomFile(path);
+            if (randomPath == null) {
                 env.writeln("Directory " + path + " is empty.");
                 return ShellStatus.CONTINUE;
             }
 
-            int index = ThreadLocalRandom.current().nextInt(files.size());
-            path = files.get(index);
+            path = randomPath;
         }
 
         // Open the file (with possible arguments)
@@ -126,6 +123,16 @@ public class OpenCommand extends AbstractCommand {
         }
 
         return ShellStatus.CONTINUE;
+    }
+
+    private Path pickRandomFile(Path dir) throws IOException {
+        List<Path> files = Utility.listFilesSorted(dir);
+            if (files.isEmpty()) {
+                return null;
+            }
+
+            int index = ThreadLocalRandom.current().nextInt(files.size());
+            return files.get(index);
     }
 
 }

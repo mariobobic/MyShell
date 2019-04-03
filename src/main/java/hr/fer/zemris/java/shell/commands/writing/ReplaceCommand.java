@@ -13,9 +13,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Replaces a target character sequence with a replacement character sequence in
@@ -118,9 +117,9 @@ public class ReplaceCommand extends AbstractCommand {
 
         List<Path> files;
         if (Files.isDirectory(path)) {
-            files = Files.list(path).collect(Collectors.toList());
+            files = Utility.listFilesSorted(path);
         } else {
-            files = Arrays.asList(path);
+            files = Collections.singletonList(path);
         }
 
         /* Check if the directory was empty. */

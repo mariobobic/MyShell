@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * Sorts files into directories matching a specified pattern.
@@ -57,7 +58,7 @@ public class SortCommand extends AbstractCommand {
                + "specified by the second argument.");
         desc.add("The destination dir pattern can contain arguments from regex groups within the first argument.");
         desc.add("Say you have hundreds of photos named by pattern yyyyMMdd_HHmmss and you want to sort them by month, "
-               + "use: sort . \"(\\d{4})(\\d{2})\\d{2}_\\d{6}.*\" \"\\1-\\2\"");
+               + "use: sort . \"^(\\d{4})(\\d{2})\\d{2}_\\d{6}.*\" \"\\1-\\2\"");
         return desc;
     }
 
@@ -120,16 +121,18 @@ public class SortCommand extends AbstractCommand {
 
         try {
             Pattern regexPattern = Pattern.compile(regex);
-            Files.list(dir)
-                .filter(Files::isRegularFile)
-                .forEach(file -> {
-                    String filename = file.getFileName().toString();
-                    Matcher regexMatcher = regexPattern.matcher(filename);
-                    if (regexMatcher.matches()) {
-                        String destDirName = getDestinationDirName(dirPattern, regexMatcher);
-                        moveFile(env, file, destDirName);
-                    }
-                });
+            try (Stream<Path> stream = Files.list(dir)) {
+                stream
+                        .filter(Files::isRegularFile)
+                        .forEach(file -> {
+                            String filename = file.getFileName().toString();
+                            Matcher regexMatcher = regexPattern.matcher(filename);
+                            if (regexMatcher.matches()) {
+                                String destDirName = getDestinationDirName(dirPattern, regexMatcher);
+                                moveFile(env, file, destDirName);
+                            }
+                        });
+            }
         } catch (Exception e) {
             env.writeln("Error: " + e.getMessage());
         }

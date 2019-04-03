@@ -34,6 +34,8 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A helper class. Provides helper methods mostly for Path manipulation, but
@@ -206,6 +208,21 @@ public abstract class Utility {
             return true;
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    /**
+     * Lists all files in the specified dir, sorted by natural ordering and
+     * returns the result as a list of {@link Path} objects.
+     *
+     * @param dir directory of which a list of files will be returned
+     * @return list of all files and directories inside <tt>dir</tt>
+     * @throws java.nio.file.NotDirectoryException if path is not a directory
+     * @throws IOException if an I/O error occurs when opening the directory
+     */
+    public static List<Path> listFilesSorted(Path dir) throws IOException {
+        try (Stream<Path> stream = Files.list(dir)) {
+            return stream.sorted().collect(Collectors.toList());
         }
     }
 
@@ -597,7 +614,9 @@ public abstract class Utility {
                 return Files.size(path);
             }
 
-            return Files.list(path).mapToLong(Utility::calculateSize).sum();
+            try (Stream<Path> stream = Files.list(path)) {
+                return stream.mapToLong(Utility::calculateSize).sum();
+            }
         } catch (IOException e) {
             return 0L;
         }

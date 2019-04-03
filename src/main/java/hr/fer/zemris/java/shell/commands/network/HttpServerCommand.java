@@ -33,7 +33,6 @@ import java.util.Scanner;
 import java.util.StringJoiner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 /**
  * A command that is used to host a HTTP server. This command accepts a
@@ -650,7 +649,7 @@ public class HttpServerCommand extends VisitorCommand {
             }
 
             // List files from this directory and include 'back' if possible
-            List<Path> children = Files.list(dir).collect(Collectors.toList());
+            List<Path> children = Utility.listFilesSorted(dir);
             Path back = dir.resolve(".."); // this stays as ".."
             if (!dir.equals(documentRoot)) {
                 children.add(0, back);

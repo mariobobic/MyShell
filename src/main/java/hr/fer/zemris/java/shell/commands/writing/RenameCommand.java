@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static hr.fer.zemris.java.shell.utility.CommandUtility.formatln;
 
@@ -114,9 +115,11 @@ public class RenameCommand extends AbstractCommand {
             if (Files.isRegularFile(path)) {
                 renameFileUsingLastModified(env, path);
             } else if (Files.isDirectory(path)) {
-                Files.list(path).filter(Files::isRegularFile).forEach(file -> {
-                    renameFileUsingLastModified(env, file);
-                });
+                try (Stream<Path> stream = Files.list(path)) {
+                    stream.filter(Files::isRegularFile).forEach(file -> {
+                        renameFileUsingLastModified(env, file);
+                    });
+                }
             }
         }
 

@@ -13,9 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * A command that is used for renaming all files and directories with the path
@@ -125,8 +123,7 @@ public class RenameAllCommand extends AbstractCommand {
         }
 
         /* Create a sorted list of files in the specified directory. */
-        List<Path> listOfFiles = Files.list(path).collect(Collectors.toList());
-        Collections.sort(listOfFiles);
+        List<Path> listOfFiles = Utility.listFilesSorted(path);
 
         /* Check if the directory was empty. */
         int n = listOfFiles.size();
@@ -149,11 +146,16 @@ public class RenameAllCommand extends AbstractCommand {
             Path originalFile = listOfFiles.get(i);
             newName = newName.replace("{ext}", Utility.extension(originalFile));
 
-            Path renamingFile = path.resolve(newName);
+            Path targetFile = path.resolve(newName);
+
+            if (Files.exists(targetFile)) {
+                env.writeln("Rename not performed. Target file already exists: " + targetFile);
+                continue;
+            }
 
             try {
-                Files.move(originalFile, renamingFile, StandardCopyOption.ATOMIC_MOVE);
-                env.writeln(originalFile.getFileName() + " renamed to " + renamingFile.getFileName());
+                Files.move(originalFile, targetFile, StandardCopyOption.ATOMIC_MOVE);
+                env.writeln(originalFile.getFileName() + " renamed to " + targetFile.getFileName());
             } catch (Exception e) {
                 env.writeln(originalFile.getFileName() + " cannot be renamed to " + newName);
             }

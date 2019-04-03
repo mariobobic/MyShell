@@ -62,7 +62,7 @@ public class NameShuffleCommand extends AbstractCommand {
         Utility.requireDirectory(path);
 
         /* Create an original list of files and keep it for later printing. */
-        List<Path> originalListOfFiles = Files.list(path).collect(Collectors.toList());
+        List<Path> originalListOfFiles = Utility.listFilesSorted(path);
 
         /* Check if the directory was empty. */
         if (originalListOfFiles.size() == 0) {
@@ -79,12 +79,12 @@ public class NameShuffleCommand extends AbstractCommand {
 
         /* Temporarily rename all files. */
         for (int i = 0, n = originalListOfFiles.size(); i < n; i++) {
-            Path tempFile = path.resolve(RENAMING_PREFIX + Integer.toString(i) + ".tmp");
+            Path tempFile = path.resolve(RENAMING_PREFIX + i + ".tmp");
             Files.move(originalListOfFiles.get(i), tempFile);
         }
 
         /* Make a list of temporary files. */
-        List<Path> listOfTempFiles = Files.list(path).collect(Collectors.toList());
+        List<Path> listOfTempFiles = Utility.listFilesSorted(path);
 
         /* Start shuffle-renaming. */
         for (int i = 0, n = listOfTempFiles.size(); i < n; i++) {

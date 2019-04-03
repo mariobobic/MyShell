@@ -141,8 +141,8 @@ public class LsCommand extends AbstractCommand {
 
         /* Print directory contents or single file. */
         if (Files.isDirectory(path)) {
-            try (Stream<Path> pathStream = Files.list(path)) {
-                pathStream.forEachOrdered(file -> {
+            try (Stream<Path> stream = Files.list(path)) {
+                stream.forEachOrdered(file -> {
                     printFile(env, file);
                 });
             }
