@@ -170,19 +170,17 @@ public class ShowCommand extends VisitorCommand {
      * @return a comparator that matches the specified attribute
      */
     private static Comparator<Path> getComparator(String attr) {
-        Comparator<Path> comparator = null;
-
         if ("largest".equalsIgnoreCase(attr)) {
-            comparator = COMP_SMALLEST.reversed();
+            return COMP_SMALLEST.reversed();
         } else if ("smallest".equalsIgnoreCase(attr)) {
-            comparator = COMP_SMALLEST;
+            return COMP_SMALLEST;
         } else if ("newest".equalsIgnoreCase(attr)) {
-            comparator = COMP_OLDEST.reversed();
+            return COMP_OLDEST.reversed();
         } else if ("oldest".equalsIgnoreCase(attr)) {
-            comparator = COMP_OLDEST;
+            return COMP_OLDEST;
         }
 
-        return comparator;
+        return null;
     }
 
     /**

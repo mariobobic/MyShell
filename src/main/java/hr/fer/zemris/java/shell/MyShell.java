@@ -30,6 +30,7 @@ import hr.fer.zemris.java.shell.commands.system.OpenCommand;
 import hr.fer.zemris.java.shell.commands.system.PwdCommand;
 import hr.fer.zemris.java.shell.commands.system.SymbolCommand;
 import hr.fer.zemris.java.shell.commands.writing.ByteShuffleCommand;
+import hr.fer.zemris.java.shell.commands.writing.CleanCommand;
 import hr.fer.zemris.java.shell.commands.writing.CopyCommand;
 import hr.fer.zemris.java.shell.commands.writing.DecryptCommand;
 import hr.fer.zemris.java.shell.commands.writing.DumpCommand;
@@ -144,6 +145,7 @@ public class MyShell {
 
                 /* Writing */
                 new ByteShuffleCommand(),
+                new CleanCommand(),
                 new CopyCommand(),
                 new DecryptCommand(),
                 new DumpCommand(),

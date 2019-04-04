@@ -389,7 +389,7 @@ public abstract class Utility {
     /**
      * Returns the real path of the specified symbolic link or Windows shortcut
      * file. If the specified path does not exist or is not a readable symbolic
-     * link or shortcut, the given file is returned.
+     * link or shortcut, the given path is returned.
      *
      * @param link link of which the real path is to be returned
      * @return the real path of the given link, or that link if it is unreadable
