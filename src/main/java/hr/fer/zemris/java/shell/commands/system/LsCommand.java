@@ -136,17 +136,17 @@ public class LsCommand extends AbstractCommand {
         Path path = s == null ?
             env.getCurrentPath() : Utility.resolveAbsolutePath(env, s);
 
+        Utility.requireExists(path);
+
         /* Clear previously marked paths. */
         env.clearMarks();
 
         /* Print directory contents or single file. */
         if (Files.isDirectory(path)) {
             try (Stream<Path> stream = Files.list(path)) {
-                stream.forEachOrdered(file -> {
-                    printFile(env, file);
-                });
+                stream.forEachOrdered(file -> printFile(env, file));
             }
-        } else {
+        } else if (Files.isRegularFile(path)) {
             printFile(env, path);
         }
 

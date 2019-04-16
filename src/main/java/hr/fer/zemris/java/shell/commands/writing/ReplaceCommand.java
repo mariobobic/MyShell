@@ -3,6 +3,7 @@ package hr.fer.zemris.java.shell.commands.writing;
 import hr.fer.zemris.java.shell.ShellStatus;
 import hr.fer.zemris.java.shell.commands.AbstractCommand;
 import hr.fer.zemris.java.shell.interfaces.Environment;
+import hr.fer.zemris.java.shell.utility.CommandUtility;
 import hr.fer.zemris.java.shell.utility.FlagDescription;
 import hr.fer.zemris.java.shell.utility.StringUtility;
 import hr.fer.zemris.java.shell.utility.Utility;
@@ -139,9 +140,12 @@ public class ReplaceCommand extends AbstractCommand {
                 dest = Utility.firstAvailable(dest);
             }
 
-            /* Atomic move serves just for case-sensitive rename. */
-            Files.move(file, dest, StandardCopyOption.ATOMIC_MOVE);
-        };
+            if (!name.equals(newName)) {
+                /* Atomic move serves just for case-sensitive rename. */
+                Files.move(file, dest, StandardCopyOption.ATOMIC_MOVE);
+                CommandUtility.formatln(env, "Renamed %s -> %s", name, newName);
+            }
+        }
 
         return ShellStatus.CONTINUE;
     }
