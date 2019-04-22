@@ -51,7 +51,7 @@ public class CdCommand extends AbstractCommand {
     @Override
     protected ShellStatus execute0(Environment env, String s) throws IOException {
         Path path = (s == null) ?
-            env.getHomePath() :
+            env.getStartPath() :
             Utility.resolveAbsolutePath(env, s);
 
         Utility.requireDirectory(path);

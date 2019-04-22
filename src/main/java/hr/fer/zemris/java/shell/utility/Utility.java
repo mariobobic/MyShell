@@ -47,10 +47,11 @@ public abstract class Utility {
 
     /** Extension used for encrypted files. */
     public static final String CRYPT_FILE_EXT = ".crypt";
-
     /** Extension used for zipped files. */
     public static final String ZIP_FILE_EXT = ".zip";
 
+    /** Path to user home directory. */
+    public static final String USER_HOME = System.getProperty("user.home");
     /** Shorthand abbreviation for home directory. */
     private static final String HOME_DIR = "~";
 
@@ -155,7 +156,7 @@ public abstract class Utility {
      * @return the user home directory path
      */
     public static Path getUserHomeDirectory() {
-        return Paths.get(System.getProperty("user.home"));
+        return Paths.get(USER_HOME);
     }
 
     /**

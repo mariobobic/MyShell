@@ -45,6 +45,7 @@ import hr.fer.zemris.java.shell.commands.writing.ReplaceCommand;
 import hr.fer.zemris.java.shell.commands.writing.RmCommand;
 import hr.fer.zemris.java.shell.commands.writing.RmdirCommand;
 import hr.fer.zemris.java.shell.commands.writing.SortCommand;
+import hr.fer.zemris.java.shell.commands.writing.TempRenameCommand;
 import hr.fer.zemris.java.shell.commands.writing.TouchCommand;
 import hr.fer.zemris.java.shell.commands.writing.UnzipCommand;
 import hr.fer.zemris.java.shell.commands.writing.ZipCommand;
@@ -160,6 +161,7 @@ public class MyShell {
                 new RmCommand(),
                 new RmdirCommand(),
                 new SortCommand(),
+                new TempRenameCommand(),
                 new TouchCommand(),
                 new UnzipCommand(),
                 new ZipCommand(),
@@ -407,10 +409,12 @@ l:		while (true) {
         /** Writer of this environment. May be connected to a remote machine. */
         private Stack<BufferedWriter> writers = new Stack<>();
 
+        /** Path to user home directory. */
+        private final Path homePath = Paths.get(Utility.USER_HOME);
         /** Path where the program was ran. */
-        private final Path homePath = Paths.get(".").normalize().toAbsolutePath();
+        private final Path startPath = Paths.get(".").normalize().toAbsolutePath();
         /** Current path of the user positioning. */
-        private Path currentPath = homePath;
+        private Path currentPath = startPath;
 
         /** Map of environment variables. */
         private Map<String, String> variables = new HashMap<>();
@@ -551,6 +555,11 @@ l:		while (true) {
         @Override
         public Path getHomePath() {
             return homePath;
+        }
+
+        @Override
+        public Path getStartPath() {
+            return startPath;
         }
 
         @Override

@@ -256,13 +256,13 @@ public class HelperTests {
 	
 	@Test
 	public void testRequireDiskSpace1() throws IOException {
-		Utility.requireDiskSpace(0, environment.getHomePath());
+		Utility.requireDiskSpace(0, environment.getStartPath());
 	}
 	
 	@Test(expected = NotEnoughDiskSpaceException.class)
 	public void testRequireDiskSpace2() throws IOException {
 		long fiveTiB = 5L*1000*1000*1000*1000; // five terabytes
-		Utility.requireDiskSpace(fiveTiB, environment.getHomePath());
+		Utility.requireDiskSpace(fiveTiB, environment.getStartPath());
 	}
 
 	@Test

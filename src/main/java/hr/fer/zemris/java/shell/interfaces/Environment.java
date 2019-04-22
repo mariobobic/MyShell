@@ -75,11 +75,18 @@ public interface Environment extends BasicEnvironment {
     void pop(boolean close);
 
     /**
+     * Returns the path to user home directory.
+     *
+     * @return the path to user home directory
+     */
+    Path getHomePath();
+
+    /**
      * Returns the path of a directory where this program was run.
      *
      * @return the path of a directory where this program was run
      */
-    Path getHomePath();
+    Path getStartPath();
 
     /**
      * Gets the value of an environment, system or shell variable with the
