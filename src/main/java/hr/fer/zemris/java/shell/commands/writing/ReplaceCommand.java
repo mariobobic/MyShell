@@ -16,6 +16,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Replaces a target character sequence with a replacement character sequence in
@@ -29,6 +31,8 @@ public class ReplaceCommand extends AbstractCommand {
     /* Flags */
     /** Charset for decoding files. */
     private boolean useRegex;
+
+    private boolean dryRun;
 
     /**
      * Constructs a new command object of type {@code ReplaceCommand}.
@@ -54,6 +58,7 @@ public class ReplaceCommand extends AbstractCommand {
         desc.add("Replaces a target sequence with a replacement sequence in file names.");
         desc.add("If the specified path is a file, its file name is modified.");
         desc.add("If the specified path is a directory, file names of files inside are modified.");
+        desc.add("The destination dir pattern can contain arguments from regex groups that are within the first argument.");
         return desc;
     }
 
@@ -74,6 +79,7 @@ public class ReplaceCommand extends AbstractCommand {
     protected String compileFlags(Environment env, String s) {
         /* Initialize default values. */
         useRegex = false;
+        dryRun = false;
 
         /* Compile! */
         s = commandArguments.compile(s);
@@ -81,6 +87,10 @@ public class ReplaceCommand extends AbstractCommand {
         /* Replace default values with flag values, if any. */
         if (commandArguments.containsFlag("r")) {
             useRegex = true;
+        }
+
+        if (commandArguments.containsFlag("d", "dry-run")) {
+            dryRun = true;
         }
 
         return super.compileFlags(env, s);
@@ -130,24 +140,41 @@ public class ReplaceCommand extends AbstractCommand {
         }
 
         for (Path file : files) {
-            String name = file.getFileName().toString();
-            String newName = useRegex ?
-                name.replaceAll(target, replacement) :
-                name.replace(target, replacement);
-
-            Path dest = file.resolveSibling(newName);
-            if (!name.equalsIgnoreCase(newName)) {
-                dest = Utility.firstAvailable(dest);
+            String filename = file.getFileName().toString();
+            String newName;
+            if (!useRegex) {
+                newName = filename.replace(target, replacement);
+            } else {
+                Pattern regex = Pattern.compile(target);
+                Matcher regexMatcher = regex.matcher(filename);
+                if (regexMatcher.matches()) {
+                    newName = StringUtility.getTargetNameFromRegex(replacement, regexMatcher);
+                } else {
+                    continue;
+                }
             }
 
-            if (!name.equals(newName)) {
-                /* Atomic move serves just for case-sensitive rename. */
-                Files.move(file, dest, StandardCopyOption.ATOMIC_MOVE);
-                CommandUtility.formatln(env, "Renamed %s -> %s", name, newName);
-            }
+            moveFile(env, file, newName);
         }
 
         return ShellStatus.CONTINUE;
+    }
+
+    private void moveFile(Environment env, Path file, String targetName) throws IOException {
+        String filename = file.getFileName().toString();
+
+        Path dest = file.resolveSibling(targetName);
+        if (!filename.equalsIgnoreCase(targetName)) {
+            dest = Utility.firstAvailable(dest);
+        }
+
+        if (!filename.equals(targetName)) {
+            if (!dryRun) {
+                /* Atomic move serves just for case-sensitive rename. */
+                Files.move(file, dest, StandardCopyOption.ATOMIC_MOVE);
+            }
+            CommandUtility.formatln(env, "Renamed %s -> %s", filename, targetName);
+        }
     }
 
 }

@@ -26,8 +26,6 @@ import java.util.stream.Stream;
  */
 public class SortCommand extends AbstractCommand {
 
-    private static final Pattern GROUP_INDEX_PATTERN = Pattern.compile("\\\\\\d+");
-
     /* Flags */
     /** Indicates if no operations should be performed in this run. */
     private boolean dryRun;
@@ -56,7 +54,7 @@ public class SortCommand extends AbstractCommand {
         desc.add("Sorts files into directories matching a specified regex pattern.");
         desc.add("Files matching the given regex pattern will be moved into one or multiple directories "
                + "specified by the second argument.");
-        desc.add("The destination dir pattern can contain arguments from regex groups within the first argument.");
+        desc.add("The destination dir pattern can contain arguments from regex groups that are within the first argument.");
         desc.add("Say you have hundreds of photos named by pattern yyyyMMdd_HHmmss and you want to sort them by month, "
                + "use: sort . \"^(\\d{4})(\\d{2})\\d{2}_\\d{6}.*\" \"\\1-\\2\"");
         return desc;
@@ -128,7 +126,7 @@ public class SortCommand extends AbstractCommand {
                             String filename = file.getFileName().toString();
                             Matcher regexMatcher = regexPattern.matcher(filename);
                             if (regexMatcher.matches()) {
-                                String destDirName = getDestinationDirName(dirPattern, regexMatcher);
+                                String destDirName = StringUtility.getTargetNameFromRegex(dirPattern, regexMatcher);
                                 moveFile(env, file, destDirName);
                             }
                         });
@@ -156,21 +154,6 @@ public class SortCommand extends AbstractCommand {
         } catch (IOException e) {
             env.writeln("Error while moving file: " + e.getMessage());
         }
-    }
-
-    private String getDestinationDirName(String dirPattern, Matcher regexMatcher) {
-        Matcher matcher = GROUP_INDEX_PATTERN.matcher(dirPattern);
-
-        String dirName = dirPattern;
-        while (matcher.find()) {
-            String match = dirPattern.substring(matcher.start(), matcher.end());
-            int regexGroup = Integer.parseInt(match.substring(1));
-
-            String replacement = regexMatcher.group(regexGroup);
-            dirName = dirName.replace(match, replacement);
-        }
-
-        return dirName;
     }
 
 }

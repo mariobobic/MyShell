@@ -18,6 +18,9 @@ public abstract class StringUtility {
     /** The quote string. */
     private static final String QUOT_STR = "\"";
 
+    /** Group index pattern for target regex. */
+    private static final Pattern REGEX_GROUP_INDEX_PATTERN = Pattern.compile("\\\\\\d+");
+
     /**
      * Disable instantiation or inheritance.
      */
@@ -115,6 +118,29 @@ public abstract class StringUtility {
         }
 
         return split;
+    }
+
+    /**
+     * Returns a name specified by <tt>regex</tt> with all available
+     * groups replaced using <tt>regexMatcher</tt>.
+     *
+     * @param regex regex of which the target name is created
+     * @param regexMatcher object containing text from regex groups
+     * @return target name with all regex groups replaced
+     */
+    public static String getTargetNameFromRegex(String regex, Matcher regexMatcher) {
+        Matcher matcher = REGEX_GROUP_INDEX_PATTERN.matcher(regex);
+
+        String targetName = regex;
+        while (matcher.find()) {
+            String match = regex.substring(matcher.start(), matcher.end());
+            int regexGroup = Integer.parseInt(match.substring(1));
+
+            String replacement = regexMatcher.group(regexGroup);
+            targetName = targetName.replace(match, replacement);
+        }
+
+        return targetName;
     }
 
     /**
