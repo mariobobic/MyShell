@@ -2,6 +2,7 @@ package hr.fer.zemris.java.shell;
 
 import hr.fer.zemris.java.shell.commands.listing.CountCommand;
 import hr.fer.zemris.java.shell.commands.listing.DiffCommand;
+import hr.fer.zemris.java.shell.commands.listing.FileTypesCommand;
 import hr.fer.zemris.java.shell.commands.listing.FilterCommand;
 import hr.fer.zemris.java.shell.commands.listing.FindCommand;
 import hr.fer.zemris.java.shell.commands.listing.ShowCommand;
@@ -110,6 +111,7 @@ public class MyShell {
                 /* Listing */
                 new CountCommand(),
                 new DiffCommand(),
+                new FileTypesCommand(),
                 new FilterCommand(),
                 new FindCommand(),
                 new ShowCommand(),

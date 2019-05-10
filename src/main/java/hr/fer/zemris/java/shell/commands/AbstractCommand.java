@@ -149,6 +149,8 @@ public abstract class AbstractCommand implements ShellCommand {
         } catch (SyntaxException e) {
             printSyntaxError(env, e);
         } catch (InvalidFlagException e) {
+            if (!e.getFlags().isEmpty())
+                env.writeln(e.getFlags() + ": ");
             env.writeln(e.getMessage());
         } catch (IllegalPathException e) {
             env.writeln(e.getMessage());
