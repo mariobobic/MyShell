@@ -105,4 +105,20 @@ public abstract class CommandUtility {
         env.writeln(" <" + num + ">");
     }
 
+    public static class CmdArg {
+        public final String cmd;
+        public final String arg;
+
+        public CmdArg(String line) {
+            int splitter = StringUtility.indexOfWhitespace(line);
+            if (splitter != -1) {
+                cmd = line.substring(0, splitter).toUpperCase();
+                arg = line.substring(splitter+1).trim();
+            } else {
+                cmd = line.toUpperCase();
+                arg = null;
+            }
+        }
+    }
+
 }

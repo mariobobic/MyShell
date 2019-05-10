@@ -200,16 +200,9 @@ l:		while (true) {
                 line = line.trim();
                 if (line.isEmpty()) continue l;
 
-                String cmd;
-                String arg;
-                int splitter = StringUtility.indexOfWhitespace(line);
-                if (splitter != -1) {
-                    cmd = line.substring(0, splitter).toUpperCase();
-                    arg = line.substring(splitter+1).trim();
-                } else {
-                    cmd = line.toUpperCase();
-                    arg = null;
-                }
+                CommandUtility.CmdArg cmdArg = new CommandUtility.CmdArg(line);
+                String cmd = cmdArg.cmd;
+                String arg = cmdArg.arg;
 
                 ShellCommand shellCommand = commands.get(cmd);
                 if (shellCommand == null) {
