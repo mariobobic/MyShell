@@ -56,7 +56,7 @@ public class ExtractCommand extends VisitorCommand {
         desc.add("Extracts all files from all folders of the specified directory.");
         desc.add("After running this command, all files will be in the specified path.");
         desc.add("Files in subfolders are directly extracted to root folder.");
-        desc.add("If a name collision occurs, the second file is renamed to its parent folders.");
+        desc.add("If a name collision occurs, the second file is prefixed with its parent folders name.");
         return desc;
     }
 
@@ -144,7 +144,11 @@ public class ExtractCommand extends VisitorCommand {
             }
 
             Files.move(file, target);
-            environment.writeln("Extracted " + file);
+            if (file.getFileName().equals(target.getFileName())) {
+                environment.writeln("Extracted " + file);
+            } else {
+                environment.writeln("Extracted " + file + ". File renamed to " + target.getFileName());
+            }
 
             return FileVisitResult.CONTINUE;
         }
@@ -160,6 +164,7 @@ public class ExtractCommand extends VisitorCommand {
             if (!dir.equals(root) && removeDirectories) {
                 try {
                     Files.delete(dir);
+                    environment.writeln("Removed " + dir);
                 } catch (IOException e) {
                     environment.writeln("Unable to remove " + dir);
                 }

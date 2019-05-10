@@ -17,6 +17,9 @@ public class MyPattern {
 
     /** Parts of the pattern to be matched against. */
     private String[] patternParts;
+    /** Indicates if the pattern parts are case sensitive. */
+    private boolean caseSensitive;
+
     /** Regular expression pattern to be matched against. */
     private Pattern regexPattern;
 
@@ -27,7 +30,19 @@ public class MyPattern {
      * @param pattern a string pattern possibly containing asterisks
      */
     public MyPattern(String pattern) {
-        patternParts = StringUtility.splitPattern(pattern.toUpperCase());
+        this(pattern, false);
+    }
+
+    /**
+     * Constructs an instance of {@code MyPattern} with the specified string
+     * pattern.
+     *
+     * @param pattern a string pattern possibly containing asterisks
+     */
+    public MyPattern(String pattern, boolean caseSensitive) {
+        this.caseSensitive = caseSensitive;
+        this.patternParts = StringUtility.splitPattern(
+                caseSensitive ? pattern : pattern.toLowerCase());
     }
 
     /**
@@ -37,7 +52,7 @@ public class MyPattern {
      * @param regex a compiled representation of a regular expression
      */
     public MyPattern(Pattern regex) {
-        regexPattern = regex;
+        this.regexPattern = regex;
     }
 
     /**
@@ -48,7 +63,7 @@ public class MyPattern {
      */
     public boolean matches(String input) {
         if (patternParts != null) {
-            return StringUtility.matches(input.toUpperCase(), patternParts);
+            return StringUtility.matches(caseSensitive ? input : input.toLowerCase(), patternParts);
         } else {
             return regexPattern.matcher(input).matches();
         }

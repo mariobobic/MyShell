@@ -39,6 +39,8 @@ public class FilterCommand extends VisitorCommand {
     private boolean useFullPath;
     /** True if only directories should be matched against the pattern. */
     private boolean directoriesOnly;
+    /** True if only files should be matched against the pattern. */
+    private boolean filesOnly;
 
     /**
      * Constructs a new command object of type {@code FilterCommand}.
@@ -77,10 +79,11 @@ public class FilterCommand extends VisitorCommand {
      */
     private static List<FlagDescription> createFlagDescriptions() {
         List<FlagDescription> desc = new ArrayList<>();
-        desc.add(new FlagDescription("r", null, null, "Use regex pattern matching."));
-        desc.add(new FlagDescription("c", null, null, "Regex pattern is case sensitive."));
-        desc.add(new FlagDescription("f", null, null, "Use full path matching instead of just file name."));
-        desc.add(new FlagDescription("d", null, null, "Match only against directories."));
+        desc.add(new FlagDescription("r", "regex", null, "Use regex pattern matching."));
+        desc.add(new FlagDescription("c", "case-sensitive", null, "Regex pattern is case sensitive."));
+        desc.add(new FlagDescription("p", "full-path", null, "Use full path matching instead of just file name."));
+        desc.add(new FlagDescription("d", "only-dirs", null, "Match only against directories."));
+        desc.add(new FlagDescription("f", "only-files", null, "Match only against files."));
         return desc;
     }
 
@@ -90,25 +93,31 @@ public class FilterCommand extends VisitorCommand {
         useRegex = false;
         caseSensitive = false;
         useFullPath = false;
+        directoriesOnly = false;
+        filesOnly = false;
 
         /* Compile! */
         s = commandArguments.compile(s);
 
         /* Replace default values with flag values, if any. */
-        if (commandArguments.containsFlag("r")) {
+        if (commandArguments.containsFlag("r", "regex")) {
             useRegex = true;
         }
 
-        if (commandArguments.containsFlag("c")) {
+        if (commandArguments.containsFlag("c", "case-sensitive")) {
             caseSensitive = true;
         }
 
-        if (commandArguments.containsFlag("f")) {
+        if (commandArguments.containsFlag("p", "full-path")) {
             useFullPath = true;
         }
 
-        if (commandArguments.containsFlag("d")) {
+        if (commandArguments.containsFlag("d", "only-dirs")) {
             directoriesOnly = true;
+        }
+
+        if (commandArguments.containsFlag("f", "only-files")) {
+            filesOnly = true;
         }
 
         return super.compileFlags(env, s);
@@ -131,7 +140,7 @@ public class FilterCommand extends VisitorCommand {
                         new MyPattern(Pattern.compile(pattern)) :
                         new MyPattern(Pattern.compile(pattern, Pattern.CASE_INSENSITIVE));
             } else {
-                myPattern = new MyPattern(pattern);
+                myPattern = new MyPattern(pattern, caseSensitive);
             }
         } catch (PatternSyntaxException e) {
             env.writeln("Pattern error occurred:");
@@ -183,8 +192,10 @@ public class FilterCommand extends VisitorCommand {
         }
 
         @Override
-        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-            printMatch(dir);
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+            if (!filesOnly || directoriesOnly) {
+                printMatch(dir);
+            }
             return FileVisitResult.CONTINUE;
         }
 
@@ -193,8 +204,8 @@ public class FilterCommand extends VisitorCommand {
          * it out if it does.
          */
         @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-            if (!directoriesOnly) {
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+            if (!directoriesOnly || filesOnly) {
                 printMatch(file);
             }
             return FileVisitResult.CONTINUE;
@@ -205,7 +216,7 @@ public class FilterCommand extends VisitorCommand {
          * failed to be visited.
          */
         @Override
-        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+        public FileVisitResult visitFileFailed(Path file, IOException exc) {
             environment.writeln("Failed to access " + file);
             fails++;
             return FileVisitResult.CONTINUE;
@@ -255,13 +266,10 @@ public class FilterCommand extends VisitorCommand {
                 int r = pattern.indexOf("*");
                 String start = pattern.substring(0, r);
                 String end = pattern.substring(r+1);
-                if (name.startsWith(start) && name.endsWith(end))
-                    return true;
-            } else if (name.equals(pattern)) {
-                return true;
+                return name.startsWith(start) && name.endsWith(end);
             }
 
-            return false;
+            return name.equals(pattern);
         }
     }
 

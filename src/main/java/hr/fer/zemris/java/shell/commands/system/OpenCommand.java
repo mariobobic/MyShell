@@ -28,6 +28,8 @@ public class OpenCommand extends AbstractCommand {
     /* Flags */
     /** Indicates if a random file should be opened. */
     private boolean random;
+    /** Indicates if a file should be navigated to (opened in finder/file explorer). */
+    private boolean navigate;
 
     /**
      * Constructs a new command object of type {@code OpenCommand}.
@@ -68,6 +70,7 @@ public class OpenCommand extends AbstractCommand {
     private static List<FlagDescription> createFlagDescriptions() {
         List<FlagDescription> desc = new ArrayList<>();
         desc.add(new FlagDescription("r", "random", null, "Open a random file in the specified directory."));
+        desc.add(new FlagDescription("n", "navigate", null, "Navigate in finder/file explorer."));
         return desc;
     }
 
@@ -75,6 +78,7 @@ public class OpenCommand extends AbstractCommand {
     protected String compileFlags(Environment env, String s) {
         /* Initialize default values. */
         random = false;
+        navigate = false;
 
         /* Compile! */
         s = commandArguments.compile(s);
@@ -82,6 +86,10 @@ public class OpenCommand extends AbstractCommand {
         /* Replace default values with flag values, if any. */
         if (commandArguments.containsFlag("r", "random")) {
             random = true;
+        }
+
+        if (commandArguments.containsFlag("n", "navigate")) {
+            navigate = true;
         }
 
         return super.compileFlags(env, s);
@@ -112,6 +120,13 @@ public class OpenCommand extends AbstractCommand {
             }
 
             path = randomPath;
+        }
+
+        // Navigate to file using native UI
+        if (navigate) {
+            String command = "explorer.exe /select,\"" + path.toAbsolutePath() + "\"";
+            Runtime.getRuntime().exec(command);
+            return ShellStatus.CONTINUE;
         }
 
         // Open the file (with possible arguments)

@@ -164,7 +164,7 @@ public class FindCommand extends VisitorCommand {
                     new MyPattern(Pattern.compile(pattern)) :
                     new MyPattern(Pattern.compile(pattern, Pattern.CASE_INSENSITIVE));
             } else {
-                myPattern = new MyPattern(pattern);
+                myPattern = new MyPattern(pattern, caseSensitive);
             }
         } catch (PatternSyntaxException e) {
             env.writeln("Pattern error occurred:");
@@ -310,7 +310,7 @@ public class FindCommand extends VisitorCommand {
          * file failed to be visited.
          */
         @Override
-        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+        public FileVisitResult visitFileFailed(Path file, IOException exc) {
             environment.writeln("Failed to access " + file);
             return FileVisitResult.CONTINUE;
         }
