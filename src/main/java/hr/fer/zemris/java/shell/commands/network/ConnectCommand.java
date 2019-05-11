@@ -85,6 +85,7 @@ public class ConnectCommand extends AbstractCommand {
         List<FlagDescription> desc = new ArrayList<>();
         desc.add(new FlagDescription("p", "pass", "pass", "Specify a connection password."));
         desc.add(new FlagDescription("r", "reverse", null, "Reverse host-client connection."));
+        desc.add(new FlagDescription("d", "download-path", "path", "Set the path of downloads on local machine."));
         return desc;
     }
 
@@ -186,7 +187,9 @@ public class ConnectCommand extends AbstractCommand {
                         char[] cbuf = new char[1024];
                         while ((len = serverReader.read(cbuf)) != -1) {
                             if (NetworkTransfer.isAHint(cbuf, NetworkTransfer.DOWNLOAD_KEYWORD)) {
-                                NetworkTransfer.download(env, inFromServer, outToServer, decrypto);
+                                NetworkTransfer.download(env, inFromServer, outToServer, decrypto, false);
+                            } else if (NetworkTransfer.isAHint(cbuf, NetworkTransfer.DOWNLOAD_OVERWRITE_KEYWORD)) {
+                                NetworkTransfer.download(env, inFromServer, outToServer, decrypto, true);
                             } else if (NetworkTransfer.isAHint(cbuf, NetworkTransfer.UPLOAD_KEYWORD)) {
                                 NetworkTransfer.processUploadRequest(env, inFromServer, outToServer, encrypto);
                             } else {

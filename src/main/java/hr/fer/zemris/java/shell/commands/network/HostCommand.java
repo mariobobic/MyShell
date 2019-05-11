@@ -74,7 +74,7 @@ public class HostCommand extends AbstractCommand {
         List<FlagDescription> desc = new ArrayList<>();
         desc.add(new FlagDescription("p", "pass", "pass", "Specify a connection password."));
         desc.add(new FlagDescription("r", "reverse", null, "Reverse host-client connection."));
-        desc.add(new FlagDescription("d", "download-path", "path", "Set the path of downloads."));
+        desc.add(new FlagDescription("d", "download-path", "path", "Set the path of downloads on local machine."));
         return desc;
     }
 

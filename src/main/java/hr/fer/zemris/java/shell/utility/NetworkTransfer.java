@@ -32,11 +32,10 @@ public abstract class NetworkTransfer {
 
     /** Keyword used for sending and detecting a download start. */
     public static final char[] DOWNLOAD_KEYWORD = "__DOWNLOAD_START".toCharArray();
+    /** Keyword used for sending and detecting a download start in overwrite mode. */
+    public static final char[] DOWNLOAD_OVERWRITE_KEYWORD = "__DOWNLOAD_OVERWRITE_START".toCharArray();
     /** Keyword used for sending and detecting an upload start. */
     public static final char[] UPLOAD_KEYWORD = "__UPLOAD_START".toCharArray();
-
-    /** Default connection timeout, 10 seconds. */
-    public static final int DEFAULT_TIMEOUT = 1000*10;
 
     /**
      * Disable instantiation or inheritance.
@@ -84,7 +83,7 @@ public abstract class NetworkTransfer {
      * <p>
      * This method <strong>proceeds</strong> with the download process by
      * calling the
-     * {@link #download(Environment, InputStream, OutputStream, Crypto)} method
+     * {@link #download(Environment, InputStream, OutputStream, Crypto, boolean)} method
      * in a loop as long as the file server sends the {@link #DOWNLOAD_KEYWORD}
      * hint.
      *
@@ -93,9 +92,10 @@ public abstract class NetworkTransfer {
      * @param inFromServer input stream of the file server
      * @param outToServer output stream of the file server
      * @param decrypto cryptographic cipher for decrypting files
+     * @param overwrite indicates if files should be overwritten
      * @throws IOException if an I/O error occurs
      */
-    public static void requestDownload(Environment env, String path, InputStream inFromServer, OutputStream outToServer, Crypto decrypto) throws IOException {
+    public static void requestDownload(Environment env, String path, InputStream inFromServer, OutputStream outToServer, Crypto decrypto, boolean overwrite) throws IOException {
         // Send a hint that server should start upload
         byte[] start = new String(UPLOAD_KEYWORD).getBytes(StandardCharsets.UTF_8);
         outToServer.write(start);
@@ -113,7 +113,7 @@ public abstract class NetworkTransfer {
 
         while (clientReader.read(cbuf) != -1) {
             if (NetworkTransfer.isAHint(cbuf, DOWNLOAD_KEYWORD)) {
-                NetworkTransfer.download(env, inFromServer, outToServer, decrypto);
+                NetworkTransfer.download(env, inFromServer, outToServer, decrypto, overwrite);
             } else {
                 break;
             }
@@ -145,9 +145,10 @@ public abstract class NetworkTransfer {
      * @param inFromServer input stream of the server
      * @param outToServer output stream of the server
      * @param decrypto cryptographic cipher for decrypting files
+     * @param overwrite indicates if files should be overwritten
      * @throws IOException if an I/O error occurs
      */
-    public static void download(Environment env, InputStream inFromServer, OutputStream outToServer, Crypto decrypto) throws IOException {
+    public static void download(Environment env, InputStream inFromServer, OutputStream outToServer, Crypto decrypto, boolean overwrite) throws IOException {
         if (decrypto.getMode() != Crypto.DECRYPT) {
             throw new IllegalArgumentException("Crypto must be in decryption mode.");
         }
@@ -194,8 +195,9 @@ public abstract class NetworkTransfer {
                 + " because a file exists with the same name as one of the directories.", e);
         }
 
-        // Do not overwrite, find first available file name
-        path = Utility.firstAvailable(path);
+        if (!overwrite) {
+            path = Utility.firstAvailable(path);
+        }
 
         //////////////////////////////////////////////////
         /////////////////// Downloading //////////////////
@@ -203,7 +205,7 @@ public abstract class NetworkTransfer {
 
         Path relativeName = Paths.get(filename).resolveSibling(path.getFileName());
         String nameAndSize = relativeName + " (" + Utility.humanReadableByteCount(size) + ")";
-        System.out.println("Downloading " + nameAndSize);
+        System.out.println("Downloading " + nameAndSize + (overwrite ? ". Overwriting..." : ""));
 
         // Prepare download
         BufferedInputStream fileInput = new BufferedInputStream(inFromServer);
@@ -246,7 +248,7 @@ public abstract class NetworkTransfer {
      * file name of the requested path is read from the input stream.
      * <p>
      * This method <strong>proceeds</strong> with the upload process by calling
-     * the {@link #upload(Path, InputStream, OutputStream, Crypto)} method.
+     * the {@link #upload(Path, InputStream, OutputStream, Crypto, boolean)} method.
      *
      * @param env an environment
      * @param inFromClient input stream of the file recipient
@@ -267,7 +269,7 @@ public abstract class NetworkTransfer {
         Path path = Utility.resolveAbsolutePath(env, filename);
 
         // Continue upload
-        upload(path, inFromClient, outToClient, encrypto);
+        upload(path, inFromClient, outToClient, encrypto, false);
     }
 
     /**
@@ -291,14 +293,15 @@ public abstract class NetworkTransfer {
      * @param inFromClient input stream of the recipient
      * @param outToClient output stream of the recipient
      * @param encrypto cryptographic cipher for encrypting files
+     * @param overwrite indicates if files should be overwritten
      * @throws IOException if an I/O error occurs
      */
-    public static void upload(Path path, InputStream inFromClient, OutputStream outToClient, Crypto encrypto) throws IOException {
+    public static void upload(Path path, InputStream inFromClient, OutputStream outToClient, Crypto encrypto, boolean overwrite) throws IOException {
         if (encrypto.getMode() != Crypto.ENCRYPT) {
             throw new IllegalArgumentException("Crypto must be in encryption mode.");
         }
 
-        UploadFileVisitor visitor = new UploadFileVisitor(path, inFromClient, outToClient, encrypto);
+        UploadFileVisitor visitor = new UploadFileVisitor(path, inFromClient, outToClient, encrypto, overwrite);
         Files.walkFileTree(path, visitor);
     }
 
@@ -316,18 +319,19 @@ public abstract class NetworkTransfer {
      * @param inFromClient input stream of the recipient
      * @param outToClient output stream of the recipient
      * @param encrypto cryptographic cipher for encrypting files
+     * @param overwrite indicates if files should be overwritten
      * @throws IOException if an I/O error occurs
      * @throws SocketException if a connection error occurs between host and
      *         client (typically the client ends the connection)
      */
-    private static void upload(Path root, Path file, InputStream inFromClient, OutputStream outToClient, Crypto encrypto) throws IOException, SocketException {
+    private static void upload(Path root, Path file, InputStream inFromClient, OutputStream outToClient, Crypto encrypto, boolean overwrite) throws IOException, SocketException {
         try {
             //////////////////////////////////////////////////
             ///////////////// File parameters ////////////////
             //////////////////////////////////////////////////
 
             // Send a hint that client should start download
-            byte[] start = new String(DOWNLOAD_KEYWORD).getBytes(StandardCharsets.UTF_8);
+            byte[] start = new String(overwrite ? DOWNLOAD_OVERWRITE_KEYWORD : DOWNLOAD_KEYWORD).getBytes(StandardCharsets.UTF_8);
             outToClient.write(start);
             int status = inFromClient.read(); // wait for signal: accepted download
             assertSuccessful(status, "Upload request not accepted");
@@ -394,6 +398,8 @@ public abstract class NetworkTransfer {
         private OutputStream outToClient;
         /** Cryptographic cipher for encrypting files. */
         private Crypto encrypto;
+        /** Indicates if files should be overwritten. */
+        private boolean overwrite;
 
         /**
          * Constructs an instance of {@code UploadFileVisitor} with the
@@ -406,12 +412,14 @@ public abstract class NetworkTransfer {
          * @param encrypto cryptographic cipher for encrypting files
          * @param inFromClient input stream of the recipient
          * @param outToClient output stream of the recipient
+         * @param overwrite indicates if files should be overwritten
          */
-        public UploadFileVisitor(Path start, InputStream inFromClient, OutputStream outToClient, Crypto encrypto) {
+        public UploadFileVisitor(Path start, InputStream inFromClient, OutputStream outToClient, Crypto encrypto, boolean overwrite) {
             this.root = Utility.getParent(start);
             this.inFromClient = inFromClient;
             this.outToClient = outToClient;
             this.encrypto = encrypto;
+            this.overwrite = overwrite;
         }
 
         @Override
@@ -435,7 +443,7 @@ public abstract class NetworkTransfer {
          * @throws IOException if the download fails on the client side
          */
         private void process(Path file) throws IOException {
-            upload(root, file, inFromClient, outToClient, encrypto);
+            upload(root, file, inFromClient, outToClient, encrypto, overwrite);
             int status = inFromClient.read(); // wait for signal: download done
 
             if (status == 0) {
