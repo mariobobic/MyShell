@@ -10,11 +10,10 @@ import static org.junit.Assert.assertNotNull;
  *
  * @author Mario Bobic
  */
-@SuppressWarnings("javadoc")
 public class MyShellTests {
 	
 	/** Environment used by some tests. */
-	private EnvironmentImpl environment = new EnvironmentImpl();
+	private final EnvironmentImpl environment = new EnvironmentImpl();
 
 	@Test
 	public void test() {

@@ -225,9 +225,9 @@ public class ShowCommand extends VisitorCommand {
     private class ShowFileVisitor extends SimpleFileVisitor<Path> {
 
         /** List of largest files in the given directory tree. */
-        private Set<Path> filteredFiles;
+        private final Set<Path> filteredFiles;
         /** Sizes of each directory that was visited, only filled if onlyDirectories == true. */
-        private Map<Path, Long> directorySizes = new HashMap<>();
+        private final Map<Path, Long> directorySizes = new HashMap<>();
 
         /**
          * Initializes a new instance of this class setting the quantity to the
@@ -243,7 +243,7 @@ public class ShowCommand extends VisitorCommand {
          * Calculates the directory size by accumulating file sizes under the visited directory.
          */
         @Override
-        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+        public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
             if (directoriesOnly) {
                 long currentDirSize = directorySizes.getOrDefault(dir, 0L);
                 computeDirectorySizes(Utility.getParent(dir), currentDirSize);
@@ -256,7 +256,7 @@ public class ShowCommand extends VisitorCommand {
          * Adds the file to the list of candidates.
          */
         @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
             if (directoriesOnly) {
                 computeDirectorySizes(Utility.getParent(file), attrs.size());
             } else {
@@ -269,7 +269,7 @@ public class ShowCommand extends VisitorCommand {
          * Continues searching for files.
          */
         @Override
-        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+        public FileVisitResult visitFileFailed(Path file, IOException exc) {
 //			environment.writeln("Failed to access " + file);
             return FileVisitResult.CONTINUE;
         }

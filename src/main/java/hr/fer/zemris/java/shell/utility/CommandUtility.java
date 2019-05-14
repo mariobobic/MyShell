@@ -76,7 +76,6 @@ public abstract class CommandUtility {
                 return false;
             } else {
                 env.write("Please answer Y / N: ");
-                continue;
             }
         }
     }

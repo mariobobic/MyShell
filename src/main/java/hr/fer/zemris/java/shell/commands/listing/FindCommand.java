@@ -175,6 +175,8 @@ public class FindCommand extends VisitorCommand {
         /* Clear previously marked paths. */
         env.clearMarks();
 
+        env.writeln("Contents of files larger than " + Utility.humanReadableByteCount(sizeLimit) + " will not be read.");
+
         /* Visit file or directory. */
         FindFileVisitor findVisitor = new FindFileVisitor(env, path, myPattern);
         walkFileTree(path, findVisitor);
@@ -259,13 +261,11 @@ public class FindCommand extends VisitorCommand {
     private class FindFileVisitor extends SimpleFileVisitor<Path> {
 
         /** An environment. */
-        private Environment environment;
+        private final Environment environment;
         /** The starting file. */
-        private Path start;
+        private final Path start;
         /** Pattern to be matched against. */
-        private MyPattern pattern;
-        /** Size limit converted to human readable byte count. */
-        private String limitStr;
+        private final MyPattern pattern;
 
         /**
          * Initializes a new instance of this class setting the desired pattern
@@ -279,7 +279,6 @@ public class FindCommand extends VisitorCommand {
             this.environment = environment;
             this.start = start;
             this.pattern = pattern;
-            this.limitStr = Utility.humanReadableByteCount(sizeLimit);
         }
 
         /**

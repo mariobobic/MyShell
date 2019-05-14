@@ -97,7 +97,7 @@ public abstract class StringUtility {
             list.add(arg);
         }
 
-        return list.toArray(new String[list.size()]);
+        return list.toArray(new String[0]);
     }
 
     /**
@@ -209,7 +209,7 @@ public abstract class StringUtility {
      */
     public static String replaceFirst(String source, String target, String replacement, int fromIndex) {
         int index = source.indexOf(target, fromIndex);
-        if (index == -1) {
+        if (index < 0) {
             return source;
         }
 
@@ -411,15 +411,18 @@ public abstract class StringUtility {
     /**
      * Returns the index within the specified string <tt>str</tt> of the first
      * occurrence of a character that is not under double quotation-marks and
-     * satisfies the specified <tt>predicate</tt>, starting at the specified
-     * index.
+     * satisfies the specified <tt>predicate</tt>.
+     *
+     * The search starts from the specified index and ends at the end of the string.
+     *
+     * If no character is found that matches the given predicate, -1 is returned.
      *
      * @param str string whose index of the first character that satisfies the
      *        predicate is to be returned
      * @param fromIndex the index from which to start the search
      * @param predicate predicate to be satisfied
      * @return the index of the first occurrence of a character that satisfies
-     *         the given predicate that is not under quotes
+     *         the given predicate that is not under quotes, or -1
      */
     public static int indexOfUnquoted(String str, int fromIndex, Predicate<Character> predicate) {
         if (fromIndex < 0) {
@@ -445,23 +448,27 @@ public abstract class StringUtility {
     /**
      * Returns the index within the specified string <tt>str</tt> of the last
      * occurrence of a character that is not under double quotation-marks and
-     * satisfies the specified <tt>predicate</tt>, starting at the specified
-     * index.
+     * satisfies the specified <tt>predicate</tt>.
+     *
+     * The search starts from the end of <tt>str</tt></> and ends at the
+     * specified index.
+     *
+     * If no character is found that matches the given predicate, -1 is returned.
      *
      * @param str string whose index of the last character that satisfies the
      *        predicate is to be returned
-     * @param fromIndex the index from which to start the search
+     * @param toIndex the index on which the search ends
      * @param predicate predicate to be satisfied
      * @return the index of the last occurrence of a character that satisfies
-     *         the given predicate that is not under quotes
+     *         the given predicate that is not under quotes, or -1
      */
-    public static int lastIndexOfUnquoted(String str, int fromIndex, Predicate<Character> predicate) {
-        if (fromIndex < 0) {
-            fromIndex = 0;
+    public static int lastIndexOfUnquoted(String str, int toIndex, Predicate<Character> predicate) {
+        if (toIndex < 0) {
+            toIndex = 0;
         }
 
         boolean underQuote = false;
-        for (int i = str.length()-1; i >= fromIndex; i--) {
+        for (int i = str.length()-1; i >= toIndex; i--) {
             char c = str.charAt(i);
             if (c == '"' && !isEscaped(str, i)) {
                 underQuote = !underQuote;

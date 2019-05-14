@@ -121,9 +121,9 @@ public class RmCommand extends VisitorCommand {
     private class RmFileVisitor extends SimpleFileVisitor<Path> {
 
         /** An environment. */
-        private Environment environment;
+        private final Environment environment;
         /** Starting path. */
-        private Path root;
+        private final Path root;
 
         /**
          * Constructs an instance of {@code RmFileVisitor} with the specified arguments.
@@ -137,7 +137,7 @@ public class RmCommand extends VisitorCommand {
         }
 
         @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
             Path relative = root.relativize(file);
             try {
                 Files.delete(file);
@@ -150,13 +150,13 @@ public class RmCommand extends VisitorCommand {
         }
 
         @Override
-        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+        public FileVisitResult visitFileFailed(Path file, IOException exc) {
             environment.writeln("Failed to access " + file);
             return FileVisitResult.CONTINUE;
         }
 
         @Override
-        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+        public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
             Path relative = root.relativize(dir);
 
             try {

@@ -25,6 +25,7 @@ import java.text.ParseException;
  *     http://www.oreilly.com/catalog/swinghks/
  */
 // https://stackoverflow.com/questions/309495/windows-shortcut-lnk-parser-in-java
+@SuppressWarnings("ALL")
 public class WindowsShortcut {
     private boolean isDirectory;
     private boolean isLocal;

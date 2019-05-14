@@ -167,7 +167,7 @@ public class HostCommand extends AbstractCommand {
         /* Go to the main program and wait for the client to disconnect. */
         try {
             MyShell.main(null);
-        } catch (Exception e) {}
+        } catch (Exception ignored) {}
 
         /* Redirect the streams back. */
         env.getConnection().disconnectStreams();

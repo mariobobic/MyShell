@@ -16,11 +16,10 @@ import static org.junit.Assert.assertTrue;
  *
  * @author Mario Bobic
  */
-@SuppressWarnings("javadoc")
 public class ExpanderTests {
 	
 	/** Environment used by some tests. */
-	private EnvironmentImpl environment = new EnvironmentImpl();
+	private final EnvironmentImpl environment = new EnvironmentImpl();
 
 	
 	/* ---------------------------- Brace expansion ----------------------------- */

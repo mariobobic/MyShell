@@ -273,7 +273,7 @@ public class FileTypesCommand extends VisitorCommand {
     public class FileTypesFileVisitor extends SimpleFileVisitor<Path> {
 
         /** Mime types this visitor has encountered. */
-        private Map<String, Integer> fileTypes = new HashMap<>();
+        private final Map<String, Integer> fileTypes = new HashMap<>();
 
         /** Number of files and folders that failed to be accessed. */
         private int fails = 0;

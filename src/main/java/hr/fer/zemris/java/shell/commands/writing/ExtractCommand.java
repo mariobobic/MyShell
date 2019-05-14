@@ -113,9 +113,9 @@ public class ExtractCommand extends VisitorCommand {
     private class ExtractFileVisitor extends SimpleFileVisitor<Path> {
 
         /** An environment. */
-        private Environment environment;
+        private final Environment environment;
         /** Root directory. Files are extracted to this one. */
-        private Path root;
+        private final Path root;
 
         /**
          * Initializes a new instance of this class setting the root directory
@@ -154,13 +154,13 @@ public class ExtractCommand extends VisitorCommand {
         }
 
         @Override
-        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+        public FileVisitResult visitFileFailed(Path file, IOException exc) {
             environment.writeln("Unable to move " + file);
             return FileVisitResult.CONTINUE;
         }
 
         @Override
-        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+        public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
             if (!dir.equals(root) && removeDirectories) {
                 try {
                     Files.delete(dir);

@@ -30,15 +30,14 @@ import static hr.fer.zemris.java.shell.utility.CommandUtility.formatln;
 public abstract class AbstractCommand implements ShellCommand {
 
     /** Name of this Shell command. */
-    private String commandName;
+    private final String commandName;
     /** Description of this Shell command. */
-    private List<String> commandDescription;
+    private final List<String> commandDescription;
     /** Flag descriptions of this Shell command. */
-    @SuppressWarnings("unused")
-    private List<FlagDescription> flagDescriptions;
+    private final List<FlagDescription> flagDescriptions;
 
     /** Command arguments and flags reader. */
-    protected CommandArguments commandArguments;
+    protected final CommandArguments commandArguments;
 
     /**
      * Constructs a new command of a type extending {@code AbstractCommand} with
@@ -63,7 +62,7 @@ public abstract class AbstractCommand implements ShellCommand {
 
         this.commandName = commandName;
         this.flagDescriptions = flagDescriptions;
-        this.commandDescription = mergeDescriptions(commandDescription, flagDescriptions);
+        this.commandDescription = mergeDescriptions(commandDescription);
 
         // Add the help flag support
         commandArguments.addFlagDefinition("help", "?", false);
@@ -84,11 +83,9 @@ public abstract class AbstractCommand implements ShellCommand {
      * command contains any.
      *
      * @param commandDescription description of this Shell command
-     * @param flagDescriptions flag descriptions of this Shell command
      * @return description of the command with flags descriptions included
      */
-    // TODO put command descriptions for all commands in a single .properties file?
-    private List<String> mergeDescriptions(List<String> commandDescription, List<FlagDescription> flagDescriptions) {
+    private List<String> mergeDescriptions(List<String> commandDescription) {
         String usage = String.format("Usage: %s %s%s",
             getCommandName().toLowerCase(),
             flagDescriptions.isEmpty() ? "" : flagDescriptions+" ",
@@ -109,9 +106,9 @@ public abstract class AbstractCommand implements ShellCommand {
             /* For each flag, add its header and description. */
             desc.add("");
             desc.add("Flags:");
-            flagDescriptions.stream().sorted().forEach(flag -> {
-                desc.add(String.format("   %-"+len+"s  %s", flag.getHeader(), flag.description));
-            });
+            flagDescriptions.stream().sorted().forEach(flag ->
+                desc.add(String.format("   %-"+len+"s  %s", flag.getHeader(), flag.description))
+            );
         }
 
         return Collections.unmodifiableList(desc);
@@ -159,7 +156,7 @@ public abstract class AbstractCommand implements ShellCommand {
         } catch (FileNotFoundException e) {
             env.writeln("File not found: " + e.getMessage());
         } catch (IOException e) {
-            env.writeln("An I/O error occured: " + e.getMessage());
+            env.writeln("An I/O error occurred: " + e.getMessage());
         } finally {
             if (commandArguments.containsFlag("server") && env.isConnected()) {
                 env.pop(false); // POP STDOUT

@@ -68,11 +68,11 @@ public class ByteShuffleCommand extends AbstractCommand {
         Utility.requireFile(file);
 
         // TODO Flag this up!
-        int offset;
+        long offset;
         long length;
         try {
-            offset = Integer.parseInt(args[1]);
-            length = Integer.parseInt(args[2]);
+            offset = Utility.parseSize(args[1]);
+            length = Utility.parseSize(args[2]);
         } catch (Exception e) {
             offset = 0;
             length = Files.size(file);
@@ -92,7 +92,7 @@ public class ByteShuffleCommand extends AbstractCommand {
         Progress progress = new Progress(env, Files.size(file)+length, true);
         try (
             FileInputStream in = new FileInputStream(file.toFile());
-            FileOutputStream out = new FileOutputStream(tempFile.toFile());
+            FileOutputStream out = new FileOutputStream(tempFile.toFile())
         ) {
             /* First copy entire file. */
             int len;
@@ -106,10 +106,14 @@ public class ByteShuffleCommand extends AbstractCommand {
             in.getChannel().position(offset);
             out.getChannel().position(offset);
 
-            /* Then read with the offset. */
+            /* Then read with the previously set offset. */
             len = (int) length;
             bytes = new byte[len];
-            in.read(bytes, 0, len);
+            if (in.read(bytes, 0, len) == -1) {
+                env.writeln("Could not read file with offset " + offset);
+                Files.delete(tempFile);
+                return ShellStatus.CONTINUE;
+            }
 
             /* Shuffle the bytes and write to a new file with offset. */
             byte[] shuffledBytes = shuffle(bytes);

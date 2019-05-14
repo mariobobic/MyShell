@@ -124,7 +124,7 @@ public class ZipCommand extends VisitorCommand {
     private static void write(Environment env, OutputStream stream, Path file) throws IOException {
         Progress progress = new Progress(env, Files.size(file), true);
         try (
-            BufferedInputStream in = new BufferedInputStream(Files.newInputStream(file));
+            BufferedInputStream in = new BufferedInputStream(Files.newInputStream(file))
         ) {
             int len;
             byte[] buff = new byte[1024];
@@ -146,11 +146,11 @@ public class ZipCommand extends VisitorCommand {
     private class ZipFileVisitor extends SimpleFileVisitor<Path> {
 
         /** An environment. */
-        private Environment environment;
+        private final Environment environment;
         /** Starting path. */
-        private Path start;
+        private final Path start;
         /** Zip output stream. */
-        private ZipOutputStream zos;
+        private final ZipOutputStream zos;
 
         /**
          * Constructs an instance of {@code ZipFileVisitor} with the specified
@@ -179,7 +179,7 @@ public class ZipCommand extends VisitorCommand {
         }
 
         @Override
-        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+        public FileVisitResult visitFileFailed(Path file, IOException exc) {
             environment.writeln("Failed to access " + file);
             return FileVisitResult.CONTINUE;
         }

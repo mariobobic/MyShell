@@ -43,8 +43,7 @@ public class HistoryCommand extends AbstractCommand {
 
     @Override
     protected ShellStatus execute0(Environment env, String s) {
-        env.getHistory().forEach(input -> env.writeln(input));
-
+        env.getHistory().forEach(env::writeln);
         return ShellStatus.CONTINUE;
     }
 

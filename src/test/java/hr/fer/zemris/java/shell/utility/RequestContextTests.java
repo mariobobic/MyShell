@@ -6,11 +6,13 @@ import org.junit.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -18,7 +20,6 @@ import static org.junit.Assert.assertTrue;
  *
  * @author Mario Bobic
  */
-@SuppressWarnings("javadoc")
 public class RequestContextTests {
 	
 	/** Output stream to be used for primitive testing. */
@@ -56,7 +57,7 @@ public class RequestContextTests {
 	@Test(expected=IllegalArgumentException.class)
 	public void testSetEncodingException() {
 		// must throw
-		rc.setEncoding("Štefica");
+		rc.setEncoding("Foobar");
 	}
 	
 	@Test
@@ -66,7 +67,7 @@ public class RequestContextTests {
 	
 	@Test
 	public void testSetStatusText() {
-		rc.setStatusText("505 s crtom.");
+		rc.setStatusText("505 with the line.");
 	}
 	
 	@Test
@@ -81,7 +82,7 @@ public class RequestContextTests {
 	
 	@Test
 	public void testAddRCCookie() {
-		rc.addRCCookie(new RCCookie("Kuki", "chocolate", "localhost", "/", null));
+		rc.addRCCookie(new RCCookie("Cookie", "chocolate", "localhost", "/", null));
 	}
 	
 	
@@ -94,7 +95,7 @@ public class RequestContextTests {
 	/** Generate header using the rc.write() method. */
 	public RequestContextTests() {
 		rcGenerated = new RequestContext(os, null, null, null);
-		try { rcGenerated.write(""); } catch (IOException ignorable) {}
+		try { rcGenerated.write(""); } catch (IOException ignored) {}
 	}
 	
 	@Test(expected=RuntimeException.class)
@@ -109,7 +110,7 @@ public class RequestContextTests {
 
 	@Test(expected=RuntimeException.class)
 	public void testSetStatusTextRuntimeException() {
-		rcGenerated.setStatusText("505 s crtom.");
+		rcGenerated.setStatusText("505 with the line.");
 	}
 
 	@Test(expected=RuntimeException.class)
@@ -124,7 +125,7 @@ public class RequestContextTests {
 
 	@Test(expected=RuntimeException.class)
 	public void testAddRCCookieRuntimeException() {
-		rcGenerated.addRCCookie(new RCCookie("Kuki", "chocolate", "localhost", "/", null));
+		rcGenerated.addRCCookie(new RCCookie("Cookie", "chocolate", "localhost", "/", null));
 	}
 	
 	
@@ -147,10 +148,10 @@ public class RequestContextTests {
 	@Test(expected=UnsupportedOperationException.class)
 	public void testGetParameterNames() {
 		Map<String, String> parameters = new HashMap<>();
-		parameters.put("name", "Mario");
-		parameters.put("surname", "Bobic");
-		parameters.put("age", "20");
-		parameters.put("jmbag", "0036484942");
+		parameters.put("name", "Rick");
+		parameters.put("surname", "Sanchez");
+		parameters.put("age", "70");
+		parameters.put("dimension", "C-137");
 
 		RequestContext rc = new RequestContext(os, parameters, null, null);
 		
@@ -201,8 +202,8 @@ public class RequestContextTests {
 		rc.setPersistentParameter("global", "parameter");
 		
 		rc.removePersistentParameter("global");
-		
-		assertEquals(null, rc.getPersistentParameter("global"));
+
+		assertNull(rc.getPersistentParameter("global"));
 	}
 	
 	
@@ -247,10 +248,10 @@ public class RequestContextTests {
 		rc.setMimeType("text/plain");
 		rc.setStatusCode(404);
 		
-		byte[] data = "Error 404 Page Not Found".getBytes("ISO-8859-1");
+		byte[] data = "Error 404 Page Not Found".getBytes(StandardCharsets.ISO_8859_1);
 		rc.write(data);
 		
-		String actual = new String(outputStream.toByteArray(), "ISO-8859-1");
+		String actual = new String(outputStream.toByteArray(), StandardCharsets.ISO_8859_1);
 		
 		assertTrue(actual.endsWith("Error 404 Page Not Found"));
 		assertTrue(actual.contains("Content-Type: text/plain; charset=ISO-8859-1"));
@@ -262,13 +263,13 @@ public class RequestContextTests {
 		RequestContext rc = new RequestContext(outputStream, null, null, null);
 		
 		String html = "<html><body>Test</body></html>";
-		byte[] data = html.getBytes("UTF-8");
+		byte[] data = html.getBytes(StandardCharsets.UTF_8);
 		
 		rc.setContentLength(data.length);
 		rc.write(data, 0, 12); // <html><body>
 		rc.write(data, 16, 14); // </body></html>
 		
-		String actual = new String(outputStream.toByteArray(), "UTF-8");
+		String actual = new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
 		
 		assertEquals(html.length(), data.length); // this MUST be true
 		assertTrue(actual.endsWith("<html><body></body></html>"));
@@ -280,17 +281,17 @@ public class RequestContextTests {
 		RequestContext rc = new RequestContext(outputStream, null, null, null);
 		rc.setEncoding("US-ASCII");
 		
-		rc.addRCCookie(new RCCookie("Kolacic", "Njami", null, "/", null));
+		rc.addRCCookie(new RCCookie("Cookie", "Yummy", null, "/", null));
 		rc.addRCCookie(new RCCookie("Chocolate", "Chip", null, null, null));
 		
 		String usa = "United States of America";
 		rc.write(usa);
 		
-		String actual = new String(outputStream.toByteArray(), "US-ASCII");
+		String actual = new String(outputStream.toByteArray(), StandardCharsets.US_ASCII);
 		
 		assertTrue(actual.endsWith(usa));
 		assertTrue(actual.contains("charset=US-ASCII"));
-		assertTrue(actual.contains("Set-Cookie: Kolacic=\"Njami\"; Path=/"));
+		assertTrue(actual.contains("Set-Cookie: Cookie=\"Yummy\"; Path=/"));
 		assertTrue(actual.contains("Set-Cookie: Chocolate=\"Chip\""));
 	}
 	

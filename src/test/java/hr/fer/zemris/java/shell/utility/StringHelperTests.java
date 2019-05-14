@@ -12,7 +12,6 @@ import static org.junit.Assert.assertTrue;
  *
  * @author Mario Bobic
  */
-@SuppressWarnings("javadoc")
 public class StringHelperTests {
 	
 	/* --------------------------- StringHelper tests --------------------------- */

@@ -34,7 +34,7 @@ public abstract class Expander {
     public static final String LAST_INPUT = "!!";
 
     /** Decimal number formatter. */
-    private static NumberFormat nf = new DecimalFormat("#.######", DecimalFormatSymbols.getInstance(Locale.US));
+    private static final NumberFormat nf = new DecimalFormat("#.######", DecimalFormatSymbols.getInstance(Locale.US));
 
     /**
      * Disable instantiation or inheritance.
@@ -71,12 +71,12 @@ public abstract class Expander {
         List<String> lines = braceExpansion(env, output);
 
         // Replace all escaped symbols and escape flags
-        lines.replaceAll(line -> {
-            return line	.replace("\\$", "$")
-                        .replace("\\{", "{")
-                        .replace("\\"+LAST_INPUT, LAST_INPUT)
-                        .replace("\\\\", "\\");
-        });
+        lines.replaceAll(line ->
+             line.replace("\\$", "$")
+                 .replace("\\{", "{")
+                 .replace("\\"+LAST_INPUT, LAST_INPUT)
+                 .replace("\\\\", "\\")
+        );
 
         return lines;
     }
@@ -141,14 +141,11 @@ l:		while (true) {
             int start = input.lastIndexOf(OPENED, i);
             int insideStart = start+OPENED.length();
 
-            int end   = input.indexOf(CLOSED, insideStart);
+            int end = input.indexOf(CLOSED, insideStart);
             int outsideEnd = end+CLOSED.length();
             if (start == -1 || end == -1) {
-                if (lines.isEmpty()) {
-                    lines.add(input);
-                    return lines;
-                }
-                break;
+                lines.add(input);
+                return lines;
             }
 
             i = start-1; // set i to the first place before {

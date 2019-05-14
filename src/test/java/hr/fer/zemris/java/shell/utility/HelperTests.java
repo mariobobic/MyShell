@@ -28,11 +28,10 @@ import static org.junit.Assert.assertTrue;
  *
  * @author Mario Bobic
  */
-@SuppressWarnings("javadoc")
 public class HelperTests {
 	
 	/** Environment used by some tests. */
-	private EnvironmentImpl environment = new EnvironmentImpl();
+	private final EnvironmentImpl environment = new EnvironmentImpl();
 
 
 	/* ------------------------------ Helper tests ------------------------------ */
@@ -143,11 +142,11 @@ public class HelperTests {
 	}
 	
 	@Test
-	public void testIsHiddenRoot() throws IOException {
+	public void testIsHiddenRoot() {
 		// roots must not be hidden
-		FileSystems.getDefault().getRootDirectories().forEach(root -> {
-			assertFalse(Utility.isHidden(root));
-		});
+		FileSystems.getDefault().getRootDirectories().forEach(root ->
+			assertFalse(Utility.isHidden(root))
+		);
 	}
 	
 	@Test
@@ -178,7 +177,7 @@ public class HelperTests {
 	}
 	
 	@Test
-	public void testFirstAvailable3() throws IOException {
+	public void testFirstAvailable3() {
 		Path file = Paths.get("./file.txt").toAbsolutePath();
 		
 		// Get the first available file (should be exactly 'file')
@@ -215,7 +214,7 @@ public class HelperTests {
 	}
 	
 	@Test(expected = IllegalPathException.class)
-	public void testRequireExists2() throws IOException {
+	public void testRequireExists2() {
 		Path file = Paths.get("./non-existent-file");
 		Utility.requireExists(file);
 	}
@@ -387,7 +386,7 @@ public class HelperTests {
 	@Test
 	public void testResolveCharset2() {
 		Charset charset = Utility.resolveCharset("nothing");
-		assertEquals(null, charset);
+		assertNull(charset);
 	}
 	
 	@Test

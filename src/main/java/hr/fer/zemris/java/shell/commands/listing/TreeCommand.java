@@ -77,11 +77,11 @@ public class TreeCommand extends VisitorCommand {
      */
     private class TreeFileVisitor implements FileVisitor<Path> {
 
+        /** An environment. */
+        private final Environment environment;
+
         /** The level in relation to root that is currently being visited. */
         private int level;
-
-        /** An environment. */
-        private Environment environment;
 
         /**
          * Constructs an instance of TreeFileVisitor with the specified
@@ -94,7 +94,7 @@ public class TreeCommand extends VisitorCommand {
         }
 
         @Override
-        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
             if (level == 0) {
                 environment.writeln(dir.normalize().toAbsolutePath());
             } else {
@@ -106,19 +106,19 @@ public class TreeCommand extends VisitorCommand {
         }
 
         @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
             print(file);
             return FileVisitResult.CONTINUE;
         }
 
         @Override
-        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+        public FileVisitResult visitFileFailed(Path file, IOException exc) {
             environment.writeln("Failed to access " + file);
             return FileVisitResult.CONTINUE;
         }
 
         @Override
-        public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+        public FileVisitResult postVisitDirectory(Path dir, IOException exc) {
             level--;
             return FileVisitResult.CONTINUE;
         }

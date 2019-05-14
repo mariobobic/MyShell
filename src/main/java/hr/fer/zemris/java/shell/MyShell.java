@@ -77,6 +77,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -92,7 +93,7 @@ import java.util.stream.Collectors;
  * input is neither a valid command name nor a variable assignment, an error
  * message is displayed. The program stops and prints out a goodbye message if
  * the input command is {@link ExitCommand}. The program also prompts an input
- * symbol while waiting for a command to be inputed. If a critical error occurs,
+ * symbol while waiting for a command to be entered. If a critical error occurs,
  * an error message is printed out onto the <b>standard error</b> with a detail
  * message specifying what went wrong before the program terminates.
  *
@@ -103,7 +104,7 @@ import java.util.stream.Collectors;
 public class MyShell {
 
     /** A map of commands. */
-    private static Map<String, ShellCommand> commands;
+    private static final Map<String, ShellCommand> commands;
 
     static {
         commands = new HashMap<>();
@@ -175,7 +176,7 @@ public class MyShell {
     }
 
     /** An environment used by MyShell. */
-    private static EnvironmentImpl environment = new EnvironmentImpl();
+    private static final EnvironmentImpl environment = new EnvironmentImpl();
     /** Indicates if the output stream has been redirected to a file. */
     private static boolean redirected = false;
     /** Execution status of the last executed command. */
@@ -224,14 +225,20 @@ l:		while (true) {
                 try {
                     arg = checkRedirect(arg);
                 } catch (InvalidPathException e) {
-                    environment.writeln(e.getMessage());
-                    continue;
+                    char invalidChar = e.getInput().charAt(e.getIndex());
+                    environment.writeln("Tried to write output to \"" + e.getInput() + "\", but an error occurred.");
+                    environment.writeln("Invalid character at index " + e.getIndex() + " (\"" + invalidChar + "\")");
+
+                    boolean goOn = CommandUtility.promptConfirm(environment, "Print to console instead? ");
+                    if (!goOn) {
+                        continue;
+                    }
                 }
 
                 try {
                     executionStatus = shellCommand.execute(environment, arg);
                 } catch (RuntimeException critical) {
-                    System.err.println("A critical error occured: " + critical.getMessage());
+                    System.err.println("A critical error occurred: " + critical.getMessage());
                     System.err.println("Stack trace:");
                     critical.printStackTrace();
                     return;
@@ -336,7 +343,7 @@ l:		while (true) {
      */
     private static String checkRedirect(String input) {
         if (input == null) {
-            return input;
+            return null;
         }
 
         // Find the last unquoted '>' symbol
@@ -400,9 +407,9 @@ l:		while (true) {
     public static class EnvironmentImpl implements Environment {
 
         /** Reader of this environment. May be connected to a remote machine. */
-        private Stack<BufferedReader> readers = new Stack<>();
+        private final Stack<BufferedReader> readers = new Stack<>();
         /** Writer of this environment. May be connected to a remote machine. */
-        private Stack<BufferedWriter> writers = new Stack<>();
+        private final Stack<BufferedWriter> writers = new Stack<>();
 
         /** Path to user home directory. */
         private final Path homePath = Paths.get(Utility.USER_HOME);
@@ -412,9 +419,9 @@ l:		while (true) {
         private Path currentPath = startPath;
 
         /** Map of environment variables. */
-        private Map<String, String> variables = new HashMap<>();
+        private final Map<String, String> variables = new HashMap<>();
         /** History of inputs entered by the user. */
-        private List<String> history = new LinkedList<>();
+        private final List<String> history = new LinkedList<>();
 
         /** Prompt symbol to indicate the environment is ready. */
         private Character promptSymbol = '>';
@@ -426,10 +433,10 @@ l:		while (true) {
         /** Current ID number for marked paths. */
         private int markNum = 0;
         /** Map that associates paths with an ID number. */
-        private Map<Integer, Path> markedMap = new HashMap<>();
+        private final Map<Integer, Path> markedMap = new HashMap<>();
 
         /** Connection object that manages client-host connections. */
-        private ConnectionImpl connection = new ConnectionImpl();
+        private final ConnectionImpl connection = new ConnectionImpl();
 
         /**
          * Constructs an instance of {@code EnvironmentImpl} with default values.
@@ -466,7 +473,7 @@ l:		while (true) {
         }
 
         @Override
-        public synchronized void write(char cbuf[], int off, int len) throws ShellIOException {
+        public synchronized void write(char[] cbuf, int off, int len) throws ShellIOException {
             try {
                 writer().write(cbuf, off, len);
                 writer().flush();
@@ -535,7 +542,7 @@ l:		while (true) {
                     try {
                         if (!in.equals(reader())) in.close();
                         if (!out.equals(writer())) out.close();
-                    } catch (IOException ignorable) {}
+                    } catch (IOException ignored) {}
                 }
             }
         }
@@ -543,7 +550,7 @@ l:		while (true) {
         @Override
         public Iterable<ShellCommand> commands() {
             return commands.values().stream()
-                .sorted((cmd1, cmd2) -> cmd1.getCommandName().compareTo(cmd2.getCommandName()))
+                .sorted(Comparator.comparing(ShellCommand::getCommandName))
                 .collect(Collectors.toList());
         }
 
@@ -635,7 +642,7 @@ l:		while (true) {
 
         @Override
         public void clearMarks() {
-            markedMap.keySet().forEach(variables::remove);
+            markedMap.keySet().forEach(i -> variables.remove(Integer.toString(i)));
             markedMap.clear();
             markNum = 0;
         }
@@ -670,14 +677,14 @@ l:		while (true) {
         /** Indicates if this machine has an active remote connection. */
         private boolean connected = false;
         /** Input streams to read from the client. */
-        private Stack<InputStream> inFromClient = new Stack<>();
+        private final Stack<InputStream> inFromClient = new Stack<>();
         /** Output streams to write to the client. */
-        private Stack<OutputStream> outToClient = new Stack<>();
+        private final Stack<OutputStream> outToClient = new Stack<>();
 
         /** Cryptographic ciphers in encryption mode. */
-        private Stack<Crypto> encryptos = new Stack<>();
+        private final Stack<Crypto> encryptos = new Stack<>();
         /** Cryptographic ciphers in decryption mode. */
-        private Stack<Crypto> decryptos = new Stack<>();
+        private final Stack<Crypto> decryptos = new Stack<>();
 
         /** Download path of this connection. */
         private Path downloadPath = Utility.getUserHomeDirectory().resolve("Downloads");
@@ -696,9 +703,9 @@ l:		while (true) {
 
         @Override
         public void disconnectStreams() {
-            try { inFromClient.pop().close(); } catch (Exception e) {}
-            try { outToClient.pop().close();  } catch (Exception e) {}
-            try { environment.pop(true); } catch (Exception e) {}
+            try { inFromClient.pop().close(); } catch (Exception ignored) {}
+            try { outToClient.pop().close();  } catch (Exception ignored) {}
+            try { environment.pop(true); } catch (Exception ignored) {}
 
             if (!inFromClient.isEmpty()) {
                 assignReaderAndWriter();
@@ -756,7 +763,7 @@ l:		while (true) {
          */
         private static Crypto requireMode(Crypto crypto, boolean mode) {
             if (crypto.getMode() != mode) {
-                String modeStr = (mode == Crypto.ENCRYPT ? "en" : "de") + "cryption";
+                String modeStr = (mode == Crypto.ENCRYPT ? "encryption" : "decryption");
                 throw new IllegalArgumentException("Crypto must be in " + modeStr + " mode.");
             }
 

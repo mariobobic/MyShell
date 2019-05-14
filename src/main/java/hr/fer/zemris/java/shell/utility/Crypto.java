@@ -93,36 +93,36 @@ public class Crypto {
     }
 
     /**
-     * Calculates the new size of <tt>sourcefile</tt> after its
+     * Calculates the new size of <tt>source</tt> after its
      * <strong>encryption</strong> considering the cryptographic padding used.
      * <p>
-     * For an example, if the <tt>sourcefile</tt> size is 295 bytes, to
+     * For an example, if the <tt>source</tt> size is 295 bytes, to
      * calculate its size after encryption simply use the following method
      * (which will return 304 bytes):
      *
      * <pre>
-     * Crypto.postSize(sourcefile);
+     * Crypto.postSize(source);
      * </pre>
      *
      * Note that size of decrypted file can not be known in advance because of
      * the algorithm padding.
      *
-     * @param sourcefile file whose post size is to be calculated
-     * @return new size of <tt>sourcefile</tt> after encryption
+     * @param source file whose post size is to be calculated
+     * @return new size of <tt>source</tt> after encryption
      * @throws IOException if an I/O error occurs
      */
-    public static long postSize(Path sourcefile) throws IOException {
-        return (Files.size(sourcefile)/16 + 1) * 16;
+    public static long postSize(Path source) throws IOException {
+        return (Files.size(source)/16 + 1) * 16;
     }
 
     /**
      * <b>Encrypts</b> or <b>decrypts</b> the file specified by the
-     * <tt>sourcefile</tt> and generates a file specified by the
-     * <tt>destfile</tt>. The <tt>hash</tt> that was given to the constructor is
+     * <tt>src</tt> and generates a file specified by the
+     * <tt>dst</tt>. The <tt>hash</tt> that was given to the constructor is
      * used as a password. This method blocks until the execution is over.
      *
-     * @param sourcefile file to be encrypted or decrypted
-     * @param destfile file to be created
+     * @param src file to be encrypted or decrypted
+     * @param dst file to be created
      * @throws FileNotFoundException if the file does not exist, is a directory
      *         rather than a regular file, or for some other reason cannot be
      *         opened for reading
@@ -130,22 +130,22 @@ public class Crypto {
      * @throws BadPaddingException if this crypto is in decryption mode, but a
      *         wrong key is given or the bytes were not properly padded
      */
-    public void execute(Path sourcefile, Path destfile) throws IOException, BadPaddingException {
-        execute(sourcefile, destfile, null);
+    public void execute(Path src, Path dst) throws IOException, BadPaddingException {
+        execute(src, dst, null);
     }
 
     /**
      * <b>Encrypts</b> or <b>decrypts</b> the file specified by the
-     * <tt>sourcefile</tt> and generates a file specified by the
-     * <tt>destfile</tt>. The <tt>hash</tt> that was given to the constructor is
+     * <tt>src</tt> and generates a file specified by the
+     * <tt>dst</tt>. The <tt>hash</tt> that was given to the constructor is
      * used as a password. This method blocks until the execution is over.
      * <p>
      * This exclusive method accepts an environment where it writes the progress
      * of execution. If the specified environment is <tt>null</tt>, progress
      * tracker is not used.
      *
-     * @param sourcefile file to be encrypted or decrypted
-     * @param destfile file to be created
+     * @param src file to be encrypted or decrypted
+     * @param dst file to be created
      * @param env an environment for writing out progress, may be <tt>null</tt>
      * @throws FileNotFoundException if the file does not exist, is a directory
      *         rather than a regular file, or for some other reason cannot be
@@ -154,11 +154,11 @@ public class Crypto {
      * @throws BadPaddingException if this crypto is in decryption mode, but a
      *         wrong key is given or the bytes were not properly padded
      */
-    public void execute(Path sourcefile, Path destfile, Environment env) throws IOException, BadPaddingException {
-        Progress progress = env == null ? null : new Progress(env, Files.size(sourcefile), true);
+    public void execute(Path src, Path dst, Environment env) throws IOException, BadPaddingException {
+        Progress progress = env == null ? null : new Progress(env, Files.size(src), true);
         try (
-            InputStream in = new BufferedInputStream(Files.newInputStream(sourcefile));
-            OutputStream out = new BufferedOutputStream(Files.newOutputStream(destfile));
+            InputStream in = new BufferedInputStream(Files.newInputStream(src));
+            OutputStream out = new BufferedOutputStream(Files.newOutputStream(dst))
         ) {
             int len;
             byte[] bytes = new byte[STD_LOADER_SIZE];

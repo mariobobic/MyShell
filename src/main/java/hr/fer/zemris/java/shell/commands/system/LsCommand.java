@@ -180,7 +180,7 @@ public class LsCommand extends AbstractCommand {
                 markAndPrintNumber(env, path);
             }
         } catch (IOException e) {
-            env.writeln("An I/O error has occured.");
+            env.writeln("An I/O error has occurred.");
             env.writeln(e.getMessage());
         }
     }

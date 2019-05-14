@@ -727,8 +727,8 @@ public abstract class Utility {
     public static String humanReadableTimeUnit(long nanoseconds) {
         final long nanosecond = 1L;
         final long microsecond = nanosecond * 1000L;
-        final long milisecond = microsecond * 1000L;
-        final long second = milisecond * 1000L;
+        final long millisecond = microsecond * 1000L;
+        final long second = millisecond * 1000L;
         final long minute = second * 60L;
         final long hour = minute * 60L;
         final long day = hour * 24L;
@@ -737,10 +737,10 @@ public abstract class Utility {
         long remainder = 0L;
         if (nanoseconds < microsecond) {
             retVal = nanoseconds + " ns";
-        } else if (nanoseconds < milisecond) {
+        } else if (nanoseconds < millisecond) {
             retVal = nanoseconds / microsecond + " us";
         } else if (nanoseconds < second) {
-            retVal = nanoseconds / milisecond + " ms";
+            retVal = nanoseconds / millisecond + " ms";
         } else if (nanoseconds < minute) {
             retVal = nanoseconds / second + " s";
         } else if (nanoseconds < hour) {
@@ -905,7 +905,7 @@ public abstract class Utility {
                     }
                 }
             }
-        } catch (SocketException e) {}
+        } catch (SocketException ignored) {}
         return null;
     }
 
@@ -915,7 +915,6 @@ public abstract class Utility {
      *
      * @return this computer's public IP address or <tt>null</tt>
      */
-    // TODO Any better way of obtaining public IP address?
     public static String getPublicIP() {
         try {
             URL whatismyip = new URL("http://checkip.amazonaws.com/");

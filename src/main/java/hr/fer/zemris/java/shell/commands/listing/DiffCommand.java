@@ -188,9 +188,9 @@ public class DiffCommand extends VisitorCommand {
         /* Print errors if not silent. */
         if (!isSilent() && fails.size() != 0) {
             env.writeln("Files that failed to be decoded:");
-            fails.forEach((file1, file2) -> {
-                env.writeln(file1 + " against " + file2);
-            });
+            fails.forEach((file1, file2) ->
+                env.writeln(file1 + " against " + file2)
+            );
         }
 
         return ShellStatus.CONTINUE;
@@ -217,7 +217,7 @@ public class DiffCommand extends VisitorCommand {
     private static boolean processFiles(Environment env, Path file1, Path file2, Charset charset, boolean all) {
         try (
             Stream<String> stream1 = Files.lines(file1, charset);
-            Stream<String> stream2 = Files.lines(file2, charset);
+            Stream<String> stream2 = Files.lines(file2, charset)
         ) {
             Iterator<String> iter2 = stream1.iterator();
             Iterator<String> iter1 = stream2.iterator();
@@ -290,15 +290,15 @@ public class DiffCommand extends VisitorCommand {
     private class DiffFileVisitor extends SimpleFileVisitor<Path> {
 
         /** An environment. */
-        private Environment environment;
+        private final Environment environment;
 
         /** This path's root directory. */
-        private Path root;
+        private final Path root;
         /** Other path's root directory. */
-        private Path otherRoot;
+        private final Path otherRoot;
 
         /** Map of files that failed to be processed. */
-        private Map<Path, Path> fails;
+        private final Map<Path, Path> fails;
 
         /**
          * Constructs an instance of {@code DiffFileVisitor} with the specified
@@ -316,7 +316,7 @@ public class DiffCommand extends VisitorCommand {
         }
 
         @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
             Path relative = root.relativize(file);
             Path otherFile = otherRoot.resolve(relative);
 
@@ -337,7 +337,7 @@ public class DiffCommand extends VisitorCommand {
         }
 
         @Override
-        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+        public FileVisitResult visitFileFailed(Path file, IOException exc) {
             environment.writeln("Failed to access " + file);
             return FileVisitResult.CONTINUE;
         }

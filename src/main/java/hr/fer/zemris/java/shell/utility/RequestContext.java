@@ -45,7 +45,7 @@ public class RequestContext {
     private static final String DEF_MIME_TYPE = "text/html";
 
     /** Output stream of the context. */
-    private OutputStream outputStream;
+    private final OutputStream outputStream;
     /** Context charset. */
     private Charset charset = Charset.forName(DEF_ENCODING);
 
@@ -63,11 +63,11 @@ public class RequestContext {
     /** Parameters stored within this context. */
     private final Map<String, String> parameters;
     /** Temporary parameters stored within this context. */
-    private Map<String, String> temporaryParameters;
+    private final Map<String, String> temporaryParameters;
     /** Persistent parameters stored within this context. */
-    private Map<String, String> persistentParameters;
+    private final Map<String, String> persistentParameters;
     /** Cookies which will be sent out in response header. */
-    private List<RCCookie> outputCookies;
+    private final List<RCCookie> outputCookies;
 
     /** Indicates that the header has been generated. */
     private boolean headerGenerated;
@@ -110,7 +110,7 @@ public class RequestContext {
         checkHeaderGenerated();
         this.encoding = encoding != null ? encoding : DEF_ENCODING;
 
-        charset = Charset.forName(encoding);
+        this.charset = Charset.forName(this.encoding);
     }
 
     /**
@@ -460,7 +460,7 @@ public class RequestContext {
          */
         public RCCookie(String name, String value, String domain, String path, Integer maxAge) {
             this.name = Objects.requireNonNull(name);
-            this.value = Objects.requireNonNull(value);;
+            this.value = Objects.requireNonNull(value);
             this.domain = domain;
             this.path = path;
             this.maxAge = maxAge;

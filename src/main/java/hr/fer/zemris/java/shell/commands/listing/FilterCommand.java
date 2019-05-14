@@ -172,9 +172,9 @@ public class FilterCommand extends VisitorCommand {
     private class FilterFileVisitor extends SimpleFileVisitor<Path> {
 
         /** An environment. */
-        private Environment environment;
+        private final Environment environment;
         /** Pattern to be matched against. */
-        private MyPattern pattern;
+        private final MyPattern pattern;
 
         /** Number of files that failed to be accessed. */
         private int fails;

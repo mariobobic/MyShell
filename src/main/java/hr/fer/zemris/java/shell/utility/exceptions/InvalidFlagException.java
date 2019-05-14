@@ -14,7 +14,7 @@ public class InvalidFlagException extends RuntimeException {
     private static final long serialVersionUID = 1L;
 
     /** A collection of flags that caused this exception. */
-    private Collection<String> flags = new ArrayList<>();
+    private final Collection<String> flags = new ArrayList<>();
 
     /**
      * Constructs an {@code CommandFlagException} with the specified flag that
@@ -57,7 +57,7 @@ public class InvalidFlagException extends RuntimeException {
      */
     public InvalidFlagException(String message, Collection<String> flags) {
         super(message);
-        flags.addAll(flags);
+        this.flags.addAll(flags);
     }
 
     /**

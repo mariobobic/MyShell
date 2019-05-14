@@ -31,8 +31,8 @@ public class FlagDescription implements Comparable<FlagDescription> {
      * @throws NullPointerException if either name or description is null
      */
     public FlagDescription(String name, String otherName, String argument, String description) {
-        Objects.requireNonNull("Name must not be null.", name);
-        Objects.requireNonNull("Description must not be null.", description);
+        Objects.requireNonNull(name, "Name must not be null.");
+        Objects.requireNonNull(description, "Description must not be null.");
 
         this.name = processName(name);
         this.otherName = processName(otherName);

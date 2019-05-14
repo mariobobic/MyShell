@@ -68,7 +68,7 @@ public class RenameAllCommand extends AbstractCommand {
         desc.add("Wildcards can be used to be substituted with some elements in file names:");
         desc.add("Use the {i} sequence to substitute it with a file index.");
         desc.add("Use the {n} sequence to substitute it with the last index.");
-        desc.add("Use the {ext} sequence to substitue it with a file extension. "
+        desc.add("Use the {ext} sequence to substitute it with a file extension. "
                 + "The extension includes a period symbol.");
         desc.add("USE THIS COMMAND WITH CAUTION!");
         return desc;

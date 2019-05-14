@@ -16,14 +16,14 @@ public interface ShellCommand {
      *
      * @return the name of this Shell command
      */
-    public String getCommandName();
+    String getCommandName();
 
     /**
      * Returns the description of this Shell command.
      *
      * @return the description of this Shell command
      */
-    public List<String> getCommandDescription();
+    List<String> getCommandDescription();
 
     /**
      * Executes the given Shell command. Every shell command has its own unique
@@ -38,5 +38,5 @@ public interface ShellCommand {
      * @param s arguments
      * @return the status of this command
      */
-    public ShellStatus execute(Environment env, String s);
+    ShellStatus execute(Environment env, String s);
 }

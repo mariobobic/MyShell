@@ -81,7 +81,7 @@ public class HttpServerCommand extends VisitorCommand {
     private boolean showHidden;
 
     /** Map of running server threads. */
-    private Map<Path, ServerThread> serversMap = new LinkedHashMap<>();
+    private final Map<Path, ServerThread> serversMap = new LinkedHashMap<>();
 
     /**
      * Constructs a new command object of type {@code HttpServerCommand}.
@@ -308,15 +308,15 @@ public class HttpServerCommand extends VisitorCommand {
     private class ServerThread extends Thread {
 
         /** Thread pool of client workers. */
-        private ExecutorService threadPool = Executors.newFixedThreadPool(NUM_THREADS);
+        private final ExecutorService threadPool = Executors.newFixedThreadPool(NUM_THREADS);
 
         /** Address which the server listens. */
-        private String address;
+        private final String address;
         /** Port number which the server listens. */
-        private int port;
+        private final int port;
 
         /** Path to the hosted directory. */
-        private Path documentRoot;
+        private final Path documentRoot;
 
         /**
          * Constructs an instance of {@code ServerThread} with the net address
@@ -388,7 +388,7 @@ public class HttpServerCommand extends VisitorCommand {
      */
     private class ClientWorker implements Runnable {
         /** The client socket. */
-        private Socket csocket;
+        private final Socket csocket;
         /** Input stream from where the request is read. */
         private PushbackInputStream istream;
         /** Output stream for serving the client. */
@@ -400,12 +400,12 @@ public class HttpServerCommand extends VisitorCommand {
         private String method;
 
         /** Parameters fetched from the request. */
-        private Map<String, String> params = new HashMap<>();
+        private final Map<String, String> params = new HashMap<>();
         /** Persistent parameters. */
-        private Map<String, String> permParams = null;
+        private final Map<String, String> permParams = null;
 
         /** Path to the hosted directory. */
-        private Path documentRoot;
+        private final Path documentRoot;
 
         /**
          * Constructs an instance of {@code ClientWorker} with the specified
@@ -533,7 +533,7 @@ public class HttpServerCommand extends VisitorCommand {
                 BufferedInputStream in = new BufferedInputStream(Files.newInputStream(requestedPath));
                 rc.setContentLength(in.available());
 
-                int len = 0;
+                int len;
                 byte[] bytes = new byte[1024];
                 while ((len = in.read(bytes)) > 0) {
                     rc.write(bytes, 0, len);
@@ -545,7 +545,7 @@ public class HttpServerCommand extends VisitorCommand {
                 System.err.println("\tat " + FORMATTER.format(LocalDateTime.now()));
                 throw new RuntimeException(e);
             } finally {
-                try { if (!csocket.isClosed()) csocket.close(); } catch (IOException ignorable) {}
+                try { if (!csocket.isClosed()) csocket.close(); } catch (IOException ignored) {}
             }
         }
 
@@ -577,7 +577,7 @@ public class HttpServerCommand extends VisitorCommand {
          * @throws RuntimeException if an invalid parameter is given
          */
         private void parseParameters(String paramString) {
-            String[] parameters = paramString.split("\\&");
+            String[] parameters = paramString.split("&");
 
             for (String parameter : parameters) {
                 String[] keyValue = parameter.split("=");

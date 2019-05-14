@@ -112,7 +112,7 @@ public abstract class NetworkTransfer {
         char[] cbuf = new char[1024];
 
         while (clientReader.read(cbuf) != -1) {
-            if (NetworkTransfer.isAHint(cbuf, DOWNLOAD_KEYWORD)) {
+            if (NetworkTransfer.isAHint(cbuf, DOWNLOAD_KEYWORD) || NetworkTransfer.isAHint(cbuf, DOWNLOAD_OVERWRITE_KEYWORD)) {
                 NetworkTransfer.download(env, inFromServer, outToServer, decrypto, overwrite);
             } else {
                 break;
@@ -157,24 +157,31 @@ public abstract class NetworkTransfer {
         ///////////////// File parameters ////////////////
         //////////////////////////////////////////////////
 
+        boolean success;
+
         // Accept download
         byte[] bytes = new byte[1024];
         outToServer.write(1); // send a signal: accepted download
 
         // Read file name
-        inFromServer.read(bytes);
-        outToServer.write(1); // send a signal: received file name
+        success = inFromServer.read(bytes) != -1;
+        outToServer.write(success ? 1 : 0); // send a signal: received file name
+        if (!success) {
+            throw new IOException("Did not receive file name");
+        }
 
         String filename = new String(bytes).trim();
         bytes = new byte[1024]; // reset array
 
         // Read file size
-        inFromServer.read(bytes);
-        outToServer.write(1); // send a signal: received file size
+        success = inFromServer.read(bytes) != -1;
+        outToServer.write(success ? 1 : 0); // send a signal: received file size
+        if (!success) {
+            throw new IOException("Did not receive file size");
+        }
 
         String filesize = new String(bytes).trim();
         long size = Long.parseLong(filesize);
-        bytes = new byte[1024]; // reset array
 
         //////////////////////////////////////////////////
         ////////////////////// Paths /////////////////////
@@ -229,11 +236,11 @@ public abstract class NetworkTransfer {
             }
             fileOutput.write(decrypto.doFinal());
         } catch (BadPaddingException e) {
-            try { outToServer.write(0); } catch (Exception ex) {} // send a signal: download failed
-            throw new IOException("An error occured while downloading " + path
+            try { outToServer.write(0); } catch (Exception ignored) {} // send a signal: download failed
+            throw new IOException("An error occurred while downloading " + path
                 + ". This is probably due to incorrect password.", e);
         } catch (IOException e) {
-            try { outToServer.write(0); } catch (Exception ex) {} // send a signal: download failed
+            try { outToServer.write(0); } catch (Exception ignored) {} // send a signal: download failed
             throw new IOException("An unexpected error occurred while downloading " + path, e);
         } finally {
             progress.stop();
@@ -262,8 +269,11 @@ public abstract class NetworkTransfer {
         outToClient.write(1); // send a signal: accepted download
 
         // Read file name
-        inFromClient.read(bytes);
-        outToClient.write(1); // send a signal: received file name
+        boolean success = inFromClient.read(bytes) != -1;
+        outToClient.write(success ? 1 : 0); // send a signal: received file name
+        if (!success) {
+            throw new IOException("Did not receive file name");
+        }
 
         String filename = new String(bytes).trim();
         Path path = Utility.resolveAbsolutePath(env, filename);
@@ -378,7 +388,7 @@ public abstract class NetworkTransfer {
 
             System.out.println("Finished uploading " + nameAndSize);
         } finally {
-            try { outToClient.flush(); } catch (IOException e) {}
+            try { outToClient.flush(); } catch (IOException ignored) {}
         }
     }
 
@@ -391,15 +401,15 @@ public abstract class NetworkTransfer {
     private static class UploadFileVisitor extends SimpleFileVisitor<Path> {
 
         /** Starting file. */
-        private Path root;
+        private final Path root;
         /** Input stream of the recipient. */
-        private InputStream inFromClient;
+        private final InputStream inFromClient;
         /** Output stream of the recipient. */
-        private OutputStream outToClient;
+        private final OutputStream outToClient;
         /** Cryptographic cipher for encrypting files. */
-        private Crypto encrypto;
+        private final Crypto encrypto;
         /** Indicates if files should be overwritten. */
-        private boolean overwrite;
+        private final boolean overwrite;
 
         /**
          * Constructs an instance of {@code UploadFileVisitor} with the
@@ -429,7 +439,7 @@ public abstract class NetworkTransfer {
         }
 
         @Override
-        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+        public FileVisitResult visitFileFailed(Path file, IOException exc) {
             System.out.println("Failed to access " + file);
             return FileVisitResult.CONTINUE;
         }

@@ -209,7 +209,7 @@ public class CopyCommand extends VisitorCommand {
         Progress progress = new Progress(env, Files.size(source), true);
         try (
             BufferedInputStream in = new BufferedInputStream(Files.newInputStream(source));
-            BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(target));
+            BufferedOutputStream out = new BufferedOutputStream(Files.newOutputStream(target))
         ) {
             int len;
             byte[] buff = new byte[1024];
@@ -235,12 +235,12 @@ public class CopyCommand extends VisitorCommand {
     private class CopyFileVisitor extends SimpleFileVisitor<Path> {
 
         /** An environment. */
-        private Environment environment;
+        private final Environment environment;
 
         /** This path's root directory. */
-        private Path root;
+        private final Path root;
         /** Other path's root directory. */
-        private Path otherRoot;
+        private final Path otherRoot;
 
         /**
          * Constructs an instance of {@code CopyFileVisitor} with the specified
@@ -271,7 +271,7 @@ public class CopyCommand extends VisitorCommand {
         }
 
         @Override
-        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+        public FileVisitResult visitFileFailed(Path file, IOException exc) {
             environment.writeln("Failed to access " + file);
             return FileVisitResult.CONTINUE;
         }

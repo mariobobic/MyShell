@@ -116,9 +116,9 @@ public class RenameCommand extends AbstractCommand {
                 renameFileUsingLastModified(env, path);
             } else if (Files.isDirectory(path)) {
                 try (Stream<Path> stream = Files.list(path)) {
-                    stream.filter(Files::isRegularFile).forEach(file -> {
-                        renameFileUsingLastModified(env, file);
-                    });
+                    stream.filter(Files::isRegularFile).forEach(file ->
+                        renameFileUsingLastModified(env, file)
+                    );
                 }
             }
         }

@@ -168,7 +168,7 @@ public class ConnectCommand extends AbstractCommand {
             OutputStream outToServer = clientSocket.getOutputStream();
             InputStream inFromServer = clientSocket.getInputStream();
             BufferedWriter serverWriter = new BufferedWriter(new OutputStreamWriter(outToServer));
-            BufferedReader serverReader = new BufferedReader(new InputStreamReader(inFromServer));
+            BufferedReader serverReader = new BufferedReader(new InputStreamReader(inFromServer))
         ) {
             /* System.in should not be closed. */
             BufferedReader inFromUser = Environment.stdIn;

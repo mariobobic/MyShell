@@ -27,14 +27,14 @@ import java.util.concurrent.TimeUnit;
 public class Progress implements Runnable {
 
     /** Scheduled executor for running tasks. */
-    private ScheduledExecutorService scheduledExecutor =
+    private final ScheduledExecutorService scheduledExecutor =
         Executors.newSingleThreadScheduledExecutor();
 
     /** Time this job was constructed. */
     private final long startTime = System.nanoTime();
 
     /** An environment. */
-    private Environment environment;
+    private final Environment environment;
     /** Total length to be processed. */
     private final long total;
     /** Currently processed length. */
@@ -47,10 +47,10 @@ public class Progress implements Runnable {
     /** Recently processed length. */
     private long recent;
 
+    /** Indicates if start and stop should be called automatically. */
+    private final boolean auto;
     /** Indicates if the progress tracker has been started. */
     private boolean started;
-    /** Indicates if start and stop should be called automatically. */
-    private boolean auto;
 
     /**
      * Constructs an instance of {@code Progress} with the specified arguments.

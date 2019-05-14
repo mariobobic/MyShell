@@ -64,14 +64,14 @@ public class DecryptCommand extends AbstractCommand {
             throw new SyntaxException();
         }
 
-        Path sourcefile = Utility.resolveAbsolutePath(env, args[1]);
-        Utility.requireFile(sourcefile);
+        Path srcFile = Utility.resolveAbsolutePath(env, args[1]);
+        Utility.requireFile(srcFile);
 
-        Path destfile = Paths.get(sourcefile.toString().replaceFirst(Utility.CRYPT_FILE_EXT+"$", ""));
-        Utility.requireDiskSpace(Files.size(sourcefile), destfile);
+        Path dstFile = Paths.get(srcFile.toString().replaceFirst(Utility.CRYPT_FILE_EXT+"$", ""));
+        Utility.requireDiskSpace(Files.size(srcFile), dstFile);
 
-        if (Files.exists(destfile)) {
-            if (!promptConfirm(env, "File " + destfile + " already exists. Overwrite?")) {
+        if (Files.exists(dstFile)) {
+            if (!promptConfirm(env, "File " + dstFile + " already exists. Overwrite?")) {
                 env.writeln("Cancelled.");
                 return ShellStatus.CONTINUE;
             }
@@ -81,7 +81,7 @@ public class DecryptCommand extends AbstractCommand {
         Crypto crypto = new Crypto(hash, Crypto.DECRYPT);
 
         try {
-            crypto.execute(sourcefile, destfile, env);
+            crypto.execute(srcFile, dstFile, env);
         } catch (BadPaddingException ignorable) {
             env.writeln("Decryption failed. This is probably due to an incorrect password.");
         }

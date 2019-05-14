@@ -130,9 +130,9 @@ public class CleanCommand extends VisitorCommand {
     private static class CleanFileVisitor extends SimpleFileVisitor<Path> {
 
         /** An environment. */
-        private Environment environment;
+        private final Environment environment;
         /** A path consumer function. */
-        private Function<Path, Boolean> function;
+        private final Function<Path, Boolean> function;
 
         /** Number of files this visitor has encountered. */
         private int cleanCount = 0;
@@ -151,7 +151,7 @@ public class CleanCommand extends VisitorCommand {
         }
 
         @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
             try {
                 boolean applied = function.apply(file);
                 if (applied) {

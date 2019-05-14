@@ -58,9 +58,9 @@ import java.util.StringJoiner;
 public class CommandArguments {
 
     /** Definitions of flags to be used while compiling. */
-    private Map<String, Boolean> flagDefinitions = new HashMap<>();
+    private final Map<String, Boolean> flagDefinitions = new HashMap<>();
     /** Map of compiled flags where key is flag name and value is the flag. */
-    private Map<String, Flag> flags = new HashMap<>();
+    private final Map<String, Flag> flags = new HashMap<>();
 
     /** Compiled argument cleared of flags. */
     private String cleanArgument;

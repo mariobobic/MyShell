@@ -64,14 +64,14 @@ public class EncryptCommand extends AbstractCommand {
             throw new SyntaxException();
         }
 
-        Path sourcefile = Utility.resolveAbsolutePath(env, args[1]);
-        Utility.requireFile(sourcefile);
+        Path srcFile = Utility.resolveAbsolutePath(env, args[1]);
+        Utility.requireFile(srcFile);
 
-        Path destfile = Paths.get(sourcefile + Utility.CRYPT_FILE_EXT);
-        Utility.requireDiskSpace(Crypto.postSize(sourcefile), destfile);
+        Path dstFile = Paths.get(srcFile + Utility.CRYPT_FILE_EXT);
+        Utility.requireDiskSpace(Crypto.postSize(srcFile), dstFile);
 
-        if (Files.exists(destfile)) {
-            if (!promptConfirm(env, "File " + destfile + " already exists. Overwrite?")) {
+        if (Files.exists(dstFile)) {
+            if (!promptConfirm(env, "File " + dstFile + " already exists. Overwrite?")) {
                 env.writeln("Cancelled.");
                 return ShellStatus.CONTINUE;
             }
@@ -81,7 +81,7 @@ public class EncryptCommand extends AbstractCommand {
         Crypto crypto = new Crypto(hash, Crypto.ENCRYPT);
 
         try {
-            crypto.execute(sourcefile, destfile, env);
+            crypto.execute(srcFile, dstFile, env);
         } catch (BadPaddingException ignorable) {
             // ignored, since crypto is in encryption mode
         }

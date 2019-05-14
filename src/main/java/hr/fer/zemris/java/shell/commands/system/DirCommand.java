@@ -77,8 +77,13 @@ public class DirCommand extends AbstractCommand {
         env.writeln("");
 
         File[] files = dir.toFile().listFiles();
-        int noFiles = 0;
-        int noDirs = 0;
+        if (files == null) {
+            env.writeln("Error while listing files from " + dir);
+            return ShellStatus.CONTINUE;
+        }
+
+        int numFiles = 0;
+        int numDirs = 0;
         long filesLength = 0;
 
         for (File file : files) {
@@ -87,19 +92,19 @@ public class DirCommand extends AbstractCommand {
 
             env.write(DATE_FORMAT.format(date) + "");
             if (file.isFile()) {
-                noFiles++;
+                numFiles++;
                 long size = file.length();
                 filesLength += size;
                 format(env, " %17s ", DECIMAL_FORMAT.format(size));
             } else {
-                noDirs++;
+                numDirs++;
                 env.write("    <DIR>          ");
             }
             env.write(name);
             markAndPrintNumber(env, file.toPath());
         }
-        formatln(env, "%15d File(s), %s bytes", noFiles, DECIMAL_FORMAT.format(filesLength));
-        formatln(env, "%15d Dir(s)", noDirs);
+        formatln(env, "%15d File(s), %s bytes", numFiles, DECIMAL_FORMAT.format(filesLength));
+        formatln(env, "%15d Dir(s)", numDirs);
 
         return ShellStatus.CONTINUE;
     }

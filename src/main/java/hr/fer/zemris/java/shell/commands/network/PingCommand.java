@@ -158,7 +158,7 @@ public class PingCommand extends AbstractCommand {
             try {
                 if (i < count)
                     Thread.sleep(interval);
-            } catch (InterruptedException ignorable) {}
+            } catch (InterruptedException ignored) {}
         }
 
         int lost = sent - received;

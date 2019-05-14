@@ -48,7 +48,7 @@ public interface BasicEnvironment {
      * @param len length to be written
      * @throws ShellIOException if an I/O exception occurs
      */
-    void write(char cbuf[], int off, int len) throws ShellIOException;
+    void write(char[] cbuf, int off, int len) throws ShellIOException;
 
     /**
      * Writes the given string using a writer, followed by a new line separator.

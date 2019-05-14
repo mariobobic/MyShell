@@ -122,7 +122,7 @@ public class HexdumpCommand extends AbstractCommand {
         /* Segment 3 */
         for (int i = 0; i < len; i++) {
             byte b = bytes[i];
-            sb.append(String.format("%c", b < 32 || b > 127 ? '.' : b));
+            sb.append(String.format("%c", (b < 32 || b > 127) ? '.' : b));
         }
 
         return sb.toString();

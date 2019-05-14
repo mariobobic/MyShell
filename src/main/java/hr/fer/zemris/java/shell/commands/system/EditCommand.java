@@ -138,7 +138,7 @@ public class EditCommand extends VisitorCommand {
     private class EditFileVisitor extends SimpleFileVisitor<Path> {
 
         /** An environment. */
-        private Environment environment;
+        private final Environment environment;
 
         /**
          * Constructs an instance of TreeFileVisitor with the specified
@@ -157,7 +157,7 @@ public class EditCommand extends VisitorCommand {
         }
 
         @Override
-        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+        public FileVisitResult visitFileFailed(Path file, IOException exc) {
             environment.writeln("Failed to access " + file);
             return FileVisitResult.CONTINUE;
         }
